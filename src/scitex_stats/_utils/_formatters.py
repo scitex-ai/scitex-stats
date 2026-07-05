@@ -148,6 +148,41 @@ def fmt_sym(symbol: str) -> str:
     return _MATHTEXT.get(symbol, f"${symbol}$")
 
 
+def fmt_sym_md(symbol: str) -> str:
+    """Return a markdown-italicized stat symbol for plain-text reports.
+
+    Companion to :func:`fmt_sym` (which targets matplotlib mathtext): this
+    targets plain-text / Markdown six-stat report strings (see
+    ``scitex_stats.reporting.full_report``). Sample-size subscripts keep the
+    N (subject-level, upper-case) / n (window-level, lower-case) convention
+    verbatim from the caller — this function only italicizes the base
+    letter, it does not decide N vs n.
+
+    Parameters
+    ----------
+    symbol : str
+        Plain symbol name (e.g. 't', 'p', 'n_x', 'N_subjects').
+
+    Returns
+    -------
+    str
+        Markdown-italicized string (e.g. '*t*', '*n*_x', '*N*_subjects').
+
+    Examples
+    --------
+    >>> fmt_sym_md('t')
+    '*t*'
+    >>> fmt_sym_md('n_x')
+    '*n*_x'
+    >>> fmt_sym_md('N_subjects')
+    '*N*_subjects'
+    """
+    if "_" in symbol:
+        base, sub = symbol.split("_", 1)
+        return f"*{base}*_{sub}"
+    return f"*{symbol}*"
+
+
 def fmt_stat(
     symbol: str,
     value,
