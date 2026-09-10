@@ -113,6 +113,8 @@ _LAZY_ATTRS: dict[str, str] = {
     "run_test": "_dispatch",
     # JSON
     "to_json_safe": "_utils._serialize",
+    # App-identity descriptor (hub Apps-list surface; read-only, no placement)
+    "app_info": "_app_info",
     # Stats ↔ SciTeX bundle I/O (optional scitex-io; extra [bundle])
     "Stats": "_integration",
     "BUNDLE_AVAILABLE": "_integration",
@@ -216,6 +218,8 @@ __all__ = [
     "available_tests",
     # Descriptive
     "describe",
+    # App-identity descriptor (hub Apps-list surface; read-only, no placement)
+    "app_info",
     # JSON serialization
     "to_json_safe",
     # Stats ↔ SciTeX bundle I/O (optional scitex-io; extra [bundle])
