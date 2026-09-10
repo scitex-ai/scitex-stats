@@ -3,7 +3,7 @@ description: |
   [TOPIC] Django App Env Vars
   [DETAILS] SCITEX_STATS_* variables read by the standalone Statistics app
   (scitex_stats._django) — the Django server launcher and settings.
-tags: [scitex-stats-django-env-vars, scitex-stats]
+tags: [scitex-stats-env-vars, scitex-stats]
 ---
 
 
