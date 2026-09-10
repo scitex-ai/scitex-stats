@@ -49,8 +49,8 @@ CROSS_PACKAGE_IMPORTS = [
     'scitex_dev._cli._completion',
     'scitex_dev.cli',
     'scitex_dev.decorators',
+    'scitex_dev.ecosystem',
     'scitex_dev.linter._rules._base',
-    'scitex_dev.skills',
     'scitex_io.bundle',
     'scitex_logging',
     'scitex_ui',
@@ -60,9 +60,17 @@ CROSS_PACKAGE_IMPORTS = [
 
 @pytest.mark.parametrize("module_name", CROSS_PACKAGE_IMPORTS)
 def test_cross_package_import(module_name):
-    """Importing scitex-stats's declared cross-package dependency must succeed."""
-    # Arrange: parametrized module name; importorskip yields the loaded module.
-    # Act
-    mod = pytest.importorskip(module_name)
-    # Assert: importorskip returns the module object on success (never None).
+    """Importing scitex-stats's declared cross-package dependency must succeed.
+
+    PS-140 §2: skip on the ROOT package (a legitimately-absent optional peer
+    must skip, not fail a lean install), then HARD-import the full dotted path
+    below it. Skipping on the full path (the old form) would let a renamed
+    submodule raise ModuleNotFoundError and be silently SKIPPED as green —
+    the exact miss this gate exists to catch (worked example scitex-hpc#88).
+    """
+    # Arrange: skip only when the whole peer is absent.
+    pytest.importorskip(module_name.split(".")[0])
+    # Act: hard-import the exact full path.
+    mod = importlib.import_module(module_name)
+    # Assert: the full module resolves (never None).
     assert mod is not None
