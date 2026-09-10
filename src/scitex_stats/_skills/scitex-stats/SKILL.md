@@ -86,4 +86,4 @@ scitex-stats <command> [options]
 ## Environment
 
 - [14_env-vars.md](14_env-vars.md) — SCITEX_* env vars read by scitex-stats at runtime
-- [20_env-vars.md](20_env-vars.md) — SCITEX_STATS_* env vars read by the standalone Django app (`scitex-stats gui`)
+- [15_django-env-vars.md](15_django-env-vars.md) — SCITEX_STATS_* env vars read by the standalone Django app (`scitex-stats gui`)
