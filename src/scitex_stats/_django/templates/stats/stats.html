@@ -1,0 +1,139 @@
+{% extends "scitex_ui/standalone_shell.html" %}
+{% load static %}
+{#
+Extends scitex-ui's shared workspace shell so Statistics renders inside the
+same frame as every other leaf (scitex-scholar, scitex-writer, figrecipe)
+instead of shipping its own <html> document. Block names (extra_css /
+app_content / extra_js) were verified against the installed scitex_ui.
+
+The stx-mount marker is KEPT deliberately: the shell does not emit it, so the
+mount contract remains this app's to declare.
+#}
+{% block extra_css %}
+    <meta name="stx-mount" content="{{ stx_mount }}">
+    <link rel="stylesheet" href="{% static 'stats/css/stats.css' %}">
+{% endblock %}
+
+{% block app_content %}
+<header class="app-header">
+    <h1>SciTeX Statistics</h1>
+    <span class="subtitle" id="appSub">Stats Calculator &mdash; thin UI over the scitex-stats package</span>
+</header>
+<div class="app-container">
+    <!-- Sidebar: test catalogue + status -->
+    <aside class="app-sidebar">
+        <div class="sidebar-section">
+            <div class="sidebar-section__header"><span class="sidebar-section__title">Status</span></div>
+            <div class="sidebar-section__content">
+                <div id="serviceStatus"><span class="status-indicator status-checking">&#9679; Checking&hellip;</span></div>
+            </div>
+        </div>
+        <div class="sidebar-section">
+            <div class="sidebar-section__header"><span class="sidebar-section__title">Recommend</span></div>
+            <div class="sidebar-section__content">
+                <label class="field"><span>Groups</span>
+                    <input type="number" id="recGroups" value="2" min="1" max="20">
+                </label>
+                <label class="field"><span>Outcome</span>
+                    <select id="recOutcome">
+                        <option value="continuous" selected>continuous</option>
+                        <option value="ordinal">ordinal</option>
+                        <option value="binary">binary</option>
+                    </select>
+                </label>
+                <label class="field"><span>Design</span>
+                    <select id="recDesign">
+                        <option value="between" selected>between</option>
+                        <option value="within">within</option>
+                    </select>
+                </label>
+                <label class="field checkbox"><input type="checkbox" id="recPaired"> paired</label>
+                <button class="btn btn-secondary" id="btnRecommend">Recommend tests</button>
+                <ol id="recList" class="rec-list"></ol>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main: run a test + read the result -->
+    <main class="app-main">
+        <section class="panel">
+            <div class="panel__title">Run a test</div>
+            <div class="grid">
+                <label class="field"><span>Test</span>
+                    <select id="runTest"></select>
+                </label>
+                <label class="field"><span>Alternative</span>
+                    <select id="runAlt">
+                        <option value="two-sided" selected>two-sided</option>
+                        <option value="greater">greater</option>
+                        <option value="less">less</option>
+                    </select>
+                </label>
+                <label class="field"><span>Mode</span>
+                    <select id="runMode">
+                        <option value="two" selected>two samples (data / data2)</option>
+                        <option value="one">one sample (data)</option>
+                        <option value="groups">groups (ANOVA / Kruskal&hellip;)</option>
+                    </select>
+                </label>
+            </div>
+            <label class="field"><span>Data (paste numbers &mdash; space / comma / newline separated)</span>
+                <textarea id="runData" rows="4" placeholder="e.g. 10 12 11 13 9 12"></textarea>
+            </label>
+            <label class="field" id="runData2Wrap"><span>Data 2</span>
+                <textarea id="runData2" rows="3" placeholder="second sample"></textarea>
+            </label>
+            <button class="btn" id="btnRun">Run</button>
+        </section>
+
+        <section class="panel">
+            <div class="panel__title">Result</div>
+            <div id="resultFormatted" class="result-formatted"></div>
+            <pre id="resultJson" class="result-json"></pre>
+        </section>
+
+        <section class="panel">
+            <div class="panel__title">Multiple-comparison correction</div>
+            <div class="grid">
+                <label class="field"><span>Method</span>
+                    <select id="corrMethod">
+                        <option value="fdr_bh" selected>FDR (Benjamini&ndash;Hochberg)</option>
+                        <option value="bonferroni">Bonferroni</option>
+                        <option value="holm">Holm</option>
+                        <option value="sidak">Sidak</option>
+                    </select>
+                </label>
+                <label class="field"><span>Alpha</span><input type="number" id="corrAlpha" value="0.05" step="0.005" min="0.001" max="1"></label>
+            </div>
+            <label class="field"><span>P-values (paste)</span>
+                <textarea id="corrP" rows="2" placeholder="0.01 0.02 0.03 0.5"></textarea>
+            </label>
+            <button class="btn btn-secondary" id="btnCorrect">Correct</button>
+            <pre id="corrOut" class="result-json"></pre>
+        </section>
+
+        <section class="panel">
+            <div class="panel__title">Post-hoc (pairwise after ANOVA / Kruskal)</div>
+            <div class="grid">
+                <label class="field"><span>Method</span>
+                    <select id="phMethod">
+                        <option value="tukey" selected>Tukey HSD</option>
+                        <option value="games_howell">Games&ndash;Howell</option>
+                        <option value="dunnett">Dunnett</option>
+                    </select>
+                </label>
+            </div>
+            <label class="field"><span>Groups (one per line)</span>
+                <textarea id="phGroups" rows="3" placeholder="line 1 = group A&#10;line 2 = group B&#10;line 3 = group C"></textarea>
+            </label>
+            <button class="btn btn-secondary" id="btnPosthoc">Compare</button>
+            <pre id="phOut" class="result-json"></pre>
+        </section>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'stats/js/stx-mount.js' %}"></script>
+    <script src="{% static 'stats/js/app.js' %}"></script>
+{% endblock %}

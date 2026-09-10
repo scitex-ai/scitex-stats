@@ -42,6 +42,7 @@ from .mcp import (
     cmd_start as _cmd_start,
 )
 from .skills_group import skills_group as _skills_group
+from .gui import gui as _gui
 from .stats import (
     run_format_pvalue as _run_format_pvalue,
     run_tests_describe as _run_tests_describe,
@@ -465,6 +466,11 @@ def format_pvalue(p, style):
 # ----------------------------------------------------------------------------
 
 main.add_command(_skills_group, name="skills")
+
+# gui group (standalone Statistics app: open / serve / status / stop). The
+# import is cheap (reads only DEFAULT_PORT); the scitex-app SDK is pulled
+# lazily inside the subcommands, so a base install (no [server]) still works.
+main.add_command(_gui, name="gui")
 
 
 # §1a install-shell-completion/print-shell-completion + optional scitex-dev

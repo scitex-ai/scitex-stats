@@ -1,0 +1,32 @@
+{
+  "name": "stats_calculator",
+  "slug": "stats",
+  "label": "Statistics",
+  "pip_package": "scitex-stats",
+  "version": "0.1.0",
+  "icon": "fas fa-calculator",
+  "subtitle": "Publication-ready statistical testing, effect sizes, power and corrections",
+  "about": "A standalone Statistics app for the SciTeX workspace: run any of 23 tests, get effect sizes, power and APA/Nature/LaTeX formatting, and control multiple comparisons. The heavy lifting is the scitex-stats common package; this app is a thin UI over it.",
+  "description": "SciTeX Statistics is a browser-based stats calculator built on the scitex-stats package. Pick a design (groups, sample sizes, outcome type, paired/between), get a ranked test recommendation, run it, and read the unified result dict: statistic, p-value, effect size, power, and a publication-ready APA / Nature / LaTeX string. Post-hoc comparisons and multiple-comparison corrections (Bonferroni, Holm, Sidak, FDR) are first-class.",
+  "author": "ywatanabe",
+  "license": "AGPL-3.0",
+  "capabilities": [
+    "Run any of 23 statistical tests through one dispatcher",
+    "Design-driven test recommendation (StatContext -> rank)",
+    "Effect sizes (Cohen's d, eta-squared, Cliff's delta, prob. of superiority, epsilon-squared)",
+    "Power analysis and required sample size",
+    "Post-hoc pairwise comparisons (Tukey HSD, Games-Howell, Dunnett)",
+    "Multiple-comparison corrections (Bonferroni, Holm, Sidak, FDR)",
+    "APA / Nature / LaTeX formatting for publication"
+  ],
+  "allowed_extensions": [".csv", ".json", ".tsv"],
+  "wip": false,
+  "standalone": true,
+  "standalone_command": "scitex-stats gui",
+  "standalone_port": 31299,
+  "frontend_type": "vanilla",
+  "embedded_package": true,
+  "dependencies": {
+    "python": ["scitex-stats", "scitex-app", "scitex-ui", "django"]
+  }
+}

@@ -72,7 +72,7 @@ dependencies = [
 # `".[all,dev]"` (pytest-matrix, quality-audit), and README/CONTRIBUTING
 # document `.[dev]` for contributors.
 all = [
-    "scitex-stats[bundle,dev,docs]",
+    "scitex-stats[bundle,dev,docs,server]",
     "figrecipe>=0.28.0",
     "torch>=2.0",
 ]
@@ -82,6 +82,17 @@ all = [
 # extra (no hard/circular dep).
 bundle = [
     "scitex-io>=0.2.16",
+]
+# Statistics app (standalone + hub integration): scitex_stats._django exposes
+# the calculator as a SciTeX workspace app via the scitex-app SDK
+# (scitex_app.embed.run_standalone / ScitexAppConfig) and scitex-ui's shell.
+# `scitex-stats gui` (open/serve/status/stop) and the hub mount both need this.
+# scitex-app is already a hard dep; scitex-ui + django are added here so the
+# app boots out of the box.
+server = [
+    "django>=4.2",
+    "scitex-app>=0.11.0",
+    "scitex-ui>=0.19.0",
 ]
 dev = [
     "pytest>=7.0.0",
@@ -99,6 +110,9 @@ dev = [
     # so a fresh `pip install -e .[dev]` runs the full suite (PS-210).
     "scitex-io>=0.2.16",  # [bundle] extra: stats↔bundle I/O round-trip tests
     "figrecipe>=0.28.0",  # [all] extra: stats↔figrecipe annotation tests
+    # [server] extra: Statistics app (Django) boot + mount tests.
+    "django>=4.2",
+    "scitex-ui>=0.19.0",
     # Note: fastmcp / mcp / scitex-dev / scitex-logging / pingouin come in via [project.dependencies].
 ]
 docs = [
