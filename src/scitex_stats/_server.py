@@ -240,7 +240,7 @@ async def p_to_stars(
 async def skills_list() -> str:
     """List available skill pages for scitex-stats."""
     try:
-        from scitex_dev.skills import list_skills
+        from scitex_dev.ecosystem import list_skills
 
         result = list_skills(package="scitex-stats")
         return _json({"success": True, "skills": result.get("scitex-stats", [])})
@@ -252,7 +252,7 @@ async def skills_list() -> str:
 async def skills_get(name: Optional[str] = None) -> str:
     """Get a skill page for scitex-stats. Without name, returns main SKILL.md."""
     try:
-        from scitex_dev.skills import get_skill
+        from scitex_dev.ecosystem import get_skill
 
         content = get_skill(package="scitex-stats", name=name)
         if content:
