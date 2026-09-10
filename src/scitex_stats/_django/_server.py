@@ -98,9 +98,10 @@ def run(
 
     django.setup()
 
-    from django.core.management import call_command
-
-    call_command("migrate", "--run-syncdb", verbosity=0)
+    # No `migrate` here on purpose: the Statistics app has NO models, so
+    # DATABASES={} (settings.py) and a `migrate --run-syncdb` call would raise
+    # ImproperlyConfigured before the server binds. (Siblings like scholar do
+    # migrate because they have DB models; stats does not.)
 
     run_standalone(
         app_module="scitex_stats._django",
