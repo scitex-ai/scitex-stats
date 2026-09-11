@@ -15,6 +15,12 @@ Functionalities
   (Cohen's d / Cliff's delta / eta-sq / sample-size-ttest /
   Bonferroni / FDR / Tukey HSD / Dunn / ...).
 - APA / Nature / LaTeX formatting via `result["formatted"]`.
+- `full_report(result, ...)` — six-stat reporting doctrine bundler:
+  packages n, 95% CI, method, p-value, effect size, and test statistic
+  into one dict + human-readable string, deriving the CI analytically
+  (scipy closed-form) or via bootstrap when raw data is supplied.
+  Raises when any of the six fields can't be determined — partial
+  reports are treated as incomplete, not silently accepted.
 
 IO
 --
@@ -107,10 +113,14 @@ _LAZY_ATTRS: dict[str, str] = {
     "effect_sizes": "effect_sizes",
     "posthoc": "posthoc",
     "power": "power",
+    "reporting": "reporting",
     "tests": "tests",
     # Dispatcher
     "available_tests": "_dispatch",
     "run_test": "_dispatch",
+    # Six-stat reporting doctrine (n, 95% CI, method, p-value, effect size,
+    # test statistic — see scitex_stats.reporting.full_report)
+    "full_report": "reporting",
     # JSON
     "to_json_safe": "_utils._serialize",
     # Stats ↔ SciTeX bundle I/O (optional scitex-io; extra [bundle])
@@ -210,10 +220,13 @@ __all__ = [
     "effect_sizes",
     "posthoc",
     "power",
+    "reporting",
     "tests",
     # Dispatcher
     "run_test",
     "available_tests",
+    # Six-stat reporting doctrine
+    "full_report",
     # Descriptive
     "describe",
     # JSON serialization

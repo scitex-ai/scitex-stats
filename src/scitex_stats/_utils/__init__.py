@@ -24,7 +24,7 @@ from ._effect_size import (
 )
 
 # Formatters
-from ._formatters import fmt_stat, fmt_sym, italicize_stats, p2stars
+from ._formatters import fmt_stat, fmt_sym, fmt_sym_md, italicize_stats, p2stars
 
 # Normalizers
 from ._normalizers import force_dataframe
@@ -53,6 +53,7 @@ __all__ = [
     # Formatters
     "fmt_stat",
     "fmt_sym",
+    "fmt_sym_md",
     "italicize_stats",
     "p2stars",
     # Normalizers
