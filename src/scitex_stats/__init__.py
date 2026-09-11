@@ -107,10 +107,15 @@ _LAZY_ATTRS: dict[str, str] = {
     "effect_sizes": "effect_sizes",
     "posthoc": "posthoc",
     "power": "power",
+    "resampling": "resampling",
     "tests": "tests",
     # Dispatcher
     "available_tests": "_dispatch",
     "run_test": "_dispatch",
+    # Resampling / confidence intervals
+    "auc_ci": "resampling",
+    "delta_auc_ci": "resampling",
+    "bootstrap_ci": "resampling",
     # JSON
     "to_json_safe": "_utils._serialize",
     # Stats ↔ SciTeX bundle I/O (optional scitex-io; extra [bundle])
@@ -210,10 +215,15 @@ __all__ = [
     "effect_sizes",
     "posthoc",
     "power",
+    "resampling",
     "tests",
     # Dispatcher
     "run_test",
     "available_tests",
+    # Resampling / confidence intervals
+    "auc_ci",
+    "delta_auc_ci",
+    "bootstrap_ci",
     # Descriptive
     "describe",
     # JSON serialization
