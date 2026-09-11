@@ -8,11 +8,29 @@ Functionalities:
   - Bundle the six mandatory fields of a complete statistical report
     (n, 95% CI, method, p-value, effect size, test statistic) from a
     `run_test()` / `test_*()`-style result dict
-  - Derive a confidence interval analytically (scipy closed-form) for
-    parametric mean-comparison tests, or via bootstrap resampling for
-    anything without a closed form
+  - Derive a confidence interval with TEST-APPROPRIATE semantics:
+    * parametric t-tests        -> analytic mean-difference CI (scipy
+                                   `ttest_*.confidence_interval`)
+    * Pearson / Spearman        -> Fisher-z CI on the correlation
+    * Mann-Whitney U            -> percentile bootstrap of the
+                                   rank-biserial r (1 - 2U/(n1*n2))
+    * anything else             -> NO CI (None). We do not emit a
+                                   generic mean/mean-difference CI for a
+                                   test whose statistic is not a mean
+                                   difference, because that interval is
+                                   meaningless for that statistic (e.g. a
+                                   Spearman rho=1.0 must not be reported
+                                   with a CI spanning negative values).
+  - Validate the inputs: a NaN/inf statistic, p-value or effect size, or a
+    NaN / reversed (lower > upper) confidence interval, is treated as
+    MISSING (and fails loudly under `strict=True`) rather than being
+    accepted as a complete report.
+  - Read the method from `test_method` OR `test` (some families, e.g.
+    repeated-measures ANOVA and Friedman, store it under `test`), and the
+    sample size from the full set of keys those families emit (incl.
+    `n_subjects`).
   - Raise a clear error (or warn) when a required field cannot be
-    determined, so partial reports never silently pass as complete
+    determined, so partial reports never silently pass as complete.
 
 Dependencies:
   - packages: numpy, scipy
@@ -49,7 +67,9 @@ SIX_STAT_FIELDS: Tuple[str, ...] = (
     "statistic",
 )
 
-# Sample-size keys already emitted by the various `test_*()` functions.
+# Sample-size keys emitted by the various `test_*()` functions, including the
+# `n_subjects` / `n_obs` / `n_total` forms used by repeated-measures ANOVA,
+# Friedman and other group-based families (which do NOT emit n_x/n_y).
 # Collected as-is; this module does not attempt to relabel them to the
 # N (subject-level) / n (window-level) convention because a generic
 # array-based test function has no way to know which level its input
@@ -63,6 +83,9 @@ _N_KEY_CANDIDATES: Tuple[str, ...] = (
     "n_pairs",
     "n_groups",
     "n_samples",
+    "n_subjects",
+    "n_obs",
+    "n_total",
     "N",
     "N_subjects",
     "n_windows",
@@ -84,6 +107,11 @@ _EFFECT_SYMBOLS: Dict[str, str] = {
     "r": "r",
     "rho": "ρ",
     "tau": "τ",
+    "kendall_tau": "τ",
+    "kendall_w": "W",
+    "rank-biserial correlation": "r_rb",
+    "Pearson r": "r",
+    "partial_eta_squared": "η²_p",
 }
 
 
@@ -97,9 +125,55 @@ class IncompleteReportError(ValueError):
     """
 
 
+def _is_finite_num(x: Any) -> bool:
+    """True when x is a real, finite number (rejects None/NaN/inf/non-numeric)."""
+    try:
+        v = float(x)
+    except (TypeError, ValueError):
+        return False
+    return np.isfinite(v)
+
+
+def _valid_ci(low: Any, high: Any) -> bool:
+    """A usable CI: both bounds finite AND correctly ordered (low <= high).
+
+    Catches the two silent-corruption modes that would otherwise pass a
+    report as "complete": NaN bounds and reversed (5, -5) bounds.
+    """
+    return _is_finite_num(low) and _is_finite_num(high) and float(low) <= float(high)
+
+
+def _method_string(result: Dict[str, Any]) -> str:
+    """The method name from `test_method`, falling back to `test`.
+
+    Most families emit `test_method`; repeated-measures ANOVA and Friedman
+    (and a few others) emit the name under `test` instead.
+    """
+    m = result.get("test_method")
+    if not m:
+        m = result.get("test")
+    return m or ""
+
+
+def _ci_kind(result: Dict[str, Any]) -> Optional[str]:
+    """Classify a result into a CI-derivation strategy, or None.
+
+    Returns one of "t", "correlation", "mann_whitney", or None (no defined
+    CI semantics for this test -> caller must not emit a generic interval).
+    """
+    m = _method_string(result).lower()
+    if "t-test" in m or "t test" in m or "ttest" in m or "student" in m or "welch" in m:
+        return "t"
+    if "spearman" in m or "pearson" in m:
+        return "correlation"
+    if "mann-whitney" in m or "mann whitney" in m or "mannwhitney" in m:
+        return "mann_whitney"
+    return None
+
+
 def _extract_n(result: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """Collect every sample-size-like key present in a test result dict."""
-    found = {k: result[k] for k in _N_KEY_CANDIDATES if k in result}
+    found = {k: result[k] for k in _N_KEY_CANDIDATES if k in result and result[k] is not None}
     return found or None
 
 
@@ -112,17 +186,17 @@ def _analytic_ci(
     """Closed-form CI for parametric mean-comparison tests via scipy.
 
     Reuses `scipy.stats.ttest_*(...).confidence_interval()` — the exact
-    machinery the parametric `test_*()` functions already call internally
-    — rather than re-deriving the formula. Returns None (falls through to
-    bootstrap) for anything that isn't a recognised parametric t-test.
+    machinery the parametric `test_*()` functions already call internally —
+    rather than re-deriving the formula. Returns None for anything that
+    isn't a recognised parametric t-test (the caller then classifies it).
     """
     if data is None:
         return None
 
     from scipy import stats as scipy_stats
 
-    method = (result.get("test_method") or "").lower()
-    if "t-test" not in method:
+    method = _method_string(result).lower()
+    if "t-test" not in method and "ttest" not in method and "student" not in method:
         return None
 
     try:
@@ -139,78 +213,142 @@ def _analytic_ci(
             r = scipy_stats.ttest_1samp(data, popmean=popmean)
             ci = r.confidence_interval(confidence_level=confidence)
     except Exception as exc:  # pragma: no cover - defensive, scipy-version guard
-        logger.debug(f"Analytic CI unavailable ({exc}); falling back to bootstrap.")
+        logger.debug(f"Analytic CI unavailable ({exc}); no generic fallback.")
         return None
 
-    return float(ci.low), float(ci.high)
+    low, high = float(ci.low), float(ci.high)
+    return (low, high) if _valid_ci(low, high) else None
 
 
-def _bootstrap_ci(
+def _correlation_ci(
+    result: Dict[str, Any],
+    data: Optional[np.ndarray],
+    data2: Optional[np.ndarray],
+    confidence: float,
+    n_bootstrap: int,
+    random_state,
+) -> Optional[Tuple[float, float]]:
+    """CI for Pearson r / Spearman rho, on the CORRELATION (not a mean diff).
+
+    Prefers the analytic Fisher-z interval (arctanh(r) +/- se*crit, back-
+    transformed with tanh) computed from the reported effect size and the
+    sample size. Falls back to a percentile bootstrap of the Fisher-z
+    transformed correlation when the analytic form is undefined (e.g. a
+    perfect |r| = 1.0, where arctanh diverges) or the sample is tiny.
+    Returns None when no data / cannot be computed.
+    """
+    if data is None or data2 is None:
+        return None
+    data = np.asarray(data, dtype=float)
+    data2 = np.asarray(data2, dtype=float)
+    if data.size != data2.size or data.size < 3:
+        return None
+
+    method = _method_string(result).lower()
+    is_spearman = "spearman" in method
+
+    from scipy import stats as scipy_stats
+
+    def _corr(a: np.ndarray, b: np.ndarray) -> float:
+        x, y = np.asarray(a, float), np.asarray(b, float)
+        if is_spearman:
+            x = scipy_stats.rankdata(x)
+            y = scipy_stats.rankdata(y)
+        return float(np.corrcoef(x, y)[0, 1])
+
+    r = result.get("effect_size", result.get("statistic"))
+    n = data.size
+
+    # A perfect (or degenerate) correlation has no sampling variance: report a
+    # degenerate CI [r, r] rather than a wide, misleading interval (arctanh
+    # diverges at |r| = 1). This is the honest answer for rho = 1.0.
+    if _is_finite_num(r) and abs(float(r)) >= 1.0:
+        rv = float(r)
+        return (rv, rv)
+
+    # Analytic Fisher-z from the reported r (finite, |r| < 1, n >= 4):
+    # arctanh(r) +/- se*crit, back-transformed with tanh.
+    if _is_finite_num(r) and abs(float(r)) < 1.0 and n >= 4:
+        z = float(np.arctanh(float(r)))
+        se = 1.0 / np.sqrt(n - 3)
+        crit = float(scipy_stats.norm.ppf(1 - (1 - confidence) / 2.0))
+        low = float(np.tanh(z - crit * se))
+        high = float(np.tanh(z + crit * se))
+        if _valid_ci(low, high):
+            return (low, high)
+
+    # Bootstrap the Fisher-z transformed correlation for the residual cases
+    # (e.g. very small n). Resample the PAIRS together (paired=True) — an
+    # independent resample of x and y destroys the correlation being estimated.
+    def _stat(a, b) -> float:
+        c = _corr(a, b)
+        if not np.isfinite(c):
+            return 0.0
+        c = max(min(c, 1 - 1e-9), -(1 - 1e-9))
+        return float(np.arctanh(c))
+
+    try:
+        res = scipy_stats.bootstrap(
+            (data, data2),
+            _stat,
+            confidence_level=confidence,
+            n_resamples=n_bootstrap,
+            method="percentile",
+            paired=True,
+            random_state=random_state,
+        )
+        low = float(np.tanh(res.confidence_interval.low))
+        high = float(np.tanh(res.confidence_interval.high))
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.debug(f"Correlation bootstrap CI unavailable ({exc}).")
+        return None
+    return (low, high) if _valid_ci(low, high) else None
+
+
+def _mann_whitney_ci(
     data: np.ndarray,
     data2: Optional[np.ndarray],
     confidence: float,
     n_bootstrap: int,
     random_state,
 ) -> Optional[Tuple[float, float]]:
-    """Bootstrap CI fallback for tests without a closed-form interval.
+    """CI for the Mann-Whitney effect size (rank-biserial r), by bootstrap.
 
-    Prefers `scitex_stats.resampling.bootstrap_ci` when that (currently
-    unmerged — see PR #66) module is importable, so this delegates rather
-    than duplicates once it lands. Falls back to `scipy.stats.bootstrap`
-    (already a hard dependency of this package) otherwise.
+    The MWU statistic U has no simple analytic CI; the reportable effect
+    size is the rank-biserial correlation r = 1 - 2U/(n1*n2), so we bootstrap
+    THAT (bounded in [-1, 1]) rather than a mean difference. Returns None
+    when it cannot be computed.
     """
-    try:
-        from scitex_stats.resampling import bootstrap_ci as _resampling_bootstrap_ci
-
-        if data2 is not None:
-            out = _resampling_bootstrap_ci(
-                data,
-                data2,
-                statistic="mean_diff",
-                confidence=confidence,
-                n_bootstrap=n_bootstrap,
-                random_state=random_state,
-            )
-        else:
-            out = _resampling_bootstrap_ci(
-                data,
-                statistic="mean",
-                confidence=confidence,
-                n_bootstrap=n_bootstrap,
-                random_state=random_state,
-            )
-        return float(out["ci_lower"]), float(out["ci_upper"])
-    except ImportError:
-        pass
-    except Exception as exc:  # pragma: no cover - defensive
-        logger.debug(f"scitex_stats.resampling.bootstrap_ci failed ({exc}); using scipy.stats.bootstrap.")
+    if data is None or data2 is None:
+        return None
+    data = np.asarray(data, dtype=float)
+    data2 = np.asarray(data2, dtype=float)
+    if data.size < 2 or data2.size < 2:
+        return None
 
     from scipy import stats as scipy_stats
 
-    data = np.asarray(data)
-    if data2 is not None:
-        data2 = np.asarray(data2)
+    def _stat(a, b) -> float:
+        try:
+            u = float(scipy_stats.mannwhitneyu(a, b, alternative="two-sided").statistic)
+        except Exception:
+            return 0.0
+        return 1.0 - (2.0 * u) / (len(a) * len(b))
 
-        def _statistic(a, b):
-            return np.mean(a) - np.mean(b)
-
-        samples = (data, data2)
-    else:
-
-        def _statistic(a):
-            return np.mean(a)
-
-        samples = (data,)
-
-    res = scipy_stats.bootstrap(
-        samples,
-        _statistic,
-        confidence_level=confidence,
-        n_resamples=n_bootstrap,
-        method="percentile",
-        random_state=random_state,
-    )
-    return float(res.confidence_interval.low), float(res.confidence_interval.high)
+    try:
+        res = scipy_stats.bootstrap(
+            (data, data2),
+            _stat,
+            confidence_level=confidence,
+            n_resamples=n_bootstrap,
+            method="percentile",
+            random_state=random_state,
+        )
+        low, high = float(res.confidence_interval.low), float(res.confidence_interval.high)
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.debug(f"Mann-Whitney bootstrap CI unavailable ({exc}).")
+        return None
+    return (low, high) if _valid_ci(low, high) else None
 
 
 def _derive_ci(
@@ -222,20 +360,38 @@ def _derive_ci(
     n_bootstrap: int,
     random_state,
 ) -> Optional[Tuple[float, float]]:
+    """Resolve the CI with test-appropriate semantics, or None (=> missing).
+
+    Precedence: explicit `ci=` (validated) -> result-provided
+    `ci_lower`/`ci_upper` (validated) -> derive by test kind -> None. A
+    NaN or reversed interval is never passed through as valid.
+    """
     if ci is not None:
-        return float(ci[0]), float(ci[1])
+        if len(ci) == 2 and _valid_ci(ci[0], ci[1]):
+            return float(ci[0]), float(ci[1])
+        return None  # invalid explicit CI -> treat as missing (fail loudly)
 
     if "ci_lower" in result and "ci_upper" in result:
-        return float(result["ci_lower"]), float(result["ci_upper"])
+        low, high = result["ci_lower"], result["ci_upper"]
+        if _valid_ci(low, high):
+            return float(low), float(high)
+        return None  # NaN / reversed result CI -> treat as missing
 
     if data is None:
         return None
 
-    analytic = _analytic_ci(result, data, data2, confidence)
-    if analytic is not None:
-        return analytic
-
-    return _bootstrap_ci(data, data2, confidence, n_bootstrap, random_state)
+    kind = _ci_kind(result)
+    if kind == "t":
+        return _analytic_ci(result, data, data2, confidence)
+    if kind == "correlation":
+        return _correlation_ci(result, data, data2, confidence, n_bootstrap, random_state)
+    if kind == "mann_whitney":
+        return _mann_whitney_ci(data, data2, confidence, n_bootstrap, random_state)
+    # No defined CI semantics for this test: do NOT emit a generic
+    # mean/mean-difference interval (it would be meaningless for the
+    # reported statistic). Return None so the report marks `ci` missing
+    # and, under strict, fails loudly.
+    return None
 
 
 def _format_pvalue(pvalue: float, stars: Optional[str]) -> str:
@@ -317,30 +473,33 @@ def full_report(
     ----------
     result : dict
         A result dict as returned by `scitex_stats.run_test()` or any
-        `scitex_stats.tests.test_*()` function. Expected to already carry
-        `test_method`, `statistic`, `stat_symbol`, `pvalue`, `effect_size`,
-        `effect_size_metric`, and one or more sample-size keys (`n_x`/`n_y`,
-        `n`, `n_pairs`, ...).
+        `scitex_stats.tests.test_*()` function. Expected to carry the method
+        (as `test_method` or `test`), `statistic`, `stat_symbol`, `pvalue`,
+        `effect_size`, `effect_size_metric`, and one or more sample-size keys
+        (`n_x`/`n_y`, `n`, `n_subjects`, ...).
     data, data2 : array-like, optional
         Raw sample(s) the test was run on. Used to derive a confidence
-        interval when *result* and *ci* don't already carry one: an
-        analytic mean-comparison CI (via `scipy.stats.ttest_*(...)
-        .confidence_interval()`) for parametric t-tests, otherwise a
-        percentile bootstrap CI.
+        interval when *result* and *ci* don't already carry one, with
+        test-appropriate semantics: an analytic mean-difference CI for
+        t-tests, a Fisher-z CI for Pearson/Spearman, a rank-biserial
+        bootstrap CI for Mann-Whitney. Other tests get no derived CI (the
+        report then marks `ci` missing and fails loudly in strict mode)
+        rather than a meaningless generic interval.
     ci : tuple of (float, float), optional
-        An already-computed `(lower, upper)` confidence interval. Takes
-        precedence over deriving one from *data*/*data2*.
+        An already-computed `(lower, upper)` confidence interval. Must be
+        finite and ordered (lower <= upper); a NaN or reversed interval is
+        treated as missing. Takes precedence over deriving one from data.
     confidence : float, default 0.95
         Confidence level for the interval (analytic or bootstrap).
     n_bootstrap : int, default 10000
-        Bootstrap resamples, used only when falling back to bootstrap CI.
+        Bootstrap resamples, used only when falling back to a bootstrap CI.
     random_state : int, optional
         Seed forwarded to the bootstrap resampler for reproducibility.
     strict : bool, default True
         If True (default), raise :class:`IncompleteReportError` when any of
-        the six mandatory fields cannot be determined. If False, log a
-        warning instead and return the partial report with a
-        `missing_fields` list.
+        the six mandatory fields cannot be determined (including a NaN or
+        reversed CI). If False, log a warning instead and return the partial
+        report with a `missing_fields` list.
 
     Returns
     -------
@@ -374,29 +533,35 @@ def full_report(
 
     missing = []
 
-    method = result.get("test_method")
+    # (3) method — from test_method or test (some families use `test`).
+    method = _method_string(result) or None
     if not method:
         missing.append("method")
 
+    # (6) statistic — must be present AND finite (NaN is not a valid stat).
     statistic = result.get("statistic")
-    if statistic is None:
+    if not _is_finite_num(statistic):
         missing.append("statistic")
     stat_symbol = result.get("stat_symbol", "")
 
+    # (4) p-value — must be present AND finite.
     pvalue = result.get("pvalue")
-    if pvalue is None:
+    if not _is_finite_num(pvalue):
         missing.append("pvalue")
     stars = result.get("stars")
 
+    # (5) effect size — must be present AND finite.
     effect_size = result.get("effect_size")
-    if effect_size is None:
+    if not _is_finite_num(effect_size):
         missing.append("effect_size")
     effect_size_metric = result.get("effect_size_metric")
 
+    # (1) n — any recognised sample-size key (incl. n_subjects/n_obs).
     n = _extract_n(result)
     if n is None:
         missing.append("n")
 
+    # (2) CI — test-appropriate semantics; NaN/reversed => missing.
     ci_tuple = _derive_ci(result, data, data2, ci, confidence, n_bootstrap, random_state)
     if ci_tuple is None:
         missing.append("ci")
@@ -406,10 +571,13 @@ def full_report(
             "Incomplete six-stat report — missing required field(s): "
             f"{', '.join(missing)}. Under the six-stat reporting doctrine, n, "
             "95% CI, method, p-value, effect size, and test statistic are all "
-            "required; partial reporting is not accepted. Pass `data=`/"
-            "`data2=` (or an explicit `ci=(lower, upper)`) so a confidence "
-            "interval can be derived, or extend the input result dict with "
-            "the missing field(s)."
+            "required; partial reporting is not accepted. A NaN/infinite "
+            "statistic, p-value, effect size, or a NaN/reversed confidence "
+            "interval counts as missing. For the CI: pass `data=`/`data2=` "
+            "(t-tests, Pearson/Spearman, Mann-Whitney) or an explicit "
+            "`ci=(lower, upper)`; other tests (e.g. Friedman, repeated-"
+            "measures ANOVA) have no generic mean-difference CI, so pass an "
+            "explicit `ci` or extend the input result dict."
         )
         if strict:
             raise IncompleteReportError(message)
