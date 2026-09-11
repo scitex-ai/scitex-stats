@@ -56,6 +56,7 @@ rule and empirical verification table.
 - [11_workflows.md](11_workflows.md) — Common analysis patterns
 - [12_cli-reference.md](12_cli-reference.md) — Extended CLI patterns
 - [13_mcp-tools.md](13_mcp-tools.md) — MCP tools for AI agents
+- [15_six-stat-reporting.md](15_six-stat-reporting.md) — Six-stat reporting doctrine (n, CI, method, p, effect size, statistic) + full_report()
 
 ### Reference
 - [22_test-catalog.md](22_test-catalog.md) — All 23 statistical tests with categories
