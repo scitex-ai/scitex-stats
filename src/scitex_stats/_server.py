@@ -78,6 +78,18 @@ async def run_test(
 
 
 @mcp.tool()
+async def validate_apa(
+    text: str = "",
+    html: Optional[str] = None,
+    result: Optional[dict] = None,
+) -> str:
+    """Check statistics text (and optional HTML) against APA 7; returns violations with fixes."""
+    from scitex_stats._utils._apa import validate_apa as _validate
+
+    return _json(_validate(text, html=html, result=result))
+
+
+@mcp.tool()
 async def format_results(
     test_name: str,
     statistic: float,

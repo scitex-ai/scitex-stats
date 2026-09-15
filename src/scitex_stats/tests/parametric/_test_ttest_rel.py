@@ -147,6 +147,7 @@ def test_ttest_rel(
         x, y = resolved["x"], resolved["y"]
 
     from scitex_stats._utils._effect_size import cohens_d, interpret_cohens_d
+    from scitex_stats._utils._effect_size_ci import cohens_d_ci
     from scitex_stats._utils._formatters import p2stars
     from scitex_stats._utils._normalizers import force_dataframe
     from scitex_stats._utils._power import power_ttest
@@ -199,6 +200,7 @@ def test_ttest_rel(
         "statistic": t_stat,
         "stat_symbol": "t",
         "alternative": alternative,
+        "df": n_pairs - 1,
         "n_pairs": n_pairs,
         "var_x": var_x,
         "var_y": var_y,
@@ -209,6 +211,7 @@ def test_ttest_rel(
         "effect_size": effect_size,
         "effect_size_metric": "Cohen's d (paired)",
         "effect_size_interpretation": effect_size_interpretation,
+        **cohens_d_ci(effect_size, n_pairs, None, alpha),
         "power": power,
         "H0": H0,
     }

@@ -177,13 +177,13 @@ def test_ks_2samp(
     # Compile results
     result = {
         "test_method": "Kolmogorov-Smirnov test (2-sample)",
-        "statistic": round(d_stat, decimals),
+        "statistic": d_stat,
         "stat_symbol": "D",
         "n_x": n_x,
         "n_y": n_y,
         "var_x": var_x,
         "var_y": var_y,
-        "pvalue": round(pvalue, decimals),
+        "pvalue": pvalue,
         "stars": p2stars(pvalue),
         "alpha": alpha,
         "significant": rejected,

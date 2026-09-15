@@ -314,6 +314,26 @@
   overflow-wrap: anywhere;
 }
 
+.stats-table--desc {
+  margin-bottom: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-table--desc th,
+.stats-table--desc td {
+  width: auto;
+  text-align: right;
+}
+
+.stats-table--desc th:first-child,
+.stats-table--desc td:first-child {
+  text-align: left;
+}
+
+.stats-table--desc thead th {
+  border-bottom: 1px solid var(--text-secondary);
+}
+
 .stats-acc {
   margin-top: 4px;
 }

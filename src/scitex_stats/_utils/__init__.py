@@ -24,7 +24,7 @@ from ._effect_size import (
 )
 
 # APA rendering (segments + plain/HTML/LaTeX)
-from ._apa import apa_render
+from ._apa import apa_render, validate_apa
 
 # Formatters
 from ._formatters import fmt_stat, fmt_sym, fmt_sym_md, italicize_stats, p2stars
@@ -64,6 +64,7 @@ __all__ = [
     # Serialization
     "to_json_safe",
     "apa_render",
+    "validate_apa",
     # CSV/DataFrame column resolution
     "resolve_columns",
     "resolve_groups",

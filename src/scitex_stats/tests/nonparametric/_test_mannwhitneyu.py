@@ -189,6 +189,7 @@ def test_mannwhitneyu(  # noqa: C901
         resolved = resolve_columns(data, x=x, y=y)
         x, y = resolved["x"], resolved["y"]
 
+    from scitex_stats._utils._effect_size_ci import mannwhitney_z
     from scitex_stats._utils._formatters import p2stars
     from scitex_stats._utils._normalizers import convert_results, force_dataframe
 
@@ -210,8 +211,9 @@ def test_mannwhitneyu(  # noqa: C901
     rejected = pvalue < alpha
 
     # Compute rank-biserial correlation effect size
-    # Formula: r = 1 - (2U) / (n1 * n2)
-    r = 1 - (2 * u_stat) / (n_x * n_y)
+    # r = 2U/(n1*n2) - 1 with U for x (Kerby, 2014): positive when x tends larger,
+    # the same direction as Cohen's d and the Wilcoxon rank-biserial r.
+    r = (2 * u_stat) / (n_x * n_y) - 1
 
     # Interpret effect size
     r_abs = abs(r)
@@ -227,17 +229,18 @@ def test_mannwhitneyu(  # noqa: C901
     # Compile results
     result = {
         "test_method": "Mann-Whitney U test",
-        "statistic": round(u_stat, decimals),
+        "statistic": u_stat,
         "stat_symbol": "U",
+        "z": mannwhitney_z(u_stat, x, y),
         "n_x": n_x,
         "n_y": n_y,
         "var_x": var_x,
         "var_y": var_y,
-        "pvalue": round(pvalue, decimals),
+        "pvalue": pvalue,
         "stars": p2stars(pvalue),
         "alpha": alpha,
         "significant": rejected,
-        "effect_size": round(r, decimals),
+        "effect_size": float(r),
         "effect_size_metric": "rank-biserial correlation",
         "effect_size_interpretation": effect_interp,
         "H0": f"Distributions of {var_x} and {var_y} have equal medians",

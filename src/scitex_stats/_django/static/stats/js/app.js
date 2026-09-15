@@ -57,18 +57,15 @@
     return [T(text.slice(0, at)), S(sym), T(text.slice(at + sym.length))].filter(function (s) { return s.text; });
   }
 
-  // Mirrors scitex_stats._utils._apa.format_p for endpoints without "apa".
-  function pRelation(p) {
-    if (typeof p !== "number" || !Number.isFinite(p)) return "= —";
-    if (p < 0.001) return "< .001";
-    if (p >= 0.9995) return "> .999";
-    return "= " + p.toFixed(3).replace(/^0/, "");
+  // Library segments carry English label text; translate each text piece.
+  function translated(segs) {
+    return (segs || []).map(function (s) { return s.kind === "text" ? T(_(s.text)) : s; });
   }
-  function pValueText(p) { return pRelation(p).replace(/^= /, ""); }
 
   // kind: how the Data groups map onto run_test arguments; sym: italic in the label.
   var TESTS = [
     { cat: "Two independent groups", name: "ttest_ind", label: "Student's t-test", kind: "two", sym: "t" },
+    { cat: "Two independent groups", name: "ttest_welch", label: "Welch's t-test", kind: "two", sym: "t" },
     { cat: "Two independent groups", name: "mannwhitneyu", label: "Mann–Whitney U", kind: "two", sym: "U" },
     { cat: "Two independent groups", name: "brunner_munzel", label: "Brunner–Munzel", kind: "two" },
     { cat: "Two independent groups", name: "ks_2samp", label: "Kolmogorov–Smirnov (2-sample)", kind: "two" },
@@ -246,7 +243,8 @@
 
   function buildPayload(test, groups) {
     var filled = groups.filter(function (g) { return g.length; });
-    var payload = { test_name: test.name, alternative: $("statsAlt").value };
+    var payload = { test_name: test.name, alternative: $("statsAlt").value, group_names: [] };
+    groups.forEach(function (g, i) { if (g.length) payload.group_names.push(groupName(i)); });
     if (test.kind === "one") {
       if (filled.length < 1) return _("Enter at least one group of numbers.");
       payload.data = filled[0];
@@ -285,12 +283,7 @@
   }
 
   // ---- Results ----------------------------------------------------------
-  function num(v, digits) {
-    if (v === null || v === undefined || v === "") return "—";
-    if (typeof v !== "number") return String(v);
-    if (v !== 0 && Math.abs(v) < 0.001) return v.toExponential(2);
-    return v.toFixed(digits === undefined ? 3 : digits);
-  }
+  // All formatting (rounding, symbols, labels) comes from the library's result["apa"].
 
   // Cells are strings or segment arrays.
   function cell(el, v) {
@@ -301,7 +294,7 @@
   function rows(tbody, pairs) {
     tbody.textContent = "";
     pairs.forEach(function (p) {
-      if (p[1] === undefined || p[1] === null || p[1] === "—") return;
+      if (p[1] === undefined || p[1] === null || p[1] === "") return;
       var tr = document.createElement("tr");
       var th = document.createElement("th");
       cell(th, p[0]);
@@ -312,8 +305,31 @@
     });
   }
 
-  function labelled(label, segs) {
-    return segs && segs.length ? [T(label + " (")].concat(segs, [T(")")]) : [T(label)];
+  function descriptives(desc) {
+    var table = $("statsDescTable");
+    table.hidden = !desc;
+    if (!desc) return;
+    var head = $("statsDescHead");
+    var body = $("statsDescRows");
+    head.textContent = "";
+    body.textContent = "";
+    var hr = document.createElement("tr");
+    desc.columns.forEach(function (segs) {
+      var th = document.createElement("th");
+      th.scope = "col";
+      setSegments(th, translated(segs));
+      hr.appendChild(th);
+    });
+    head.appendChild(hr);
+    desc.rows.forEach(function (r) {
+      var tr = document.createElement("tr");
+      r.forEach(function (segs) {
+        var td = document.createElement("td");
+        setSegments(td, segs);
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
   }
 
   var lastPlain = "";
@@ -327,24 +343,10 @@
     $("statsResultTitle").textContent = res.test_method || test.label;
     if (apa) setSegments($("statsFormatted"), apa.segments);
     else $("statsFormatted").textContent = res.formatted || "";
-    lastPlain = apa ? apa.plain : res.formatted || "";
-    lastApaHtml = apa && apa.html ? apa.html : "";
-    var n = res.n !== undefined ? res.n
-      : res.n_x !== undefined ? [res.n_x, res.n_y].filter(function (x) { return x !== undefined && x !== null; }).join(", ")
-      : res.n_pairs !== undefined ? res.n_pairs
-      : Array.isArray(res.n_samples) ? res.n_samples.join(", ") : undefined;
-    var statSyms = apa ? apa.stat_symbol : res.stat_symbol ? [S(res.stat_symbol)] : [];
-    var effectSyms = apa ? apa.effect_size_label : res.effect_size_metric ? [T(res.effect_size_metric)] : [];
-    rows($("statsResultRows"), [
-      [labelled(_("Statistic"), statSyms), apa ? apa.statistic : num(res.statistic)],
-      [withSymbol(_("p-value"), "p"), apa ? apa.p_value.replace(/^= /, "") : pValueText(res.pvalue)],
-      [_("Significance"), res.stars !== undefined ? (res.significant ? _("significant") : _("not significant")) + " (" + res.stars + ")" : undefined],
-      [labelled(_("Effect size"), effectSyms), res.effect_size === undefined || res.effect_size === null ? undefined : apa && apa.effect_size ? apa.effect_size : num(res.effect_size)],
-      [_("Interpretation"), res.effect_size_interpretation],
-      [_("Power"), res.power !== undefined ? num(res.power) : undefined],
-      [labelled(_("Sample size"), [S("n")]), n === undefined || n === "" ? undefined : String(n)],
-      [_("Null hypothesis"), res.H0],
-    ]);
+    descriptives(apa && apa.descriptives);
+    lastPlain = apa ? apa.plain + (apa.descriptives ? "\n" + apa.descriptives.plain : "") : res.formatted || "";
+    lastApaHtml = apa ? apa.html + (apa.descriptives ? "<br>" + apa.descriptives.html : "") : "";
+    rows($("statsResultRows"), apa ? apa.table.map(function (r) { return [translated(r.label), r.value]; }) : []);
     $("statsJson").textContent = JSON.stringify(res, null, 2);
   }
 
@@ -355,7 +357,7 @@
     var r = await api("/api/correct", { pvalues: pvalues, method: $("statsCorrMethod").value });
     if (!r.ok) return rows(out, [[_("Error"), (r.body && r.body.error) || "HTTP " + r.status]]);
     rows(out, (r.body.results || []).map(function (x) {
-      return [pValueText(x.pvalue), "→ " + pValueText(x.pvalue_adjusted) + (x.rejected ? " *" : "")];
+      return [[S("p"), T(" " + x.p_apa)], [T("→ "), S("p"), T(" " + x.p_adjusted_apa + (x.rejected ? " *" : ""))]];
     }));
   }
 
@@ -370,7 +372,7 @@
     });
     if (!r.ok) return rows(out, [[_("Error"), (r.body && r.body.error) || "HTTP " + r.status]]);
     rows(out, (r.body.comparisons || []).map(function (c) {
-      return [c.group_i + " – " + c.group_j, [S("p"), T(" " + pRelation(c.pvalue) + " " + (c.pstars || ""))]];
+      return [c.group_i + " – " + c.group_j, [S("p"), T(" " + c.p_apa + " " + (c.pstars || ""))]];
     }));
   }
 
@@ -388,7 +390,10 @@
       return Array.prototype.map.call(tr.cells, function (c) { return c.textContent; }).join("\t");
     }).join("\n");
     var summaryHtml = lastApaHtml || escapeHtml(lastPlain);
-    var tableHtml = '<table border="1" cellpadding="4" style="border-collapse:collapse">' +
+    var desc = $("statsDescTable");
+    var descHtml = desc.hidden ? "" : '<table border="1" cellpadding="4" style="border-collapse:collapse">' +
+      desc.tHead.innerHTML + desc.tBodies[0].innerHTML + "</table><br>";
+    var tableHtml = descHtml + '<table border="1" cellpadding="4" style="border-collapse:collapse">' +
       table.tBodies[0].innerHTML + "</table>";
     return {
       html: "<p><b>" + escapeHtml(title) + "</b></p><p>" + summaryHtml + "</p>" + tableHtml,

@@ -26,6 +26,7 @@ __DIR__ = os.path.dirname(__FILE__)
 _TWO_SAMPLE = {
     "ttest",
     "ttest_ind",
+    "ttest_welch",
     "brunnermunzel",
     "brunner_munzel",
     "mannwhitneyu",
@@ -58,6 +59,7 @@ _CONTINGENCY = {"chi2", "fisher"}
 _ALIASES = {
     "ttest": "test_ttest_ind",
     "ttest_ind": "test_ttest_ind",
+    "ttest_welch": "test_ttest_ind",
     "ttest_rel": "test_ttest_rel",
     "ttest_paired": "test_ttest_rel",
     "ttest_1samp": "test_ttest_1samp",
@@ -101,6 +103,7 @@ def run_test(
     popmean: float = 0,
     return_as: str = "dict",
     json_safe: bool = True,
+    group_names: Optional[List[str]] = None,
     **kwargs: Any,
 ) -> Dict[str, Any]:
     """Run a statistical test by name and return a normalised result dict.
@@ -126,6 +129,9 @@ def run_test(
         Passed through to the underlying test function.
     json_safe : bool, default ``True``
         If True, apply :func:`to_json_safe` to the result.
+    group_names : list of str, optional
+        Labels for the per-group descriptives (default: the test's variable
+        names, else "Group 1", "Group 2", ...).
     **kwargs
         Additional keyword arguments forwarded to the test function.
 
@@ -151,6 +157,8 @@ def run_test(
 
     func_name = _ALIASES[test_name]
     func = getattr(_tests, func_name)
+    if test_name == "ttest_welch":
+        kwargs.setdefault("equal_var", False)
 
     # Route arguments based on test category
     result = _call_test(
@@ -169,6 +177,13 @@ def run_test(
     # Some test functions return (result, fig) tuples
     if isinstance(result, tuple):
         result = result[0]
+
+    if isinstance(result, dict) and "descriptives" not in result:
+        from scitex_stats._utils._group_descriptives import group_descriptives
+
+        desc = group_descriptives(test_name, data, data2, groups, result, group_names)
+        if desc:
+            result["descriptives"] = desc
 
     if json_safe:
         from scitex_stats._utils._serialize import to_json_safe

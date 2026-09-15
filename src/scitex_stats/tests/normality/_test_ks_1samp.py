@@ -202,11 +202,11 @@ def test_ks_1samp(  # noqa: C901
     # Compile results
     result = {
         "test_method": "Kolmogorov-Smirnov test (1-sample)",
-        "statistic": round(d_stat, decimals),
+        "statistic": d_stat,
         "stat_symbol": "D",
         "n": n_x,
         "var_x": var_x,
-        "pvalue": round(pvalue, decimals),
+        "pvalue": pvalue,
         "stars": p2stars(pvalue),
         "alpha": alpha,
         "significant": rejected,
