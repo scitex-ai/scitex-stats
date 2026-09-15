@@ -17,6 +17,15 @@ msgstr "検定"
 msgid "Results"
 msgstr "結果"
 
+msgid "1. Data Input"
+msgstr "1. データ入力"
+
+msgid "2. Test Selection"
+msgstr "2. 検定選択"
+
+msgid "3. Results"
+msgstr "3. 結果"
+
 msgid "Sample data"
 msgstr "サンプルデータ"
 

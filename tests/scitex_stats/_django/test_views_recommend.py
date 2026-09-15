@@ -123,6 +123,17 @@ def test_form_dropdowns_use_scitex_ui_select_primitive():
     assert all(f'<select class="stx-select" id="{select_id}">' in template for select_id in selects)
 
 
+def test_pane_titles_show_the_three_step_workflow(client):  # noqa: F811
+    # Arrange
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
+    assert all(
+        title in html
+        for title in ("1. Data Input", "2. Test Selection", "3. Results")
+    )
+
+
 def test_data_pane_accepts_dropped_csv(client):  # noqa: F811
     # Arrange
     html = client.get("/").content.decode()

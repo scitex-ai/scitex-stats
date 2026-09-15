@@ -14,11 +14,11 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
 
 {% block scitex_app_content %}
 <div class="stats-app" data-stats-app>
-{% translate "Data" as label_data %}{% translate "Test" as label_test %}{% translate "Results" as label_results %}
+{% translate "1. Data Input" as label_data %}{% translate "2. Test Selection" as label_test %}{% translate "3. Results" as label_results %}
 {% scitex_panes "stats" columns="minmax(0,1.1fr) minmax(0,0.9fr) minmax(0,1.2fr)" active="data" %}
   {% scitex_pane "data" label=label_data order=1 css_class="stats-pane" %}
     <header class="stats-pane__header" data-stx-pane-header>
-      <h2 class="stats-pane__title">{% translate "Data" %}</h2>
+      <h2 class="stats-pane__title">{% translate "1. Data Input" %}</h2>
       <div class="stats-pane__actions">
         <button type="button" class="stats-btn stats-btn--ghost" id="statsSample">{% translate "or Load Sample Data" %}</button>
         <input type="file" id="statsCsv" accept=".csv,.tsv,.txt,text/csv" hidden>
@@ -52,7 +52,7 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
 
   {% scitex_pane "test" label=label_test order=2 css_class="stats-pane" %}
     <header class="stats-pane__header" data-stx-pane-header>
-      <h2 class="stats-pane__title">{% translate "Test" %}</h2>
+      <h2 class="stats-pane__title">{% translate "2. Test Selection" %}</h2>
       <div class="stats-pane__actions">
         <button type="button" class="stats-btn" id="statsRecommend">{% translate "Select recommended test" %}</button>
         <button type="button" class="stats-btn stats-btn--primary" id="statsCalculate">{% translate "Calculate" %}</button>
@@ -78,7 +78,7 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
 
   {% scitex_pane "results" label=label_results order=3 css_class="stats-pane" %}
     <header class="stats-pane__header" data-stx-pane-header>
-      <h2 class="stats-pane__title">{% translate "Results" %}</h2>
+      <h2 class="stats-pane__title">{% translate "3. Results" %}</h2>
       <div class="stats-pane__actions">
         <button type="button" class="stats-btn stats-btn--ghost stats-copy" id="statsCopy" hidden><span class="stats-copy__icon" aria-hidden="true"></span><span class="stats-copy__label">{% translate "Copy" %}</span></button>
         <span id="statsCopyStatus" class="stats-visually-hidden" role="status" aria-live="polite"></span>
