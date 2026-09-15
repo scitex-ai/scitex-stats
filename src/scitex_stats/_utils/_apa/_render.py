@@ -178,7 +178,12 @@ def table_rows(rule: TestRule, result: Dict[str, Any], parts: Dict[str, Any]) ->
     if parts["z"]:
         add("z", [T("Standardized statistic"), T(" ("), S("z"), T(")")], parts["z"])
     add("p", [S("p"), T(" value")], parts["p"].replace("= ", ""))
-    add("p_exact", [T("Exact "), S("p")], format_p_exact(result.get("pvalue", result.get("p_value"))))
+    exact = format_p_exact(result.get("pvalue", result.get("p_value")))
+    if " × 10" in exact:  # real <sup> in HTML; superscript minus is missing from many UI fonts
+        mant, exp = exact.split(" × 10")
+        exponent = exp.translate(str.maketrans("⁻⁰¹²³⁴⁵⁶⁷⁸⁹", "−0123456789"))
+        exact = [T(f"{mant} × 10"), seg(exponent, "sup")]
+    add("p_exact", [T("Exact "), S("p")], exact)
     if parts["effect"]:
         eff = parts["effect_symbol"]
         name = _EFFECT_NAMES.get(eff, symbol_segments(eff))
