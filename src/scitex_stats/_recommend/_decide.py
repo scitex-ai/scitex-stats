@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from ._applicability import SPECS, assess
 from ._data import Prepared
 from ._messages import fail, note, ok
+from ._report import assumption_section
 
 DECISION_RULES: List[Dict[str, str]] = [
     {"when": "2 independent groups, continuous, normality not rejected", "primary": "ttest_welch", "why": "Welch is the default; Student only with a documented equal-variance reason (assume_equal_variance=True)"},
@@ -16,8 +17,7 @@ DECISION_RULES: List[Dict[str, str]] = [
     {"when": "2 independent groups, ordinal", "primary": "mannwhitneyu", "why": "ranks only"},
     {"when": "2 paired groups, continuous, differences normal", "primary": "ttest_rel", "why": ""},
     {"when": "2 paired groups, differences not normal, or ordinal", "primary": "wilcoxon", "why": ""},
-    {"when": "3+ independent groups, continuous, normal, equal variances not rejected", "primary": "anova", "why": ""},
-    {"when": "3+ independent groups, continuous, normal, variances differ", "primary": "welch_anova", "why": ""},
+    {"when": "3+ independent groups, continuous, normality not rejected", "primary": "welch_anova", "why": "Welch is the default; one-way ANOVA only with a documented equal-variance reason (assume_equal_variance=True)"},
     {"when": "3+ independent groups, not normal, or ordinal", "primary": "kruskal", "why": ""},
     {"when": "3+ paired groups, continuous, residuals normal", "primary": "anova_rm", "why": "Greenhouse–Geisser if sphericity fails"},
     {"when": "3+ paired groups, residuals not normal, or ordinal", "primary": "friedman", "why": ""},
@@ -32,8 +32,8 @@ _REASON = {
     "brunner_munzel": "The Brunner–Munzel test compares two independent groups by ranks without assuming equal spreads, which differ here.",
     "ttest_rel": "The paired t-test compares two related measurements; the paired differences are consistent with normality.",
     "wilcoxon": "The Wilcoxon signed-rank test compares two related measurements by ranks, so it does not rely on normal differences.",
-    "anova": "One-way ANOVA compares three or more independent means; normality and equal variances are not rejected.",
-    "welch_anova": "Welch's ANOVA compares three or more independent means without assuming equal variances, which differ here.",
+    "anova": "One-way ANOVA was chosen because equal variances were declared in advance (a documented reason) and are not rejected by the data.",
+    "welch_anova": "Welch's ANOVA compares three or more independent means without assuming equal variances. It is the default over one-way ANOVA: it loses little power when variances are equal and keeps the false-positive rate when they are not.",
     "kruskal": "The Kruskal–Wallis H test compares three or more independent groups by ranks, so it does not rely on normality.",
     "anova_rm": "Repeated-measures ANOVA compares three or more related conditions; the residuals are consistent with normality.",
     "friedman": "The Friedman test compares three or more related conditions by ranks, so it does not rely on normality.",
@@ -52,6 +52,7 @@ _SECONDARY = {
     ("brunner_munzel", "mannwhitneyu"): "Assumes equal spreads under the null hypothesis; the spreads differ here.",
     ("ttest_rel", "wilcoxon"): "Rank-based: less power when the differences are normal.",
     ("anova", "welch_anova"): "Does not assume equal variances; slightly less power when they are equal. A natural sensitivity analysis.",
+    ("welch_anova", "anova"): "Assumes equal variances; use only with a documented reason stated before seeing the data.",
     ("anova", "kruskal"): "Rank-based: less power when normality holds.",
     ("welch_anova", "kruskal"): "Rank-based: less power when normality holds, and it tests stochastic ordering rather than means.",
     ("anova_rm", "friedman"): "Rank-based: less power when the residuals are normal.",
@@ -133,7 +134,11 @@ def _path_and_primary(prep: Prepared, checks: Dict[str, Any], th: Dict[str, Any]
             return path, "brunner_munzel"
         return path, "mannwhitneyu"
     if parametric:
-        return path, "anova" if var["status"] == "met" else "welch_anova"
+        if assume_equal_variance and var["status"] == "met":
+            path.append(ok("Equal variances declared in advance (documented reason)"))
+            return path, "anova"
+        path.append(ok("Default: Welch's ANOVA (no documented reason to assume equal variances)"))
+        return path, "welch_anova"
     return path, "kruskal"
 
 
@@ -206,6 +211,7 @@ def recommend_test(
         "thresholds": report["thresholds"],
         "data": report["data"],
         "notes": report["notes"],
+        "assumption_checks": assumption_section(report["checks"], primary_id in ("ttest_welch", "welch_anova")),
         "rules": DECISION_RULES,
     }
 

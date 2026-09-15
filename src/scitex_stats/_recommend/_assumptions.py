@@ -43,6 +43,16 @@ def thresholds(overrides: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     return th
 
 
+def _qq(x: np.ndarray) -> Dict[str, Any]:
+    """Normal Q-Q coordinates (Filliben plotting positions) for a visual check."""
+    (theoretical, observed), (slope, intercept, _r) = stats.probplot(x, dist="norm")
+    return {
+        "theoretical": [round(float(v), 6) for v in theoretical],
+        "observed": [round(float(v), 6) for v in observed],
+        "line": {"slope": float(slope), "intercept": float(intercept)},
+    }
+
+
 def _shapiro(label: str, x: np.ndarray, th: Dict[str, Any]) -> Dict[str, Any]:
     n = int(len(x))
     out: Dict[str, Any] = {"sample": label, "n": n, "W": None, "p": None, "normal": None, "caveats": []}
@@ -55,7 +65,7 @@ def _shapiro(label: str, x: np.ndarray, th: Dict[str, Any]) -> Dict[str, Any]:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         w, p = stats.shapiro(x)
-    out.update(W=float(w), p=float(p), normal=bool(p >= th["normality_alpha"]))
+    out.update(W=float(w), p=float(p), p_apa=fmt_p(p), normal=bool(p >= th["normality_alpha"]), qq=_qq(x))
     if n < th["normality_low_power_n"]:
         out["caveats"].append(note("%s: Shapiro–Wilk has low power at n = %s; a non-significant result does not show normality", label, n))
     if n > th["normality_oversensitive_n"]:
@@ -116,9 +126,10 @@ def variance(prep: Prepared, th: Dict[str, Any]) -> Dict[str, Any]:
     if not np.isfinite(bf.pvalue):
         out["status"] = "unknown"
         return out
-    out["brown_forsythe"] = {"statistic": float(bf.statistic), "p": float(bf.pvalue), "p_apa": fmt_p(bf.pvalue)}
+    df = [prep.k - 1, int(sum(len(g) for g in prep.groups)) - prep.k]
+    out["brown_forsythe"] = {"statistic": float(bf.statistic), "df": df, "p": float(bf.pvalue), "p_apa": fmt_p(bf.pvalue)}
     if np.isfinite(lv.pvalue):
-        out["levene"] = {"statistic": float(lv.statistic), "p": float(lv.pvalue), "p_apa": fmt_p(lv.pvalue)}
+        out["levene"] = {"statistic": float(lv.statistic), "df": df, "p": float(lv.pvalue), "p_apa": fmt_p(lv.pvalue)}
     out["status"] = "met" if bf.pvalue >= th["variance_alpha"] else "violated"
     return out
 

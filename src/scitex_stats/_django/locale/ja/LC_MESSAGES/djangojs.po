@@ -501,3 +501,90 @@ msgstr "主検定（事前指定）"
 
 msgid "Sensitivity"
 msgstr "感度分析"
+
+msgid "Assumption tests are diagnostic, not confirmatory: they are not corrected for multiplicity, have low power in small samples and flag trivial departures in large ones. Check the Q-Q plots and spreads visually as well."
+msgstr "前提の検定は診断用で、確証的なものではありません。多重性の補正はしておらず、小標本では検出力が低く、大標本ではわずかな逸脱でも有意になります。Q-Q プロットとばらつきも目で確認してください。"
+
+msgid "Welch's correction is used by default whether or not the equal-variance test is significant; that test is reported, not used to switch tests. The classic equal-variance test is chosen only with a reason documented in advance."
+msgstr "等分散性の検定が有意かどうかにかかわらず、既定で Welch の補正を用います。その検定結果は報告のみで、検定の切り替えには使いません。等分散を仮定する従来の検定は、事前に根拠を示した場合のみ選びます。"
+
+msgid "p ≥ %s: normality not rejected"
+msgstr "p ≥ %s：正規性は棄却されない"
+
+msgid "p ≥ %s: equal variances not rejected"
+msgstr "p ≥ %s：等分散は棄却されない"
+
+msgid "Reported only (mean-centred; less robust to non-normality)"
+msgstr "報告のみ（平均中心。非正規性に弱い）"
+
+msgid "Descriptive; no significance test"
+msgstr "記述統計のみ（有意性検定なし）"
+
+msgid "≥ %s in every cell (%s of %s cells below)"
+msgstr "全セルで %s 以上（下回るセル %s / %s）"
+
+msgid "Shapiro–Wilk"
+msgstr "Shapiro–Wilk"
+
+msgid "Brown–Forsythe"
+msgstr "Brown–Forsythe"
+
+msgid "Levene"
+msgstr "Levene"
+
+msgid "Largest / smallest variance"
+msgstr "最大分散 / 最小分散"
+
+msgid "Minimum expected count"
+msgstr "最小期待度数"
+
+msgid "all groups"
+msgstr "全群"
+
+msgid "all cells"
+msgstr "全セル"
+
+msgid "not rejected"
+msgstr "棄却されない"
+
+msgid "rejected"
+msgstr "棄却"
+
+msgid "not assessable"
+msgstr "評価不能"
+
+msgid "reported"
+msgstr "報告のみ"
+
+msgid "met"
+msgstr "満たす"
+
+msgid "not met"
+msgstr "満たさない"
+
+msgid "Default: Welch's ANOVA (no documented reason to assume equal variances)"
+msgstr "既定：Welch の分散分析（等分散を仮定する根拠がないため）"
+
+msgid "One-way ANOVA was chosen because equal variances were declared in advance (a documented reason) and are not rejected by the data."
+msgstr "等分散が事前に宣言され（根拠あり）、データでも棄却されないため一元配置分散分析を選びました。"
+
+msgid "Welch's ANOVA compares three or more independent means without assuming equal variances. It is the default over one-way ANOVA: it loses little power when variances are equal and keeps the false-positive rate when they are not."
+msgstr "Welch の分散分析は等分散を仮定せずに独立した3群以上の平均を比較します。等分散のときも検出力の損失はわずかで、不等分散のときは偽陽性率を保つため、一元配置分散分析より優先する既定です。"
+
+msgid "Assumption checks"
+msgstr "前提条件のチェック"
+
+msgid "Check"
+msgstr "チェック"
+
+msgid "Sample"
+msgstr "対象"
+
+msgid "Threshold"
+msgstr "基準"
+
+msgid "Decision"
+msgstr "判定"
+
+msgid "Normal Q-Q plot: %s"
+msgstr "正規 Q-Q プロット：%s"
