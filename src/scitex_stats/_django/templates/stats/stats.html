@@ -6,6 +6,7 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
 {% endcomment %}
 {% block extra_css %}
     <meta name="stx-mount" content="{{ stx_mount }}">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <link rel="stylesheet" href="{% app_static 'scitex_ui/css/app/form-controls.css' %}">
     <link rel="stylesheet" href="{% app_static 'stats/css/stats.css' %}">
 {% endblock %}
@@ -81,6 +82,18 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
         <p id="statsFormatted" class="stats-result__formatted"></p>
         <table class="stats-table stats-table--desc" id="statsDescTable" hidden><thead id="statsDescHead"></thead><tbody id="statsDescRows"></tbody></table>
         <table class="stats-table"><tbody id="statsResultRows"></tbody></table>
+        <section class="stats-plot" id="statsPlot" aria-labelledby="statsPlotTitle" hidden>
+          <div class="stats-plot__head">
+            <h3 class="stats-plot__title" id="statsPlotTitle">{% translate "Plot" %}</h3>
+            <div class="stats-plot__actions">
+              <a class="stats-btn stats-btn--ghost" id="statsPlotSvg" download="stats-plot.svg" hidden>SVG</a>
+              <a class="stats-btn stats-btn--ghost" id="statsPlotPng" download="stats-plot.png" hidden>PNG</a>
+              <button type="button" class="stats-btn" id="statsOpenFigrecipe" hidden>{% translate "Open in FigRecipe" %}</button>
+            </div>
+          </div>
+          <div class="stats-plot__frame"><img id="statsPlotImg" class="stats-plot__img" alt="{% translate 'Plot of the test result' %}" hidden></div>
+          <p id="statsPlotStatus" class="stats-hint" role="status" aria-live="polite"></p>
+        </section>
         <details class="stx-acc stats-acc">
           <summary>{% translate "Raw result" %}</summary>
           <div class="stx-acc__body"><pre id="statsJson" class="stats-pre"></pre></div>
@@ -130,5 +143,6 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
 {% block extra_js %}
     {% scitex_js_catalog "scitex_stats._django" %}
     <script src="{% app_static 'stats/js/stx-mount.js' %}"></script>
+    <script src="{% app_static 'stats/js/plot.js' %}"></script>
     <script src="{% app_static 'stats/js/app.js' %}"></script>
 {% endblock %}

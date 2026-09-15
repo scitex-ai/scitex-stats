@@ -136,6 +136,10 @@ _LAZY_ATTRS: dict[str, str] = {
     "to_figrecipe": "_figrecipe_integration",
     "annotate": "_figrecipe_integration",
     "load_and_annotate": "_figrecipe_integration",
+    # Plotting: neutral plot spec -> FigRecipe (when importable) or matplotlib
+    "plot": "_plot",
+    "plot_spec": "_plot",
+    "PLOT_SPEC_JSON_SCHEMA": "_plot",
     # Auto convenience
     "StatContext": "auto",
     "StatStyle": "auto",
@@ -246,6 +250,10 @@ __all__ = [
     "to_figrecipe",
     "annotate",
     "load_and_annotate",
+    # Plotting
+    "plot",
+    "plot_spec",
+    "PLOT_SPEC_JSON_SCHEMA",
     # Auto convenience
     "StatContext",
     "TestRule",

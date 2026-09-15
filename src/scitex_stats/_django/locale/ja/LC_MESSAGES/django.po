@@ -88,3 +88,12 @@ msgstr "「データ」の群を使います。"
 
 msgid "Compare groups"
 msgstr "群を比較"
+
+msgid "Plot"
+msgstr "プロット"
+
+msgid "Open in FigRecipe"
+msgstr "FigRecipeで開く"
+
+msgid "Plot of the test result"
+msgstr "検定結果のプロット"

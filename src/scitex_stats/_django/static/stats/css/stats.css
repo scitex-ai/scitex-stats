@@ -334,6 +334,51 @@
   border-bottom: 1px solid var(--text-secondary);
 }
 
+.stats-plot {
+  margin: 12px 0 6px;
+}
+
+.stats-plot__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.stats-plot__title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.stats-plot__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.stats-plot__actions a.stats-btn {
+  text-decoration: none;
+}
+
+/* The figure is a white print artefact in both themes. */
+.stats-plot__frame {
+  border: 1px solid var(--border-muted);
+  border-radius: 6px;
+  background: #fff;
+  padding: 6px;
+}
+
+.stats-plot__img {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  height: auto;
+  margin: 0 auto;
+}
+
 .stats-acc {
   margin-top: 4px;
 }

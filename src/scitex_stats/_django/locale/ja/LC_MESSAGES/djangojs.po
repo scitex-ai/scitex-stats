@@ -118,3 +118,15 @@ msgstr "群"
 
 msgid "Note"
 msgstr "注"
+
+msgid "Drawing plot…"
+msgstr "プロットを描画しています…"
+
+msgid "Could not draw the plot."
+msgstr "プロットを描画できませんでした。"
+
+msgid "Creating the figure in FigRecipe…"
+msgstr "FigRecipeで図を作成しています…"
+
+msgid "Could not open the plot in FigRecipe."
+msgstr "FigRecipeでプロットを開けませんでした。"

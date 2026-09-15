@@ -274,6 +274,7 @@
       var r = await api("/api/run", payload);
       if (!r.ok) return showError((r.body && r.body.error) || fmt(_("Request failed (HTTP %s)."), [r.status]));
       renderResult(test, r.body);
+      if (window.stxStatsPlot) window.stxStatsPlot.draw(payload);
       if (window.stxPanes) window.stxPanes.show("results", "stats");
     } catch (e) {
       showError(_("Could not reach the Statistics service."));

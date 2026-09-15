@@ -104,6 +104,7 @@ def run_test(
     return_as: str = "dict",
     json_safe: bool = True,
     group_names: Optional[List[str]] = None,
+    plot_spec: bool = False,
     **kwargs: Any,
 ) -> Dict[str, Any]:
     """Run a statistical test by name and return a normalised result dict.
@@ -132,6 +133,9 @@ def run_test(
     group_names : list of str, optional
         Labels for the per-group descriptives (default: the test's variable
         names, else "Group 1", "Group 2", ...).
+    plot_spec : bool, default ``False``
+        Attach ``result["plot_spec"]``, the neutral plot spec (see
+        :func:`scitex_stats.plot_spec`), including the raw data.
     **kwargs
         Additional keyword arguments forwarded to the test function.
 
@@ -184,6 +188,14 @@ def run_test(
         desc = group_descriptives(test_name, data, data2, groups, result, group_names)
         if desc:
             result["descriptives"] = desc
+
+    if plot_spec and isinstance(result, dict):
+        from scitex_stats._plot import build_plot_spec
+
+        result["plot_spec"] = build_plot_spec(
+            result, data=data, data2=data2, groups=groups,
+            group_names=group_names, popmean=popmean if test_name == "ttest_1samp" else None,
+        )
 
     if json_safe:
         from scitex_stats._utils._serialize import to_json_safe
