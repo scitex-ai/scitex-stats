@@ -10,6 +10,7 @@ whole point of compass §12 L451/#210: logic in the package, thin app UI).
 
 from __future__ import annotations
 
+import math
 from typing import Any, Dict, List, Optional
 
 from django.apps import apps as _django_apps
@@ -17,6 +18,7 @@ from django.conf import settings as django_settings
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpResponse, JsonResponse
 from django.template.loader import render_to_string
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from scitex_app._django import mount_prefix
@@ -59,27 +61,39 @@ def _refuse_unless_app_installed() -> None:
 
 _refuse_unless_app_installed()
 
+# Stats fills only the module pane; the shell's AI/files/viewer panes stay closed.
+SHELL_PANES = {"ai": "unused", "files": "unused", "viewer": "unused"}
+
+
+def _finite(value: Any) -> Any:
+    # JSON has no NaN/Infinity; the browser's JSON.parse rejects them.
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    if isinstance(value, dict):
+        return {k: _finite(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_finite(v) for v in value]
+    return value
+
 
 def _safe(payload: Any) -> Any:
-    """Best-effort JSON-safe conversion (numpy scalars/arrays -> native)."""
+    """JSON-safe conversion (numpy -> native, NaN/Inf -> null)."""
     try:
         from scitex_stats import to_json_safe
 
-        return to_json_safe(payload)
+        payload = to_json_safe(payload)
     except Exception:
-        return payload
+        pass
+    return _finite(payload)
 
 
 def index(request):
-    """Serve the Statistics calculator SPA shell page."""
-    html = render_to_string(
-        "stats/stats.html",
-        {
-            "stx_mount": mount_prefix(request),
-            "app_label": APP_LABEL,
-        },
-        request=request,
-    )
+    """Serve the Statistics page (Data | Test | Results panes)."""
+    from scitex_ui.branding import shell_context
+
+    context = shell_context("Statistics", panes=SHELL_PANES)
+    context["stx_mount"] = mount_prefix(request)
+    html = render_to_string("stats/stats.html", context, request=request)
     return HttpResponse(html)
 
 
@@ -112,6 +126,7 @@ def tests(request):
     return JsonResponse(_safe({"tests": _available_tests()}))
 
 
+@csrf_exempt  # stateless calculations: no side effects to forge
 @require_POST
 def recommend(request):
     """Rank appropriate tests from a StatContext payload."""
@@ -138,6 +153,7 @@ def recommend(request):
     return JsonResponse(_safe({"recommendations": list(recs)}))
 
 
+@csrf_exempt
 @require_http_methods(["POST"])
 def run(request):
     """Run a single test by name; returns the unified result dict."""
@@ -174,6 +190,7 @@ def run(request):
     return JsonResponse(_safe(result))
 
 
+@csrf_exempt
 @require_http_methods(["POST"])
 def describe(request):
     """Descriptive statistics for one sample."""
@@ -193,6 +210,7 @@ def describe(request):
     )
 
 
+@csrf_exempt
 @require_http_methods(["POST"])
 def effect_size(request):
     """Standalone effect size between two groups."""
@@ -219,6 +237,7 @@ def effect_size(request):
     return JsonResponse(_safe({"measure": measure, "value": value}))
 
 
+@csrf_exempt
 @require_http_methods(["POST"])
 def power(request):
     """Power / required sample size for a t-test design."""
@@ -249,6 +268,7 @@ def power(request):
     return JsonResponse(_safe({"which": which, "value": value}))
 
 
+@csrf_exempt
 @require_http_methods(["POST"])
 def posthoc(request):
     """Post-hoc pairwise comparisons after ANOVA/Kruskal."""
@@ -275,6 +295,7 @@ def posthoc(request):
     return JsonResponse(_safe({"method": method, "comparisons": out}))
 
 
+@csrf_exempt
 @require_http_methods(["POST"])
 def correct(request):
     """Multiple-comparison correction over a list of p-values."""

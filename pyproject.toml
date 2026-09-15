@@ -136,6 +136,9 @@ scitex-stats = "scitex_stats"
 [project.entry-points."scitex_dev.linter.plugins"]
 stats = "scitex_stats._linter_plugin:get_plugin"
 
+[project.entry-points."scitex.apps"]
+stats = "scitex_stats._django.apps:StatsCalculatorConfig"
+
 [project.urls]
 Homepage = "https://github.com/scitex-ai/scitex-stats"
 Documentation = "https://scitex-stats.readthedocs.io"

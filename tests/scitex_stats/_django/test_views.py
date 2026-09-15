@@ -340,7 +340,46 @@ def test_manifest_declares_all_required_fields():
     # Act
     data = json.loads(manifest.read_text())
     # Assert
-    assert all(data.get(k) for k in ("name", "slug", "label", "version", "icon"))
+    assert all(data.get(k) for k in ("name", "slug", "label", "pip_package", "icon"))
+
+
+def test_manifest_has_no_hand_written_version():
+    # Arrange
+    from pathlib import Path
+
+    manifest = Path(scitex_stats._django.__file__).parent / "manifest.json"
+    # Act
+    data = json.loads(manifest.read_text())
+    # Assert
+    assert "version" not in data
+
+
+def test_pyproject_declares_scitex_apps_entry_point():
+    # Arrange
+    from pathlib import Path
+
+    pyproject = Path(__file__).resolve().parents[3] / "pyproject.toml"
+    # Act
+    text = pyproject.read_text()
+    # Assert
+    assert 'stats = "scitex_stats._django.apps:StatsCalculatorConfig"' in text
+
+
+def test_index_has_data_test_results_panes(client):
+    # Arrange
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
+    assert all(f'data-stx-pane="{p}"' in html for p in ("data", "test", "results"))
+
+
+def test_safe_turns_nan_into_null():
+    # Arrange
+    from scitex_stats._django.views import _safe
+    # Act
+    out = _safe({"power": float("nan"), "rows": [float("inf"), 1.0]})
+    # Assert
+    assert out == {"power": None, "rows": [None, 1.0]}
 
 
 def test_manifest_slug_is_stats():

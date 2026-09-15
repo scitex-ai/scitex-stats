@@ -50,10 +50,15 @@ import scitex_ui  # noqa: F401
 
 INSTALLED_APPS.append("scitex_ui")
 
-MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
-    "django.middleware.common.CommonMiddleware",
-]
+from scitex_app.i18n import i18n_settings, with_locale_middleware  # noqa: E402
+
+MIDDLEWARE = with_locale_middleware(
+    [
+        "django.middleware.security.SecurityMiddleware",
+        "django.middleware.common.CommonMiddleware",
+    ]
+)
+globals().update(i18n_settings())
 
 ROOT_URLCONF = "scitex_stats._django._standalone_urls"
 
