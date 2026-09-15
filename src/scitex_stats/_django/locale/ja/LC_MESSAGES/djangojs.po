@@ -103,3 +103,18 @@ msgstr "コピーしました"
 
 msgid "Copy failed"
 msgstr "コピーできませんでした"
+
+msgid "Degrees of freedom"
+msgstr "自由度"
+
+msgid "Standardized statistic"
+msgstr "標準化統計量"
+
+msgid "Total sample size"
+msgstr "総サンプルサイズ"
+
+msgid "Group"
+msgstr "群"
+
+msgid "Note"
+msgstr "注"

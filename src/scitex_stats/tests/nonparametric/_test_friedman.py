@@ -305,12 +305,14 @@ def test_friedman(  # noqa: C901
     # Build result dictionary
     result = {
         "test": "Friedman test",
-        "statistic": round(float(statistic), decimals),
-        "pvalue": round(float(pvalue), decimals + 1),
+        "test_method": "Friedman test",
+        "statistic": float(statistic),
+        "stat_symbol": "χ²",
+        "pvalue": float(pvalue),
         "df": int(df),
         "kendall_w": round(float(W), decimals),
-        "effect_size": round(float(W), decimals),
-        "effect_size_metric": "kendall_w",
+        "effect_size": float(W),
+        "effect_size_metric": "Kendall's W",
         "effect_size_interpretation": W_interpretation,
         "n_subjects": int(n_subjects),
         "n_conditions": int(n_conditions),

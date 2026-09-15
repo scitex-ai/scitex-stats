@@ -180,6 +180,8 @@ def run(request):
         kwargs["groups"] = body["groups"]
     if body.get("popmean") is not None:
         kwargs["popmean"] = float(body["popmean"])
+    if isinstance(body.get("group_names"), list):
+        kwargs["group_names"] = [str(n) for n in body["group_names"]]
 
     try:
         result = run_test(test_name, **kwargs)
@@ -291,7 +293,11 @@ def posthoc(request):
     }.get(method)
     if fn is None:
         return JsonResponse({"error": f"unsupported method '{method}'"}, status=400)
+    from scitex_stats._utils._apa import format_p
+
     out = fn(groups, group_names=group_names, return_as="list")
+    for c in out:
+        c["p_apa"] = format_p(c.get("pvalue"))
     return JsonResponse(_safe({"method": method, "comparisons": out}))
 
 
@@ -322,7 +328,12 @@ def correct(request):
     results = [
         {"name": f"p{i}", "pvalue": float(p)} for i, p in enumerate(pvalues)
     ]
+    from scitex_stats._utils._apa import format_p
+
     out = fn(results, alpha=float(body.get("alpha", 0.05)), **kwargs)
+    for r in out:
+        r["p_apa"] = format_p(r.get("pvalue"))
+        r["p_adjusted_apa"] = format_p(r.get("pvalue_adjusted"))
     return JsonResponse(_safe({"method": method, "results": out}))
 
 

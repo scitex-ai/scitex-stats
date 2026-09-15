@@ -161,6 +161,7 @@ def test_ttest_ind(
         x, y = resolved["x"], resolved["y"]
 
     from scitex_stats._utils._effect_size import cohens_d
+    from scitex_stats._utils._effect_size_ci import cohens_d_ci
     from scitex_stats._utils._formatters import p2stars
     from scitex_stats._utils._normalizers import force_dataframe
     from scitex_stats._utils._power import power_ttest
@@ -215,6 +216,8 @@ def test_ttest_ind(
         "statistic": t_stat,
         "stat_symbol": "t",
         "alternative": alternative,
+        "df": float(t_result.df),
+        "equal_var": bool(equal_var),
         "n_x": n_x,
         "n_y": n_y,
         "var_x": var_x,
@@ -226,6 +229,7 @@ def test_ttest_ind(
         "effect_size": effect_size,
         "effect_size_metric": "Cohen's d",
         "effect_size_interpretation": effect_size_interpretation,
+        **cohens_d_ci(effect_size, n_x, n_y, alpha),
         "power": power,
         "H0": H0,
     }

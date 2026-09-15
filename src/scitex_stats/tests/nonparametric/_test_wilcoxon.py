@@ -167,6 +167,7 @@ def test_wilcoxon(  # noqa: C901
         x, y = resolved["x"], resolved["y"]
 
     from scitex_stats._utils._formatters import p2stars
+    from scitex_stats._utils._effect_size_ci import wilcoxon_z
     from scitex_stats._utils._normalizers import force_dataframe
 
     # Convert to numpy arrays and remove NaN
@@ -236,7 +237,8 @@ def test_wilcoxon(  # noqa: C901
     result = {
         "test_method": "Wilcoxon signed-rank test",
         "statistic": w_stat,
-        "stat_symbol": "W",
+        "stat_symbol": "T" if alternative == "two-sided" else "W+",
+        "z": wilcoxon_z(diff),
         "alternative": alternative,
         "n_pairs": n_nonzero,
         "n_zeros": n_zeros,

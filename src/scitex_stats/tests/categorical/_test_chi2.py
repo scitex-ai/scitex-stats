@@ -300,14 +300,15 @@ def test_chi2(  # noqa: C901
     # Build result
     result = {
         "test_method": "Chi-square test of independence",
-        "statistic": round(chi2_stat, decimals),
+        "statistic": chi2_stat,
         "stat_symbol": "χ²",
-        "pvalue": round(pvalue, decimals),
+        "pvalue": pvalue,
         "df": dof,
+        "yates_correction": bool(rows == 2 and cols == 2 and correction),
         "alpha": alpha,
         "significant": significant,
         "stars": stars,
-        "effect_size": round(v, decimals),
+        "effect_size": float(v),
         "effect_size_metric": "Cramér's V",
         "effect_size_interpretation": interpretation,
         "n": n,

@@ -262,8 +262,9 @@ def _correlation_ci(
     # A perfect (or degenerate) correlation has no sampling variance: report a
     # degenerate CI [r, r] rather than a wide, misleading interval (arctanh
     # diverges at |r| = 1). This is the honest answer for rho = 1.0.
-    if _is_finite_num(r) and abs(float(r)) >= 1.0:
-        rv = float(r)
+    # Unrounded r from the tests can land a hair below 1 (float noise).
+    if _is_finite_num(r) and abs(float(r)) >= 1.0 - 1e-12:
+        rv = float(np.sign(r))
         return (rv, rv)
 
     # Analytic Fisher-z from the reported r (finite, |r| < 1, n >= 4):
@@ -315,7 +316,7 @@ def _mann_whitney_ci(
     """CI for the Mann-Whitney effect size (rank-biserial r), by bootstrap.
 
     The MWU statistic U has no simple analytic CI; the reportable effect
-    size is the rank-biserial correlation r = 1 - 2U/(n1*n2), so we bootstrap
+    size is the rank-biserial correlation r = 2U/(n1*n2) - 1, so we bootstrap
     THAT (bounded in [-1, 1]) rather than a mean difference. Returns None
     when it cannot be computed.
     """
@@ -333,7 +334,7 @@ def _mann_whitney_ci(
             u = float(scipy_stats.mannwhitneyu(a, b, alternative="two-sided").statistic)
         except Exception:
             return 0.0
-        return 1.0 - (2.0 * u) / (len(a) * len(b))
+        return (2.0 * u) / (len(a) * len(b)) - 1.0
 
     try:
         res = scipy_stats.bootstrap(
