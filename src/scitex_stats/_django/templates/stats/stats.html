@@ -1,13 +1,13 @@
 {% extends "scitex_app/app_shell.html" %}
-{% load static i18n scitex_i18n scitex_panes %}
+{% load static i18n scitex_i18n scitex_panes scitex_static %}
 {% comment %}
 Host chrome comes from scitex_app/app_shell.html: the hub maps it to its own
 base page (site header + dock), standalone falls back to scitex-ui's shell.
 {% endcomment %}
 {% block extra_css %}
     <meta name="stx-mount" content="{{ stx_mount }}">
-    <link rel="stylesheet" href="{% static 'scitex_ui/css/app/form-controls.css' %}">
-    <link rel="stylesheet" href="{% static 'stats/css/stats.css' %}">
+    <link rel="stylesheet" href="{% app_static 'scitex_ui/css/app/form-controls.css' %}">
+    <link rel="stylesheet" href="{% app_static 'stats/css/stats.css' %}">
 {% endblock %}
 
 {% block scitex_app_content %}
@@ -67,7 +67,8 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
     <header class="stats-pane__header" data-stx-pane-header>
       <h2 class="stats-pane__title">{% translate "Results" %}</h2>
       <div class="stats-pane__actions">
-        <button type="button" class="stats-btn stats-btn--ghost" id="statsCopy" hidden>{% translate "Copy" %}</button>
+        <button type="button" class="stats-btn stats-btn--ghost stats-copy" id="statsCopy" hidden><span class="stats-copy__icon" aria-hidden="true"></span><span class="stats-copy__label">{% translate "Copy" %}</span></button>
+        <span id="statsCopyStatus" class="stats-visually-hidden" role="status" aria-live="polite"></span>
       </div>
     </header>
     <div class="stats-pane__body">
@@ -127,6 +128,6 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
 
 {% block extra_js %}
     {% scitex_js_catalog "scitex_stats._django" %}
-    <script src="{% static 'stats/js/stx-mount.js' %}"></script>
-    <script src="{% static 'stats/js/app.js' %}"></script>
+    <script src="{% app_static 'stats/js/stx-mount.js' %}"></script>
+    <script src="{% app_static 'stats/js/app.js' %}"></script>
 {% endblock %}

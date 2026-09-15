@@ -94,3 +94,12 @@ msgstr "エラー"
 
 msgid "Enter p-values."
 msgstr "p値を入力してください。"
+
+msgid "Copy"
+msgstr "コピー"
+
+msgid "Copied"
+msgstr "コピーしました"
+
+msgid "Copy failed"
+msgstr "コピーできませんでした"
