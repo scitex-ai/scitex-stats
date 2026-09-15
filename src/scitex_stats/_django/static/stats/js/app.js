@@ -317,6 +317,7 @@
   }
 
   var lastPlain = "";
+  var lastApaHtml = "";
 
   function renderResult(test, res) {
     var apa = res.apa || null;
@@ -327,6 +328,7 @@
     if (apa) setSegments($("statsFormatted"), apa.segments);
     else $("statsFormatted").textContent = res.formatted || "";
     lastPlain = apa ? apa.plain : res.formatted || "";
+    lastApaHtml = apa && apa.html ? apa.html : "";
     var n = res.n !== undefined ? res.n
       : res.n_x !== undefined ? [res.n_x, res.n_y].filter(function (x) { return x !== undefined && x !== null; }).join(", ")
       : res.n_pairs !== undefined ? res.n_pairs
@@ -372,18 +374,44 @@
     }));
   }
 
-  // Plain http has no navigator.clipboard; execCommand still works there.
-  function legacyCopy(text) {
-    var area = document.createElement("textarea");
-    area.value = text;
-    area.setAttribute("readonly", "");
-    area.style.cssText = "position:fixed;top:0;left:0;opacity:0;pointer-events:none";
-    document.body.appendChild(area);
-    area.select();
-    area.setSelectionRange(0, text.length);
+  function escapeHtml(text) {
+    var div = document.createElement("div");
+    div.textContent = String(text);
+    return div.innerHTML;
+  }
+
+  // Title, APA summary and table, as HTML (keeps <i>/<sub> in Word/Docs) and plain text.
+  function resultClip() {
+    var title = $("statsResultTitle").textContent;
+    var table = $("statsResultRows").closest("table");
+    var rowsText = Array.prototype.map.call(table.rows, function (tr) {
+      return Array.prototype.map.call(tr.cells, function (c) { return c.textContent; }).join("\t");
+    }).join("\n");
+    var summaryHtml = lastApaHtml || escapeHtml(lastPlain);
+    var tableHtml = '<table border="1" cellpadding="4" style="border-collapse:collapse">' +
+      table.tBodies[0].innerHTML + "</table>";
+    return {
+      html: "<p><b>" + escapeHtml(title) + "</b></p><p>" + summaryHtml + "</p>" + tableHtml,
+      text: title + "\n" + lastPlain + (rowsText ? "\n\n" + rowsText : ""),
+    };
+  }
+
+  // No ClipboardItem or plain http: copying a selected rendered element still carries formatting.
+  function legacyCopy(clip) {
+    var holder = document.createElement("div");
+    holder.contentEditable = "true";
+    holder.innerHTML = clip.html;
+    holder.style.cssText = "position:fixed;top:0;left:-9999px;opacity:0;pointer-events:none;white-space:pre-wrap";
+    document.body.appendChild(holder);
+    var sel = window.getSelection();
+    var range = document.createRange();
+    range.selectNodeContents(holder);
+    sel.removeAllRanges();
+    sel.addRange(range);
     var ok = false;
     try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
-    area.remove();
+    sel.removeAllRanges();
+    holder.remove();
     return ok;
   }
 
@@ -409,12 +437,18 @@
   }
 
   async function copyResult() {
-    var text = $("statsResultTitle").textContent + "\n" + lastPlain;
+    var clip = resultClip();
     var ok = false;
-    if (navigator.clipboard && window.isSecureContext) {
-      try { await navigator.clipboard.writeText(text); ok = true; } catch (e) { ok = false; }
+    if (window.isSecureContext && navigator.clipboard && navigator.clipboard.write && window.ClipboardItem) {
+      try {
+        await navigator.clipboard.write([new ClipboardItem({
+          "text/html": new Blob([clip.html], { type: "text/html" }),
+          "text/plain": new Blob([clip.text], { type: "text/plain" }),
+        })]);
+        ok = true;
+      } catch (e) { ok = false; }
     }
-    if (!ok) ok = legacyCopy(text);
+    if (!ok) ok = legacyCopy(clip);
     if (!ok) selectResultText();
     showCopyState(ok ? "copied" : "failed");
   }
