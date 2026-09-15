@@ -11,7 +11,7 @@
   var $ = function (id) { return document.getElementById(id); };
 
   // Italic Latin statistical symbols (APA) before a relation or in a test name ("t-test", "U test"); Greek stays upright.
-  var SYM_RE = /(^|[^A-Za-zÀ-ɏ'’])(p|n|t|F|U|H|W|BM|OR|M|SD)(?=\s*[=<>≥≤]|-test|\s+test|\s*検定)/g;
+  var SYM_RE = /(^|[^A-Za-zÀ-ɏ'’])(p|n|t|F|U|H|W|BM|OR|M|SD)(?=\s*[=<>≥≤]|-test|-value|\s+test|\s*検定|\s*値)/g;
 
   function el(tag, cls, text) {
     var node = document.createElement(tag);
@@ -90,7 +90,7 @@
     });
     rows.forEach(function (row) {
       var tr = el("tr", "stats-applic__row" + (row.applicable ? " is-ok" : " is-no") + (row.test_id === primaryId ? " is-primary" : ""));
-      var mark = el("td", "stats-applic__mark", row.applicable ? "✓" : "✗");
+      var mark = el("td", "stats-applic__mark", row.applicable ? "✓" : "×"); // ✗ (U+2717) is missing from common phone UI fonts
       mark.setAttribute("aria-label", row.applicable ? _("Applicable") : _("Not applicable"));
       var name = el("td", "stats-applic__name");
       name.appendChild(labelNode("span", row.label));
@@ -162,7 +162,12 @@
     document.dispatchEvent(new CustomEvent("stats:recommendation", {
       detail: { payload: payload, recommendation: lastRec, slot: $("statsPlotSlot") },
     }));
-    if (opts && opts.show && window.stxPanes) window.stxPanes.show("results", "stats");
+    if (opts && opts.show) {
+      // Calculate then runs the recommended test, not whatever was checked before.
+      var radio = lastRec.primary && document.querySelector('input[name="statsTest"][value="' + lastRec.primary.test_id + '"]');
+      if (radio) { radio.checked = true; radio.dispatchEvent(new Event("change")); }
+      if (window.stxPanes) window.stxPanes.show("results", "stats");
+    }
   }
 
   function num(v) {
