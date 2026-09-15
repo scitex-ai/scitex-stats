@@ -49,7 +49,7 @@ def main(args):  # noqa: C901
     logger.info("\n[Example 1] Pain ratings across 4 time points (ordinal)")
     logger.info("-" * 70)
 
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
     # Simulate decreasing pain over time
     pain_data = np.array(
         [
@@ -113,7 +113,7 @@ def main(args):  # noqa: C901
 
     subjects = np.repeat(np.arange(8), 4)
     conditions = np.tile(["Pre", "Mid1", "Mid2", "Post"], 8)
-    values = np.random.randint(1, 11, 32)  # Random scores 1-10
+    values = rng.integers(1, 11, 32)  # Random scores 1-10
 
     df_long = pd.DataFrame(
         {"Subject": subjects, "TimePoint": conditions, "Score": values}
@@ -140,7 +140,7 @@ def main(args):  # noqa: C901
     from scitex_stats.tests.parametric import test_anova_rm
 
     # Data with outliers
-    data_outlier = np.random.normal(5, 1, (10, 4))
+    data_outlier = rng.normal(5, 1, (10, 4))
     data_outlier[0, 0] = 20  # Add outlier
 
     test_friedman(data_outlier, verbose=True)

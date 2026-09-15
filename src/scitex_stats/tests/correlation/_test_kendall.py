@@ -372,7 +372,7 @@ def main(args) -> int:
     logger.info("\n[Example 1] Basic Kendall's tau with tied values")
     logger.info("-" * 70)
 
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
     x = np.array([1, 2, 2, 3, 4, 4, 5, 6, 7, 8, 9, 10])
     y = np.array([2, 3, 3, 5, 6, 6, 8, 9, 10, 11, 12, 13])
 

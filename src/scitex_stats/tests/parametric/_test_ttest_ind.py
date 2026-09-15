@@ -298,29 +298,29 @@ def main(args):
     logger.info("Demonstrating independent samples t-test")
 
     # Set random seed
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     # Example 1: Significant difference
     logger.info("\n=== Example 1: Significant difference ===")
 
-    x1 = np.random.normal(0, 1, 50)
-    y1 = np.random.normal(0.8, 1, 50)  # Large effect
+    x1 = rng.normal(0, 1, 50)
+    y1 = rng.normal(0.8, 1, 50)  # Large effect
 
     test_ttest_ind(x1, y1, var_x="Control", var_y="Treatment", verbose=True)
 
     # Example 2: Non-significant difference
     logger.info("\n=== Example 2: Non-significant difference ===")
 
-    x2 = np.random.normal(0, 1, 30)
-    y2 = np.random.normal(0.2, 1, 30)  # Small effect
+    x2 = rng.normal(0, 1, 30)
+    y2 = rng.normal(0.2, 1, 30)  # Small effect
 
     test_ttest_ind(x2, y2, var_x="Group A", var_y="Group B", verbose=True)
 
     # Example 3: Welch's t-test (unequal variances)
     logger.info("\n=== Example 3: Welch's t-test ===")
 
-    x3 = np.random.normal(0, 1, 40)
-    y3 = np.random.normal(0.5, 2, 40)  # Different variance
+    x3 = rng.normal(0, 1, 40)
+    y3 = rng.normal(0.5, 2, 40)  # Different variance
 
     test_ttest_ind(
         x3,
@@ -334,8 +334,8 @@ def main(args):
     # Example 4: One-sided test
     logger.info("\n=== Example 4: One-sided test ===")
 
-    x4 = np.random.normal(0, 1, 50)
-    y4 = np.random.normal(0.6, 1, 50)
+    x4 = rng.normal(0, 1, 50)
+    y4 = rng.normal(0.6, 1, 50)
 
     test_ttest_ind(x4, y4, alternative="two-sided", verbose=True)
     test_ttest_ind(x4, y4, alternative="less", verbose=True)
@@ -343,8 +343,8 @@ def main(args):
     # Example 5: With visualization
     logger.info("\n=== Example 5: With visualization ===")
 
-    x5 = np.random.normal(10, 2, 60)
-    y5 = np.random.normal(12, 2, 60)
+    x5 = rng.normal(10, 2, 60)
+    y5 = rng.normal(12, 2, 60)
 
     try:
         test_ttest_ind(

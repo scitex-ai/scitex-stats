@@ -41,7 +41,7 @@ def main(args):
     logger.info("\n[Example 1] Drug x Gender (interaction present)")
     logger.info("-" * 70)
 
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     data = pd.DataFrame(
         {
@@ -49,10 +49,10 @@ def main(args):
             "Gender": (["Male"] * 15 + ["Female"] * 15) * 2,
             "Score": np.concatenate(
                 [
-                    np.random.normal(50, 10, 15),  # Placebo, Male
-                    np.random.normal(55, 10, 15),  # Placebo, Female
-                    np.random.normal(65, 10, 15),  # Active, Male
-                    np.random.normal(75, 10, 15),  # Active, Female (interaction)
+                    rng.normal(50, 10, 15),  # Placebo, Male
+                    rng.normal(55, 10, 15),  # Placebo, Female
+                    rng.normal(65, 10, 15),  # Active, Male
+                    rng.normal(75, 10, 15),  # Active, Female (interaction)
                 ]
             ),
         }
@@ -86,18 +86,18 @@ def main(args):
             "Time": (["Short", "Long"] * 30),
             "Yield": np.concatenate(
                 [
-                    np.random.normal(40, 5, 10)
-                    + np.random.normal(0, 2, 10),  # Low, Short
-                    np.random.normal(40, 5, 10)
-                    + np.random.normal(10, 2, 10),  # Low, Long
-                    np.random.normal(50, 5, 10)
-                    + np.random.normal(0, 2, 10),  # Medium, Short
-                    np.random.normal(50, 5, 10)
-                    + np.random.normal(10, 2, 10),  # Medium, Long
-                    np.random.normal(60, 5, 10)
-                    + np.random.normal(0, 2, 10),  # High, Short
-                    np.random.normal(60, 5, 10)
-                    + np.random.normal(10, 2, 10),  # High, Long
+                    rng.normal(40, 5, 10)
+                    + rng.normal(0, 2, 10),  # Low, Short
+                    rng.normal(40, 5, 10)
+                    + rng.normal(10, 2, 10),  # Low, Long
+                    rng.normal(50, 5, 10)
+                    + rng.normal(0, 2, 10),  # Medium, Short
+                    rng.normal(50, 5, 10)
+                    + rng.normal(10, 2, 10),  # Medium, Long
+                    rng.normal(60, 5, 10)
+                    + rng.normal(0, 2, 10),  # High, Short
+                    rng.normal(60, 5, 10)
+                    + rng.normal(10, 2, 10),  # High, Long
                 ]
             ),
         }

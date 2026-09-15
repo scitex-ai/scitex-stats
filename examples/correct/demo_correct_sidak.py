@@ -50,11 +50,11 @@ def main():
     logger.info("\n[Example 1] Basic Šidák correction with 5 independent t-tests")
     logger.info("-" * 70)
 
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
     results = []
     for i in range(5):
-        x = np.random.normal(0, 1, 30)
-        y = np.random.normal(0.3, 1, 30)
+        x = rng.normal(0, 1, 30)
+        y = rng.normal(0.3, 1, 30)
         r = test_ttest_ind(x, y, var_x=f"Group_{i}_A", var_y=f"Group_{i}_B")
         results.append(r)
 
@@ -83,11 +83,11 @@ def main():
     logger.info("\n[Example 3] Large number of tests (m=20)")
     logger.info("-" * 70)
 
-    np.random.seed(123)
+    rng = np.random.default_rng(123)
     results_20 = []
     for i in range(20):
-        x = np.random.normal(0, 1, 50)
-        y = np.random.normal(0.2, 1, 50)
+        x = rng.normal(0, 1, 50)
+        y = rng.normal(0.2, 1, 50)
         r = test_ttest_ind(x, y)
         results_20.append(r)
 

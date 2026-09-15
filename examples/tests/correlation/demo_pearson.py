@@ -33,7 +33,7 @@ def main(args) -> int:
     logger.info("Demonstrating Pearson correlation test")
 
     # Set random seed
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     # Ensure ./.dev exists for figure output.
     os.makedirs("./.dev", exist_ok=True)
@@ -41,16 +41,16 @@ def main(args) -> int:
     # Example 1: Strong positive correlation
     logger.info("\n=== Example 1: Strong positive correlation ===")
 
-    x1 = np.random.normal(0, 1, 50)
-    y1 = 2 * x1 + np.random.normal(0, 0.5, 50)  # y ~ 2x with noise
+    x1 = rng.normal(0, 1, 50)
+    y1 = 2 * x1 + rng.normal(0, 0.5, 50)  # y ~ 2x with noise
 
     result1 = test_pearson(x1, y1, var_x="X", var_y="Y", verbose=True)
 
     # Example 2: Negative correlation
     logger.info("\n=== Example 2: Negative correlation ===")
 
-    x2 = np.random.normal(0, 1, 50)
-    y2 = -1.5 * x2 + np.random.normal(0, 0.8, 50)
+    x2 = rng.normal(0, 1, 50)
+    y2 = -1.5 * x2 + rng.normal(0, 0.8, 50)
 
     result2 = test_pearson(
         x2, y2, var_x="Temperature", var_y="Ice Cream Sales", verbose=True
@@ -59,16 +59,16 @@ def main(args) -> int:
     # Example 3: No correlation
     logger.info("\n=== Example 3: No correlation ===")
 
-    x3 = np.random.normal(0, 1, 50)
-    y3 = np.random.normal(0, 1, 50)  # Independent
+    x3 = rng.normal(0, 1, 50)
+    y3 = rng.normal(0, 1, 50)  # Independent
 
     result3 = test_pearson(x3, y3, var_x="Variable A", var_y="Variable B", verbose=True)
 
     # Example 4: With visualization
     logger.info("\n=== Example 4: With visualization ===")
 
-    x4 = np.random.normal(100, 15, 60)
-    y4 = 0.8 * x4 + 20 + np.random.normal(0, 10, 60)
+    x4 = rng.normal(100, 15, 60)
+    y4 = 0.8 * x4 + 20 + rng.normal(0, 10, 60)
 
     result4 = test_pearson(
         x4,
@@ -87,8 +87,8 @@ def main(args) -> int:
     # Example 5: One-sided tests
     logger.info("\n=== Example 5: One-sided tests ===")
 
-    x5 = np.random.normal(0, 1, 40)
-    y5 = 1.2 * x5 + np.random.normal(0, 0.5, 40)
+    x5 = rng.normal(0, 1, 40)
+    y5 = 1.2 * x5 + rng.normal(0, 0.5, 40)
 
     result_two = test_pearson(x5, y5, alternative="two-sided")
     result_greater = test_pearson(x5, y5, alternative="greater")
@@ -100,12 +100,12 @@ def main(args) -> int:
     logger.info("\n=== Example 6: Effect of sample size ===")
 
     # Small sample
-    x_small = np.random.normal(0, 1, 10)
-    y_small = 0.5 * x_small + np.random.normal(0, 0.8, 10)
+    x_small = rng.normal(0, 1, 10)
+    y_small = 0.5 * x_small + rng.normal(0, 0.8, 10)
 
     # Large sample
-    x_large = np.random.normal(0, 1, 100)
-    y_large = 0.5 * x_large + np.random.normal(0, 0.8, 100)
+    x_large = rng.normal(0, 1, 100)
+    y_large = 0.5 * x_large + rng.normal(0, 0.8, 100)
 
     result_small = test_pearson(x_small, y_small)
     result_large = test_pearson(x_large, y_large)
@@ -121,8 +121,8 @@ def main(args) -> int:
     # Example 7: Effect of outliers
     logger.info("\n=== Example 7: Effect of outliers ===")
 
-    x7 = np.random.normal(0, 1, 40)
-    y7 = 0.5 * x7 + np.random.normal(0, 0.5, 40)
+    x7 = rng.normal(0, 1, 40)
+    y7 = 0.5 * x7 + rng.normal(0, 0.5, 40)
 
     # Without outliers
     result_clean = test_pearson(x7, y7)
@@ -143,7 +143,7 @@ def main(args) -> int:
     logger.info("\n=== Example 8: Pearson vs Spearman (non-linear relationship) ===")
 
     x8 = np.linspace(0, 10, 50)
-    y8 = x8**2 + np.random.normal(0, 5, 50)  # Quadratic relationship
+    y8 = x8**2 + rng.normal(0, 5, 50)  # Quadratic relationship
 
     pearson_result = test_pearson(x8, y8)
 
@@ -157,9 +157,9 @@ def main(args) -> int:
 
     # Correlation matrix scenario
     data = {
-        "Age": np.random.normal(40, 10, 50),
-        "Income": np.random.normal(50000, 15000, 50),
-        "Education": np.random.normal(16, 3, 50),
+        "Age": rng.normal(40, 10, 50),
+        "Income": rng.normal(50000, 15000, 50),
+        "Education": rng.normal(16, 3, 50),
     }
 
     # Income vs Age

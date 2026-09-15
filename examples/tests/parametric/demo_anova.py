@@ -54,7 +54,7 @@ def main(args):
     logger.info("Demonstrating one-way ANOVA")
 
     # Set random seed
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     # Make sure ./.dev exists for outputs.
     os.makedirs("./.dev", exist_ok=True)
@@ -62,9 +62,9 @@ def main(args):
     # Example 1: Three groups with clear differences
     logger.info("\n=== Example 1: Three groups with clear differences ===")
 
-    group1 = np.random.normal(5, 1, 30)
-    group2 = np.random.normal(7, 1, 30)
-    group3 = np.random.normal(9, 1, 30)
+    group1 = rng.normal(5, 1, 30)
+    group2 = rng.normal(7, 1, 30)
+    group3 = rng.normal(9, 1, 30)
 
     result1 = test_anova(
         [group1, group2, group3],
@@ -85,9 +85,9 @@ def main(args):
     # Example 2: No significant difference
     logger.info("\n=== Example 2: No significant difference ===")
 
-    group1 = np.random.normal(5, 1, 30)
-    group2 = np.random.normal(5.2, 1, 30)
-    group3 = np.random.normal(4.9, 1, 30)
+    group1 = rng.normal(5, 1, 30)
+    group2 = rng.normal(5.2, 1, 30)
+    group3 = rng.normal(4.9, 1, 30)
 
     result2 = test_anova(
         [group1, group2, group3],
@@ -104,10 +104,10 @@ def main(args):
     # Example 3: With visualization
     logger.info("\n=== Example 3: Complete analysis with visualization ===")
 
-    group1 = np.random.normal(10, 2, 25)
-    group2 = np.random.normal(12, 2, 25)
-    group3 = np.random.normal(14, 2, 25)
-    group4 = np.random.normal(16, 2, 25)
+    group1 = rng.normal(10, 2, 25)
+    group2 = rng.normal(12, 2, 25)
+    group3 = rng.normal(14, 2, 25)
+    group4 = rng.normal(16, 2, 25)
 
     result3 = _safe_call(
         test_anova,
@@ -122,9 +122,9 @@ def main(args):
     # Example 4: Assumption violation - unequal variances
     logger.info("\n=== Example 4: Unequal variances ===")
 
-    group1 = np.random.normal(5, 1, 30)  # Small variance
-    group2 = np.random.normal(7, 3, 30)  # Large variance
-    group3 = np.random.normal(9, 1, 30)  # Small variance
+    group1 = rng.normal(5, 1, 30)  # Small variance
+    group2 = rng.normal(7, 3, 30)  # Large variance
+    group3 = rng.normal(9, 1, 30)  # Small variance
 
     result4 = test_anova(
         [group1, group2, group3],
@@ -142,9 +142,9 @@ def main(args):
     # Example 5: Non-normal data
     logger.info("\n=== Example 5: Non-normal data (exponential) ===")
 
-    group1 = np.random.exponential(2, 30)
-    group2 = np.random.exponential(3, 30)
-    group3 = np.random.exponential(4, 30)
+    group1 = rng.exponential(2, 30)
+    group2 = rng.exponential(3, 30)
+    group3 = rng.exponential(4, 30)
 
     result5 = test_anova(
         [group1, group2, group3],
@@ -204,9 +204,9 @@ def main(args):
 
     # Use non-normal data
     groups_exp = [
-        np.random.exponential(2, 30),
-        np.random.exponential(3, 30),
-        np.random.exponential(4, 30),
+        rng.exponential(2, 30),
+        rng.exponential(3, 30),
+        rng.exponential(4, 30),
     ]
 
     anova_result = test_anova(groups_exp, check_assumptions=False, verbose=True)

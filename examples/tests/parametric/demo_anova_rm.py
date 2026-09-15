@@ -41,11 +41,11 @@ def main(args):
     logger.info("\n[Example 1] Basic repeated measures - 4 time points")
     logger.info("-" * 70)
 
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
     n_subjects = 12
     # Simulate increasing trend over time
     time_effects = np.array([0, 0.5, 1.0, 0.8])
-    data = np.random.normal(5, 1, (n_subjects, 4)) + time_effects
+    data = rng.normal(5, 1, (n_subjects, 4)) + time_effects
 
     result, _fig = test_anova_rm(
         data,
@@ -71,9 +71,9 @@ def main(args):
     logger.info("-" * 70)
 
     # Create data that violates sphericity
-    data_spher = np.random.normal(0, 1, (15, 4))
-    data_spher[:, 1] += np.random.normal(0, 2, 15)  # High variance for condition 2
-    data_spher[:, 2] += np.random.normal(0.5, 0.5, 15)
+    data_spher = rng.normal(0, 1, (15, 4))
+    data_spher[:, 1] += rng.normal(0, 2, 15)  # High variance for condition 2
+    data_spher[:, 2] += rng.normal(0.5, 0.5, 15)
 
     result_spher, _fig_spher = test_anova_rm(
         data_spher,
@@ -100,7 +100,7 @@ def main(args):
     # Create long format data
     subjects = np.repeat(np.arange(10), 3)
     conditions = np.tile(["Pre", "Mid", "Post"], 10)
-    values = np.random.normal(10, 2, 30) + np.tile([0, 1, 1.5], 10)
+    values = rng.normal(10, 2, 30) + np.tile([0, 1, 1.5], 10)
 
     df_long = pd.DataFrame(
         {"Subject": subjects, "TimePoint": conditions, "Score": values}
@@ -125,7 +125,7 @@ def main(args):
     logger.info("-" * 70)
 
     df_wide = pd.DataFrame(
-        np.random.normal(50, 10, (20, 5)),
+        rng.normal(50, 10, (20, 5)),
         columns=[
             "Drug_0mg",
             "Drug_5mg",

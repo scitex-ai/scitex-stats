@@ -117,11 +117,11 @@ def main(args):
     # Example 6: No association (null example)
     print("\nExample 6: No association (random data)")
     print("-" * 70)
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
     n_samples = 200
     row_probs = [0.5, 0.5]
     col_probs = [0.3, 0.4, 0.3]
-    observed6 = np.random.multinomial(
+    observed6 = rng.multinomial(
         n_samples, [p * q for p in row_probs for q in col_probs]
     ).reshape(2, 3)
     result6 = test_chi2(observed6, var_row="Factor1", var_col="Factor2", plot=True)
@@ -170,8 +170,8 @@ def main(args):
     # Example 10: Large contingency table (4×5)
     print("\nExample 10: Larger contingency table (4×5)")
     print("-" * 70)
-    np.random.seed(43)
-    observed10 = np.random.randint(10, 40, size=(4, 5))
+    rng = np.random.default_rng(43)
+    observed10 = rng.integers(10, 40, size=(4, 5))
     result10 = test_chi2(observed10, var_row="Factor_A", var_col="Factor_B", plot=True)
     print(force_dataframe(result10))
     plt.gcf().savefig("./example10_large_table.jpg")

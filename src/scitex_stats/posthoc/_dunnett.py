@@ -179,11 +179,11 @@ def posthoc_dunnett(
     >>> from scitex_stats.posthoc import posthoc_dunnett
     >>>
     >>> # Example: Placebo vs 3 drug doses
-    >>> np.random.seed(42)
-    >>> placebo = np.random.normal(100, 15, 30)
-    >>> dose_low = np.random.normal(105, 15, 30)
-    >>> dose_med = np.random.normal(110, 15, 30)
-    >>> dose_high = np.random.normal(115, 15, 30)
+    >>> rng = np.random.default_rng(42)
+    >>> placebo = rng.normal(100, 15, 30)
+    >>> dose_low = rng.normal(105, 15, 30)
+    >>> dose_med = rng.normal(110, 15, 30)
+    >>> dose_high = rng.normal(115, 15, 30)
     >>>
     >>> results = posthoc_dunnett(
     ...     control=placebo,
@@ -348,11 +348,11 @@ if __name__ == "__main__":
     logger.info("\n[Example 1] Drug trial: Placebo vs 3 doses")
     logger.info("-" * 70)
 
-    np.random.seed(42)
-    placebo = np.random.normal(100, 15, 30)
-    dose_low = np.random.normal(105, 15, 30)
-    dose_med = np.random.normal(110, 15, 30)
-    dose_high = np.random.normal(115, 15, 30)
+    rng = np.random.default_rng(42)
+    placebo = rng.normal(100, 15, 30)
+    dose_low = rng.normal(105, 15, 30)
+    dose_med = rng.normal(110, 15, 30)
+    dose_high = rng.normal(115, 15, 30)
 
     logger.info(f"Placebo: mean={np.mean(placebo):.2f}, n={len(placebo)}")
     logger.info(f"Low Dose: mean={np.mean(dose_low):.2f}, n={len(dose_low)}")
@@ -390,9 +390,9 @@ if __name__ == "__main__":
     logger.info("\n[Example 3] Baseline vs interventions")
     logger.info("-" * 70)
 
-    baseline = np.random.normal(50, 10, 25)
-    intervention_a = np.random.normal(55, 10, 25)
-    intervention_b = np.random.normal(58, 10, 25)
+    baseline = rng.normal(50, 10, 25)
+    intervention_a = rng.normal(55, 10, 25)
+    intervention_b = rng.normal(58, 10, 25)
 
     results_baseline = posthoc_dunnett(
         control=baseline,
@@ -435,10 +435,10 @@ if __name__ == "__main__":
     logger.info("\n[Example 5] Unbalanced design")
     logger.info("-" * 70)
 
-    control_unbal = np.random.normal(20, 5, 50)
-    treat1_unbal = np.random.normal(22, 5, 15)
-    treat2_unbal = np.random.normal(25, 5, 20)
-    treat3_unbal = np.random.normal(23, 5, 30)
+    control_unbal = rng.normal(20, 5, 50)
+    treat1_unbal = rng.normal(22, 5, 15)
+    treat2_unbal = rng.normal(25, 5, 20)
+    treat3_unbal = rng.normal(23, 5, 30)
 
     results_unbal = posthoc_dunnett(
         control=control_unbal,

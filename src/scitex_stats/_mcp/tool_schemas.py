@@ -470,6 +470,40 @@ def get_tool_schemas() -> list[types.Tool]:
                 "required": ["p_value"],
             },
         ),
+        # Verify a result against its provenance receipt
+        types.Tool(
+            name="verify_result",
+            description=(
+                "Check that a scitex-stats result is exactly what scitex-stats "
+                "computes: its provenance receipt is intact, the statistics were "
+                "not edited, the data hashes to the recorded SHA-256, and a "
+                "recompute is bit-identical. Use before reporting any number from "
+                "run_test, or to audit a saved result JSON."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "result": {
+                        "type": "object",
+                        "description": "Result dict carrying 'provenance' (e.g. run_test output)",
+                    },
+                    "result_file": {
+                        "type": "string",
+                        "description": "Path to a saved result JSON (instead of 'result')",
+                    },
+                    "data": {
+                        "type": "array",
+                        "description": (
+                            "Data the result was computed from; for an MCP run_test "
+                            "result the same list of arrays passed to run_test. "
+                            "Omit to use the copy embedded in the receipt."
+                        ),
+                    },
+                    "data2": {"type": "array", "items": {"type": "number"}},
+                    "groups": {"type": "array", "items": {"type": "array"}},
+                },
+            },
+        ),
     ]
 
 

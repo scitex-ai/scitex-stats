@@ -201,19 +201,19 @@ def main(args):
     logger.info("Demonstrating Cohen's d effect size")
 
     # Set random seed
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     # Example 1: Different effect sizes
     logger.info("\n=== Example 1: Different effect sizes ===")
 
     n = 50
-    control = np.random.normal(0, 1, n)
+    control = rng.normal(0, 1, n)
 
     effect_sizes = [0.0, 0.2, 0.5, 0.8, 1.2]
     results = []
 
     for true_d in effect_sizes:
-        treatment = np.random.normal(true_d, 1, n)
+        treatment = rng.normal(true_d, 1, n)
         computed_d = cohens_d(control, treatment)
         interpretation = interpret_cohens_d(computed_d)
 
@@ -235,8 +235,8 @@ def main(args):
     logger.info("\n=== Example 2: Paired vs Independent ===")
 
     n_pairs = 30
-    baseline = np.random.normal(0, 1, n_pairs)
-    noise = np.random.normal(0, 0.3, n_pairs)
+    baseline = rng.normal(0, 1, n_pairs)
+    noise = rng.normal(0, 0.3, n_pairs)
     followup = baseline + 0.5 + noise
 
     d_independent = cohens_d(baseline, followup, paired=False)
@@ -250,8 +250,8 @@ def main(args):
     logger.info("\n=== Example 3: Correction methods ===")
 
     small_n = 10
-    x_small = np.random.normal(0, 1, small_n)
-    y_small = np.random.normal(0.5, 1, small_n)
+    x_small = rng.normal(0, 1, small_n)
+    y_small = rng.normal(0.5, 1, small_n)
 
     d_standard = cohens_d(x_small, y_small)
     d_hedges = cohens_d(x_small, y_small, correction="hedges")
@@ -268,8 +268,8 @@ def main(args):
 
     # Plot 1: Distribution visualization
     ax = axes[0]
-    control_demo = np.random.normal(0, 1, 1000)
-    treatment_demo = np.random.normal(0.8, 1, 1000)
+    control_demo = rng.normal(0, 1, 1000)
+    treatment_demo = rng.normal(0.8, 1, 1000)
 
     ax.hist(control_demo, bins=30, alpha=0.5, label="Control", density=True)
     ax.hist(treatment_demo, bins=30, alpha=0.5, label="Treatment", density=True)

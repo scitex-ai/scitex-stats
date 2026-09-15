@@ -146,13 +146,14 @@ def test_ks_1samp(  # noqa: C901
     Examples
     --------
     >>> # Test if data are normally distributed
-    >>> x = np.random.normal(0, 1, 100)
+    >>> rng = np.random.default_rng(42)
+    >>> x = rng.normal(0, 1, 100)
     >>> result = test_ks_1samp(x, cdf='norm', args=(0, 1))
     >>> result['rejected']
     False
 
     >>> # Test if data are uniformly distributed
-    >>> x = np.random.uniform(0, 1, 100)
+    >>> x = rng.uniform(0, 1, 100)
     >>> result = test_ks_1samp(x, cdf='uniform', args=(0, 1))
     """
     from scitex_stats._utils._formatters import p2stars
@@ -380,12 +381,12 @@ def main(args):
     logger.info("Demonstrating one-sample Kolmogorov-Smirnov test")
 
     # Set random seed
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     # Example 1: One-sample test - normal data
     logger.info("\n=== Example 1: One-sample KS test (normal data) ===")
 
-    x_normal = np.random.normal(0, 1, 100)
+    x_normal = rng.normal(0, 1, 100)
     result1 = test_ks_1samp(
         x_normal, cdf="norm", args=(0, 1), var_x="Normal data", verbose=True
     )
@@ -393,7 +394,7 @@ def main(args):
     # Example 2: One-sample test - exponential data tested against normal
     logger.info("\n=== Example 2: One-sample KS test (exponential data vs normal) ===")
 
-    x_exp = np.random.exponential(2, 100)
+    x_exp = rng.exponential(2, 100)
     result2 = test_ks_1samp(
         x_exp,
         cdf="norm",
@@ -405,7 +406,7 @@ def main(args):
     # Example 3: One-sample test with visualization
     logger.info("\n=== Example 3: One-sample KS test with visualization ===")
 
-    x_mixed = np.concatenate([np.random.normal(0, 1, 90), np.random.normal(3, 1, 10)])
+    x_mixed = np.concatenate([rng.normal(0, 1, 90), rng.normal(3, 1, 10)])
     result3 = test_ks_1samp(
         x_mixed,
         cdf="norm",
