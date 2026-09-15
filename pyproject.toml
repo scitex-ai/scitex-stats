@@ -76,6 +76,11 @@ all = [
     "figrecipe>=0.28.0",
     "torch>=2.0",
 ]
+# Plot results as editable FigRecipe recipes (scitex_stats.plot, backend="auto").
+# Looked up at call time only; without it plots render with plain matplotlib.
+figrecipe = [
+    "figrecipe>=0.28.0",
+]
 # Stats ↔ SciTeX bundle I/O: test_result_to_stats / save_stats / load_stats
 # in scitex_stats._bundle_io require scitex-io's bundle subpackage. scitex-io
 # imports the Stats schema back from scitex_stats, so it stays an optional

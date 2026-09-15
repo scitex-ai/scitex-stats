@@ -108,6 +108,7 @@ def run_test(
     json_safe: bool = True,
     group_names: Optional[List[str]] = None,
     nan_policy: Literal["omit", "raise"] = "omit",
+    plot_spec: bool = False,
     **kwargs: Any,
 ) -> Dict[str, Any]:
     """Run a statistical test by name and return a normalised result dict.
@@ -141,6 +142,9 @@ def run_test(
         designs) and reports every exclusion in ``result["input_integrity"]``;
         ``"raise"`` rejects NaN. Infinite, non-numeric and empty inputs always
         raise :class:`~scitex_stats._provenance.InputIntegrityError`.
+    plot_spec : bool, default ``False``
+        Attach ``result["plot_spec"]``, the neutral plot spec (see
+        :func:`scitex_stats.plot_spec`), including the raw data.
     **kwargs
         Additional keyword arguments forwarded to the test function.
 
@@ -207,6 +211,14 @@ def run_test(
         )
         if desc:
             result["descriptives"] = desc
+
+    if plot_spec and isinstance(result, dict):
+        from scitex_stats._plot import build_plot_spec
+
+        result["plot_spec"] = build_plot_spec(
+            result, data=used.get("data"), data2=used.get("data2"), groups=used_groups,
+            group_names=group_names, popmean=popmean if test_name == "ttest_1samp" else None,
+        )
 
     if json_safe:
         from scitex_stats._utils._serialize import to_json_safe

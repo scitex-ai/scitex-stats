@@ -9,7 +9,7 @@ is set so namespace-relative reverse() works from a host urlconf.
 
 from django.urls import path
 
-from . import views
+from . import _plot_views, views
 
 app_name = "stats"
 
@@ -26,6 +26,8 @@ urlpatterns = [
     path("api/power", views.power, name="power"),
     path("api/posthoc", views.posthoc, name="posthoc"),
     path("api/correct", views.correct, name="correct"),
+    path("api/plot", _plot_views.plot, name="plot"),
+    path("api/integrations", _plot_views.integrations, name="integrations"),
 ]
 
 # EOF
