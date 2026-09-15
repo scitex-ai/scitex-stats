@@ -372,9 +372,51 @@
     }));
   }
 
-  function copyResult() {
+  // Plain http has no navigator.clipboard; execCommand still works there.
+  function legacyCopy(text) {
+    var area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.cssText = "position:fixed;top:0;left:0;opacity:0;pointer-events:none";
+    document.body.appendChild(area);
+    area.select();
+    area.setSelectionRange(0, text.length);
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+    area.remove();
+    return ok;
+  }
+
+  function selectResultText() {
+    var range = document.createRange();
+    range.selectNodeContents($("statsFormatted"));
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  var copyTimer = null;
+
+  function showCopyState(state) {
+    var btn = $("statsCopy");
+    var label = btn.querySelector(".stats-copy__label");
+    var message = state === "copied" ? _("Copied") : state === "failed" ? _("Copy failed") : _("Copy");
+    label.textContent = message;
+    btn.dataset.state = state;
+    $("statsCopyStatus").textContent = state === "idle" ? "" : message;
+    clearTimeout(copyTimer);
+    if (state !== "idle") copyTimer = setTimeout(function () { showCopyState("idle"); }, 1500);
+  }
+
+  async function copyResult() {
     var text = $("statsResultTitle").textContent + "\n" + lastPlain;
-    if (navigator.clipboard) navigator.clipboard.writeText(text);
+    var ok = false;
+    if (navigator.clipboard && window.isSecureContext) {
+      try { await navigator.clipboard.writeText(text); ok = true; } catch (e) { ok = false; }
+    }
+    if (!ok) ok = legacyCopy(text);
+    if (!ok) selectResultText();
+    showCopyState(ok ? "copied" : "failed");
   }
 
   async function init() {

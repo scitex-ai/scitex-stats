@@ -336,6 +336,29 @@
   overflow: auto;
 }
 
+.stats-copy[data-state="copied"] {
+  color: var(--status-success, #2e7d32);
+}
+
+.stats-copy[data-state="copied"] .stats-copy__icon::before {
+  content: "\2713";
+  font-weight: 700;
+}
+
+.stats-copy[data-state="failed"] {
+  color: var(--status-error);
+}
+
+.stats-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 .stats-app [hidden] {
   display: none !important;
 }
