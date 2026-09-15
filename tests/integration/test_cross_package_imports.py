@@ -44,6 +44,8 @@ CROSS_PACKAGE_IMPORTS = [
     'scitex_app',
     'scitex_app._django',
     'scitex_app.embed',
+    'scitex_app.i18n',
+    'scitex_clew._hash',
     'scitex_config',
     'scitex_dev',
     'scitex_dev._cli._completion',
@@ -54,6 +56,7 @@ CROSS_PACKAGE_IMPORTS = [
     'scitex_io.bundle',
     'scitex_logging',
     'scitex_ui',
+    'scitex_ui.branding',
 ]
 # ===== END AUTO-GENERATED =====
 
