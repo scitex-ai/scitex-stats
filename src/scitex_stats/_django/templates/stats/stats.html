@@ -10,7 +10,7 @@
 <div class="stats-app" data-stats-app>
 {% translate "Data" as label_data %}{% translate "Test" as label_test %}{% translate "Results" as label_results %}
 {% scitex_panes "stats" columns="minmax(0,1.1fr) minmax(0,0.9fr) minmax(0,1.2fr)" active="data" %}
-  {% scitex_pane "data" label=label_data icon="📋" order=1 css_class="stats-pane" %}
+  {% scitex_pane "data" label=label_data order=1 css_class="stats-pane" %}
     <header class="stats-pane__header" data-stx-pane-header>
       <h2 class="stats-pane__title">{% translate "Data" %}</h2>
       <div class="stats-pane__actions">
@@ -29,11 +29,15 @@
     </div>
   {% endscitex_pane %}
 
-  {% scitex_pane "test" label=label_test icon="🧪" order=2 css_class="stats-pane" %}
+  {% scitex_pane "test" label=label_test order=2 css_class="stats-pane" %}
     <header class="stats-pane__header" data-stx-pane-header>
       <h2 class="stats-pane__title">{% translate "Test" %}</h2>
+      <div class="stats-pane__actions">
+        <button type="button" class="stats-btn stats-btn--primary" id="statsCalculate">{% translate "Calculate" %}</button>
+      </div>
     </header>
     <div class="stats-pane__body">
+      <p id="statsError" class="stats-error" role="alert" hidden></p>
       <div id="statsTests" class="stats-tests" role="radiogroup" aria-label="{% translate 'Statistical test' %}"></div>
       <div class="stats-options">
         <label class="stats-field"><span>{% translate "Alternative hypothesis" %}</span>
@@ -48,16 +52,14 @@
         </label>
       </div>
       <div class="stats-row stats-row--actions">
-        <button type="button" class="stats-btn stats-btn--primary" id="statsCalculate">{% translate "Calculate" %}</button>
         <button type="button" class="stats-btn" id="statsRecommend" disabled aria-disabled="true" title="{% translate 'Coming soon' %}">
           {% translate "Recommend test" %} <span class="stats-badge">{% translate "Coming soon" %}</span>
         </button>
       </div>
-      <p id="statsError" class="stats-error" role="alert" hidden></p>
     </div>
   {% endscitex_pane %}
 
-  {% scitex_pane "results" label=label_results icon="📈" order=3 css_class="stats-pane" %}
+  {% scitex_pane "results" label=label_results order=3 css_class="stats-pane" %}
     <header class="stats-pane__header" data-stx-pane-header>
       <h2 class="stats-pane__title">{% translate "Results" %}</h2>
       <div class="stats-pane__actions">
