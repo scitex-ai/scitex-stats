@@ -28,7 +28,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-height: 44px;
+  height: 48px;
+  min-height: 48px;
+  flex: 0 0 48px;
   padding: 6px 12px;
   border-bottom: 1px solid var(--border-muted);
   background: var(--bg-surface);
@@ -51,6 +53,15 @@
   gap: 6px;
 }
 
+.stats-pane__header .stats-pane__actions {
+  flex-wrap: nowrap;
+}
+
+.stats-pane__header .stats-btn {
+  min-height: 32px;
+  white-space: nowrap;
+}
+
 .stats-pane__body {
   display: flex;
   flex-direction: column;
@@ -58,6 +69,22 @@
   padding: 12px;
   /* keep the last controls scrollable above the hub's floating dock */
   padding-bottom: calc(var(--site-dock-height, 0px) + 24px);
+}
+
+.stats-dropzone {
+  transition: box-shadow 120ms ease, background-color 120ms ease;
+}
+
+.stats-dropzone--active {
+  background: var(--bg-muted);
+  box-shadow: inset 0 0 0 2px var(--stats-accent);
+}
+
+.stats-dropzone__hint {
+  padding: 6px 8px;
+  border: 1px dashed var(--border-default);
+  border-radius: 6px;
+  text-align: center;
 }
 
 .stats-hint {

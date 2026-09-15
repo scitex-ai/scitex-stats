@@ -20,22 +20,22 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
     <header class="stats-pane__header" data-stx-pane-header>
       <h2 class="stats-pane__title">{% translate "Data" %}</h2>
       <div class="stats-pane__actions">
-        <button type="button" class="stats-btn stats-btn--ghost" id="statsSample">{% translate "Sample data" %}</button>
-        <label class="stats-btn stats-btn--ghost" for="statsCsv">{% translate "Open CSV" %}</label>
+        <button type="button" class="stats-btn stats-btn--ghost" id="statsSample">{% translate "or Load Sample Data" %}</button>
         <input type="file" id="statsCsv" accept=".csv,.tsv,.txt,text/csv" hidden>
       </div>
     </header>
-    <div class="stats-pane__body">
+    <div class="stats-pane__body stats-dropzone" id="statsDataDrop">
       <p class="stats-hint">{% translate "One group per box. Paste numbers separated by spaces, commas or new lines." %}</p>
+      <label class="stats-hint stats-dropzone__hint" for="statsCsv">{% translate "Drop a CSV or TSV file here, or click to choose." %}</label>
       <div class="stats-options">
         <label class="stats-field"><span>{% translate "Design" %}</span>
-          <select id="statsDesign">
+          <select class="stx-select" id="statsDesign">
             <option value="independent" selected>{% translate "Independent groups" %}</option>
             <option value="paired">{% translate "Paired / repeated measures" %}</option>
           </select>
         </label>
         <label class="stats-field"><span>{% translate "Measurement scale" %}</span>
-          <select id="statsScale">
+          <select class="stx-select" id="statsScale">
             <option value="continuous" selected>{% translate "Continuous" %}</option>
             <option value="ordinal">{% translate "Ordinal" %}</option>
             <option value="categorical">{% translate "Categorical (one row of counts per box)" %}</option>
@@ -54,6 +54,7 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
     <header class="stats-pane__header" data-stx-pane-header>
       <h2 class="stats-pane__title">{% translate "Test" %}</h2>
       <div class="stats-pane__actions">
+        <button type="button" class="stats-btn" id="statsRecommend">{% translate "Select recommended test" %}</button>
         <button type="button" class="stats-btn stats-btn--primary" id="statsCalculate">{% translate "Calculate" %}</button>
       </div>
     </header>
@@ -62,7 +63,7 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
       <div id="statsTests" class="stats-tests" role="radiogroup" aria-label="{% translate 'Statistical test' %}"></div>
       <div class="stats-options">
         <label class="stats-field"><span>{% translate "Alternative hypothesis" %}</span>
-          <select id="statsAlt">
+          <select class="stx-select" id="statsAlt">
             <option value="two-sided" selected>{% translate "two-sided" %}</option>
             <option value="greater">{% translate "greater" %}</option>
             <option value="less">{% translate "less" %}</option>
@@ -71,9 +72,6 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
         <label class="stats-field" id="statsPopmeanWrap" hidden><span>{% translate "Population mean" %}</span>
           <input type="number" id="statsPopmean" value="0" step="any">
         </label>
-      </div>
-      <div class="stats-row stats-row--actions">
-        <button type="button" class="stats-btn" id="statsRecommend">{% translate "Recommend test" %}</button>
       </div>
     </div>
   {% endscitex_pane %}
@@ -135,7 +133,7 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
         <summary>{% translate "Multiple-comparison correction" %}</summary>
         <div class="stx-acc__body">
           <label class="stats-field"><span>{% translate "Method" %}</span>
-            <select id="statsCorrMethod">
+            <select class="stx-select" id="statsCorrMethod">
               <option value="fdr_bh" selected>FDR (Benjamini–Hochberg)</option>
               <option value="bonferroni">Bonferroni</option>
               <option value="holm">Holm</option>
@@ -155,7 +153,7 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
         <div class="stx-acc__body">
           <p class="stats-hint">{% translate "Uses the groups in Data." %}</p>
           <label class="stats-field"><span>{% translate "Method" %}</span>
-            <select id="statsPhMethod">
+            <select class="stx-select" id="statsPhMethod">
               <option value="tukey" selected>Tukey HSD</option>
               <option value="games_howell">Games–Howell</option>
               <option value="dunnett">Dunnett</option>

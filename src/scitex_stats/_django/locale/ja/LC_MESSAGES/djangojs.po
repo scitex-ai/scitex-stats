@@ -38,6 +38,9 @@ msgstr "n = %s"
 msgid "No numeric columns found in this file."
 msgstr "このファイルに数値の列が見つかりません。"
 
+msgid "Choose a CSV or TSV file."
+msgstr "CSVまたはTSVファイルを選択してください。"
+
 msgid "Enter at least one group of numbers."
 msgstr "少なくとも1群の数値を入力してください。"
 

@@ -481,6 +481,29 @@
       if (this.files && this.files[0]) loadCsv(this.files[0]);
       this.value = "";
     });
+    var dropZone = $("statsDataDrop");
+    ["dragenter", "dragover"].forEach(function (eventName) {
+      dropZone.addEventListener(eventName, function (event) {
+        event.preventDefault();
+        dropZone.classList.add("stats-dropzone--active");
+      });
+    });
+    dropZone.addEventListener("dragleave", function (event) {
+      if (!dropZone.contains(event.relatedTarget)) {
+        dropZone.classList.remove("stats-dropzone--active");
+      }
+    });
+    dropZone.addEventListener("drop", function (event) {
+      event.preventDefault();
+      dropZone.classList.remove("stats-dropzone--active");
+      var file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+      if (!file) return;
+      if (!/\.(csv|tsv|txt)$/i.test(file.name)) {
+        showError(_("Choose a CSV or TSV file."));
+        return;
+      }
+      loadCsv(file);
+    });
     $("statsCalculate").addEventListener("click", calculate);
     $("statsCorrect").addEventListener("click", correct);
     $("statsPosthoc").addEventListener("click", posthoc);
