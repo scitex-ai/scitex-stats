@@ -22,21 +22,65 @@
     return template.replace(/%s/g, function () { return String(args[i++]); });
   }
 
-  // kind: how the Data groups map onto run_test arguments.
+  // ---- APA symbols ------------------------------------------------------
+  // Segments {text, kind} come from the package's result["apa"]; kind is
+  // text | sym (italic Latin) | greek (upright) | sub | sup. DOM only, no innerHTML.
+  var SEG_TAGS = { sym: "i", greek: "span", sub: "sub", sup: "sup" };
+
+  function segNode(seg) {
+    var tag = SEG_TAGS[seg.kind];
+    if (!tag) return document.createTextNode(String(seg.text));
+    var el = document.createElement(tag);
+    if (seg.kind === "sym") el.className = "stx-sym";
+    if (seg.kind === "greek") el.className = "stx-sym stx-sym--greek";
+    el.textContent = String(seg.text);
+    return el;
+  }
+
+  function setSegments(el, segs) {
+    el.textContent = "";
+    segs.forEach(function (s) { el.appendChild(segNode(s)); });
+  }
+
+  function T(text) { return { text: text, kind: "text" }; }
+  function S(text) { return { text: text, kind: "sym" }; }
+
+  // Italicize the first standalone `sym` in an (already translated) string,
+  // so "p-value" and "p値" both keep an italic p.
+  function withSymbol(text, sym) {
+    text = String(text);
+    if (!sym) return [T(text)];
+    var re = new RegExp("(^|[^A-Za-z])" + sym + "(?![A-Za-z])");
+    var m = re.exec(text);
+    if (!m) return [T(text)];
+    var at = m.index + m[1].length;
+    return [T(text.slice(0, at)), S(sym), T(text.slice(at + sym.length))].filter(function (s) { return s.text; });
+  }
+
+  // Mirrors scitex_stats._utils._apa.format_p for endpoints without "apa".
+  function pRelation(p) {
+    if (typeof p !== "number" || !Number.isFinite(p)) return "= —";
+    if (p < 0.001) return "< .001";
+    if (p >= 0.9995) return "> .999";
+    return "= " + p.toFixed(3).replace(/^0/, "");
+  }
+  function pValueText(p) { return pRelation(p).replace(/^= /, ""); }
+
+  // kind: how the Data groups map onto run_test arguments; sym: italic in the label.
   var TESTS = [
-    { cat: "Two independent groups", name: "ttest_ind", label: "Student's t-test", kind: "two" },
-    { cat: "Two independent groups", name: "mannwhitneyu", label: "Mann–Whitney U", kind: "two" },
+    { cat: "Two independent groups", name: "ttest_ind", label: "Student's t-test", kind: "two", sym: "t" },
+    { cat: "Two independent groups", name: "mannwhitneyu", label: "Mann–Whitney U", kind: "two", sym: "U" },
     { cat: "Two independent groups", name: "brunner_munzel", label: "Brunner–Munzel", kind: "two" },
     { cat: "Two independent groups", name: "ks_2samp", label: "Kolmogorov–Smirnov (2-sample)", kind: "two" },
-    { cat: "Paired groups", name: "ttest_rel", label: "Paired t-test", kind: "paired" },
+    { cat: "Paired groups", name: "ttest_rel", label: "Paired t-test", kind: "paired", sym: "t" },
     { cat: "Paired groups", name: "wilcoxon", label: "Wilcoxon signed-rank", kind: "paired" },
     { cat: "Three or more groups", name: "anova", label: "One-way ANOVA", kind: "groups" },
     { cat: "Three or more groups", name: "kruskal", label: "Kruskal–Wallis", kind: "groups" },
     { cat: "Three or more groups", name: "friedman", label: "Friedman (repeated measures)", kind: "groups" },
-    { cat: "Correlation", name: "pearson", label: "Pearson r", kind: "two" },
+    { cat: "Correlation", name: "pearson", label: "Pearson r", kind: "two", sym: "r" },
     { cat: "Correlation", name: "spearman", label: "Spearman ρ", kind: "two" },
     { cat: "Correlation", name: "kendall", label: "Kendall τ", kind: "two" },
-    { cat: "One sample", name: "ttest_1samp", label: "One-sample t-test", kind: "one" },
+    { cat: "One sample", name: "ttest_1samp", label: "One-sample t-test", kind: "one", sym: "t" },
     { cat: "One sample", name: "shapiro", label: "Shapiro–Wilk normality", kind: "one" },
     { cat: "One sample", name: "ks_1samp", label: "Kolmogorov–Smirnov (1-sample)", kind: "one" },
     { cat: "Contingency table", name: "chi2", label: "Chi-square test", kind: "table" },
@@ -105,7 +149,7 @@
       renumber();
     });
     function updateCount() {
-      count.textContent = fmt(_("n = %s"), [parseNumbers(area.value).length]);
+      setSegments(count, withSymbol(fmt(_("n = %s"), [parseNumbers(area.value).length]), "n"));
     }
     area.addEventListener("input", updateCount);
     label.append(name, count);
@@ -181,7 +225,7 @@
       if (i === 0) input.checked = true;
       input.addEventListener("change", syncOptions);
       var text = document.createElement("span");
-      text.textContent = t.label;
+      setSegments(text, withSymbol(t.label, t.sym));
       label.append(input, text);
       box.appendChild(label);
     });
@@ -248,37 +292,55 @@
     return v.toFixed(digits === undefined ? 3 : digits);
   }
 
+  // Cells are strings or segment arrays.
+  function cell(el, v) {
+    if (Array.isArray(v)) setSegments(el, v);
+    else el.textContent = v;
+  }
+
   function rows(tbody, pairs) {
-    tbody.innerHTML = "";
+    tbody.textContent = "";
     pairs.forEach(function (p) {
       if (p[1] === undefined || p[1] === null || p[1] === "—") return;
       var tr = document.createElement("tr");
       var th = document.createElement("th");
-      th.textContent = p[0];
+      cell(th, p[0]);
       var td = document.createElement("td");
-      td.textContent = p[1];
+      cell(td, p[1]);
       tr.append(th, td);
       tbody.appendChild(tr);
     });
   }
 
+  function labelled(label, segs) {
+    return segs && segs.length ? [T(label + " (")].concat(segs, [T(")")]) : [T(label)];
+  }
+
+  var lastPlain = "";
+
   function renderResult(test, res) {
+    var apa = res.apa || null;
     $("statsEmpty").hidden = true;
     $("statsResult").hidden = false;
     $("statsCopy").hidden = false;
     $("statsResultTitle").textContent = res.test_method || test.label;
-    $("statsFormatted").textContent = res.formatted || "";
+    if (apa) setSegments($("statsFormatted"), apa.segments);
+    else $("statsFormatted").textContent = res.formatted || "";
+    lastPlain = apa ? apa.plain : res.formatted || "";
     var n = res.n !== undefined ? res.n
       : res.n_x !== undefined ? [res.n_x, res.n_y].filter(function (x) { return x !== undefined && x !== null; }).join(", ")
+      : res.n_pairs !== undefined ? res.n_pairs
       : Array.isArray(res.n_samples) ? res.n_samples.join(", ") : undefined;
+    var statSyms = apa ? apa.stat_symbol : res.stat_symbol ? [S(res.stat_symbol)] : [];
+    var effectSyms = apa ? apa.effect_size_label : res.effect_size_metric ? [T(res.effect_size_metric)] : [];
     rows($("statsResultRows"), [
-      [_("Statistic") + (res.stat_symbol ? " (" + res.stat_symbol + ")" : ""), num(res.statistic)],
-      [_("p-value"), num(res.pvalue, 4)],
+      [labelled(_("Statistic"), statSyms), apa ? apa.statistic : num(res.statistic)],
+      [withSymbol(_("p-value"), "p"), apa ? apa.p_value.replace(/^= /, "") : pValueText(res.pvalue)],
       [_("Significance"), res.stars !== undefined ? (res.significant ? _("significant") : _("not significant")) + " (" + res.stars + ")" : undefined],
-      [_("Effect size") + (res.effect_size_metric ? " (" + res.effect_size_metric + ")" : ""), res.effect_size !== undefined ? num(res.effect_size) : undefined],
+      [labelled(_("Effect size"), effectSyms), res.effect_size === undefined || res.effect_size === null ? undefined : apa && apa.effect_size ? apa.effect_size : num(res.effect_size)],
       [_("Interpretation"), res.effect_size_interpretation],
       [_("Power"), res.power !== undefined ? num(res.power) : undefined],
-      [_("Sample size"), n === undefined || n === "" ? undefined : String(n)],
+      [labelled(_("Sample size"), [S("n")]), n === undefined || n === "" ? undefined : String(n)],
       [_("Null hypothesis"), res.H0],
     ]);
     $("statsJson").textContent = JSON.stringify(res, null, 2);
@@ -291,7 +353,7 @@
     var r = await api("/api/correct", { pvalues: pvalues, method: $("statsCorrMethod").value });
     if (!r.ok) return rows(out, [[_("Error"), (r.body && r.body.error) || "HTTP " + r.status]]);
     rows(out, (r.body.results || []).map(function (x) {
-      return [num(x.pvalue, 4), "→ " + num(x.pvalue_adjusted, 4) + (x.rejected ? " *" : "")];
+      return [pValueText(x.pvalue), "→ " + pValueText(x.pvalue_adjusted) + (x.rejected ? " *" : "")];
     }));
   }
 
@@ -306,12 +368,12 @@
     });
     if (!r.ok) return rows(out, [[_("Error"), (r.body && r.body.error) || "HTTP " + r.status]]);
     rows(out, (r.body.comparisons || []).map(function (c) {
-      return [c.group_i + " – " + c.group_j, "p = " + num(c.pvalue, 4) + " " + (c.pstars || "")];
+      return [c.group_i + " – " + c.group_j, [S("p"), T(" " + pRelation(c.pvalue) + " " + (c.pstars || ""))]];
     }));
   }
 
   function copyResult() {
-    var text = $("statsResultTitle").textContent + "\n" + $("statsFormatted").textContent;
+    var text = $("statsResultTitle").textContent + "\n" + lastPlain;
     if (navigator.clipboard) navigator.clipboard.writeText(text);
   }
 
