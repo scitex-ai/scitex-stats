@@ -382,3 +382,164 @@
 .stats-app [hidden] {
   display: none !important;
 }
+
+/* ---- Applicable tests / recommendation (first section of Results) ---- */
+.stats-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stats-summary__title {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.stats-notes,
+.stats-reasons,
+.stats-rec__path {
+  margin: 0;
+  padding-left: 1.1em;
+  font-size: 0.8rem;
+}
+
+.stats-notes {
+  color: var(--text-secondary);
+}
+
+.stats-applic-wrap {
+  overflow-x: auto;
+}
+
+.stats-applic {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.stats-applic th,
+.stats-applic td {
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--border-muted);
+  text-align: left;
+  vertical-align: top;
+}
+
+.stats-applic thead th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.stats-applic__mark {
+  width: 1.4em;
+  font-weight: 700;
+  text-align: center;
+}
+
+.stats-applic__row.is-ok .stats-applic__mark {
+  color: var(--status-success, #2e7d32);
+}
+
+.stats-applic__row.is-no {
+  color: var(--text-muted);
+}
+
+.stats-applic__name {
+  min-width: 7.5em;
+  font-weight: 600;
+}
+
+.stats-applic__row.is-no .stats-applic__name {
+  font-weight: 400;
+}
+
+.stats-applic tr.is-primary {
+  background: var(--bg-muted);
+  box-shadow: inset 3px 0 0 var(--stats-accent);
+}
+
+.stats-applic__name .stats-badge,
+.stats-badge--primary {
+  display: inline-block;
+  margin-left: 4px;
+  border-color: var(--stats-accent);
+  color: var(--text-primary);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.stats-reasons li.is-fail {
+  color: var(--status-error);
+}
+
+.stats-applic__row.is-no .stats-reasons li.is-fail {
+  color: var(--text-secondary);
+}
+
+.stats-rec {
+  padding: 8px 10px;
+  border-left: 3px solid var(--stats-accent);
+  border-radius: 4px;
+  background: var(--bg-muted);
+}
+
+.stats-rec__title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 4px;
+}
+
+.stats-rec__kicker {
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.stats-rec__reason {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.stats-rec__path li.is-fail {
+  color: var(--text-primary);
+}
+
+.stats-plot-slot {
+  margin: 0;
+  min-height: 0;
+}
+
+.stats-warning {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--status-warning, #b26a00);
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+.stats-runall {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stats-applic__stat {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.stats-agreement {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.stats-agreement.is-disagree {
+  font-weight: 600;
+}

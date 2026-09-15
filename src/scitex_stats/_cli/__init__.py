@@ -46,13 +46,8 @@ from .skills_group import skills_group as _skills_group
 from .gui import gui as _gui
 from .validate_apa import validate_apa_cmd as _validate_apa_cmd
 from .verify import verify as _verify_cmd
-from .stats import (
-    run_format_pvalue as _run_format_pvalue,
-    run_tests_describe as _run_tests_describe,
-    run_tests_execute as _run_tests_execute,
-    run_tests_list as _run_tests_list,
-    run_tests_recommend as _run_tests_recommend,
-)
+from .stats import run_format_pvalue as _run_format_pvalue
+from .tests_group import tests_group as _tests_group
 
 
 def _get_version() -> str:
@@ -222,168 +217,10 @@ def mcp_start(transport, dry_run, yes):
 
 
 # ----------------------------------------------------------------------------
-# tests group
+# tests group (list / execute / describe / recommend / recommend-test / run-all)
 # ----------------------------------------------------------------------------
 
-
-@main.group()
-def tests():
-    """Statistical tests — list / execute / describe / recommend.
-
-    \b
-    Quick start:
-      scitex-stats tests list
-      scitex-stats tests execute ttest_ind data.csv --x a --y b
-      scitex-stats tests describe data.csv -c group_a
-      scitex-stats tests recommend --n-groups 2 --sample-sizes 30,28
-    """
-
-
-@tests.command("list")
-@click.option(
-    "--json/--no-json",
-    "as_json",
-    default=True,
-    help="Emit JSON list (default) or one name per line.",
-)
-def tests_list(as_json):
-    """List all available statistical test names.
-
-    \b
-    Example:
-        $ scitex-stats tests list
-        $ scitex-stats tests list --no-json
-    """
-    return _run_tests_list(as_json=as_json)
-
-
-@tests.command("execute")
-@click.argument("test_name")
-@click.argument("data")
-@click.option("--x", default=None, help="Column for the first sample.")
-@click.option("--y", default=None, help="Column for the second sample.")
-@click.option(
-    "--groups",
-    default=None,
-    help="Comma-separated columns for K groups (anova/kruskal).",
-)
-@click.option(
-    "--popmean", type=float, default=0.0, help="Population mean (1-sample tests)."
-)
-@click.option(
-    "--alternative",
-    type=click.Choice(["two-sided", "greater", "less"]),
-    default="two-sided",
-    help="Alternative hypothesis.",
-)
-@click.option(
-    "--json/--no-json",
-    "as_json",
-    default=True,
-    help="JSON output (default) or plain key/value pairs.",
-)
-def tests_execute(test_name, data, x, y, groups, popmean, alternative, as_json):
-    """Run a named statistical test on CSV/NPY/JSON data.
-
-    \b
-    Example:
-        $ scitex-stats tests execute ttest_ind data.csv --x group_a --y group_b
-        $ scitex-stats tests execute anova data.csv --groups col1,col2,col3
-        $ scitex-stats tests execute pearson data.csv --x x --y y
-        $ scitex-stats tests execute chi2 contingency.csv
-    """
-    return _run_tests_execute(
-        test_name=test_name,
-        data=data,
-        x=x,
-        y=y,
-        groups=groups,
-        popmean=popmean,
-        alternative=alternative,
-        as_json=as_json,
-    )
-
-
-@tests.command("describe")
-@click.argument("data")
-@click.option(
-    "-c",
-    "--column",
-    default=None,
-    help="Column to describe (CSV only). Defaults to all numeric.",
-)
-@click.option(
-    "--funcs",
-    default=None,
-    help="Comma-separated funcs to compute (e.g. 'mean,std,median').",
-)
-@click.option(
-    "--json/--no-json",
-    "as_json",
-    default=True,
-    help="JSON output (default) or plain key/value pairs.",
-)
-def tests_describe(data, column, funcs, as_json):
-    """Compute descriptive statistics from a CSV/NPY/JSON file.
-
-    \b
-    Example:
-        $ scitex-stats tests describe data.csv -c group_a
-        $ scitex-stats tests describe data.npy --funcs mean,std,median
-        $ cat numbers.json | scitex-stats tests describe -
-    """
-    return _run_tests_describe(data=data, column=column, funcs=funcs, as_json=as_json)
-
-
-@tests.command("recommend")
-@click.option("--n-groups", type=int, required=True, help="Number of groups (1, 2, K).")
-@click.option(
-    "--sample-sizes",
-    required=True,
-    help="Comma-separated per-group sample sizes (e.g. 30,28).",
-)
-@click.option(
-    "--outcome",
-    type=click.Choice(["continuous", "ordinal", "binary", "categorical"]),
-    default="continuous",
-    help="Outcome variable type.",
-)
-@click.option(
-    "--design",
-    type=click.Choice(["between", "within", "mixed"]),
-    default="between",
-    help="Experimental design.",
-)
-@click.option(
-    "--paired",
-    is_flag=True,
-    default=False,
-    help="Paired/related samples (also sets --design=within).",
-)
-@click.option("--top-k", type=int, default=3, help="How many tests to return.")
-@click.option(
-    "--json/--no-json",
-    "as_json",
-    default=True,
-    help="JSON output (default) or one name per line.",
-)
-def tests_recommend(n_groups, sample_sizes, outcome, design, paired, top_k, as_json):
-    """Recommend statistical tests for a study design.
-
-    \b
-    Example:
-        $ scitex-stats tests recommend --n-groups 2 --sample-sizes 30,28 --outcome continuous
-        $ scitex-stats tests recommend --n-groups 3 --sample-sizes 20,20,20 --paired
-    """
-    return _run_tests_recommend(
-        n_groups=n_groups,
-        sample_sizes=sample_sizes,
-        outcome=outcome,
-        design=design,
-        paired=paired,
-        top_k=top_k,
-        as_json=as_json,
-    )
+main.add_command(_tests_group, name="tests")
 
 
 # ----------------------------------------------------------------------------

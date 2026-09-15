@@ -467,6 +467,9 @@
     showCopyState(ok ? "copied" : "failed");
   }
 
+  // Shared with recommend.js (loaded next).
+  window.stxStatsApp = { _: _, fmt: fmt, api: api, readGroups: readGroups, groupName: groupName, setSegments: setSegments };
+
   async function init() {
     setGroups([[], []]);
     renderTests(null);
