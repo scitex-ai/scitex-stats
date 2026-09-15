@@ -125,6 +125,11 @@ _LAZY_ATTRS: dict[str, str] = {
     # Six-stat reporting doctrine (n, 95% CI, method, p-value, effect size,
     # test statistic — see scitex_stats.reporting.full_report)
     "full_report": "reporting",
+    # Bundled PDF/HTML/Markdown report (assumptions, primary, sensitivity, post-hoc)
+    "report": "reporting",
+    "build_report": "reporting",
+    "run_posthoc": "posthoc",
+    "select_posthoc": "posthoc",
     # JSON
     "to_json_safe": "_utils._serialize",
     # APA 7 reporting (format + validate from one rule table)
@@ -244,6 +249,10 @@ __all__ = [
     "available_tests",
     # Six-stat reporting doctrine
     "full_report",
+    "report",
+    "build_report",
+    "run_posthoc",
+    "select_posthoc",
     # Descriptive
     "describe",
     # JSON serialization

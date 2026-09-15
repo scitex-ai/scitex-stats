@@ -120,6 +120,28 @@ async def run_all_applicable(
 
 
 @mcp.tool()
+async def generate_report(
+    data: Optional[dict] = None,
+    data_file: Optional[str] = None,
+    output: str = "report.pdf",
+    design: str = "between",
+    group_names: Optional[List[str]] = None,
+    alpha: float = 0.05,
+    posthoc: str = "auto",
+    formats: Optional[List[str]] = None,
+    title: str = "Statistical report",
+) -> str:
+    """Write one bundled report (PDF, HTML, Markdown): assumptions, primary test, sensitivity, post-hoc, figure, methods."""
+    from scitex_stats._mcp.handlers import generate_report_handler
+
+    result = await generate_report_handler(
+        data=data, data_file=data_file, output=output, design=design, group_names=group_names,
+        alpha=alpha, posthoc=posthoc, formats=formats, title=title,
+    )
+    return _json(result)
+
+
+@mcp.tool()
 async def run_test(
     test_name: str,
     data: Optional[List[List[float]]] = None,

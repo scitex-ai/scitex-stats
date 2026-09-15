@@ -12,11 +12,13 @@ from ._normality import normality_test_handler
 from ._posthoc import posthoc_test_handler
 from ._power import power_analysis_handler
 from ._recommend import recommend_tests_handler
+from ._report import generate_report_handler
 from ._run_test import run_test_handler
 from ._stars import p_to_stars_handler
 from ._verify import verify_result_handler
 
 __all__ = [
+    "generate_report_handler",
     "verify_result_handler",
     "recommend_tests_handler",
     "run_test_handler",

@@ -11,6 +11,7 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
     <link rel="stylesheet" href="{% app_static 'scitex_ui/css/app/form-controls.css' %}">
     <link rel="stylesheet" href="{% app_static 'stats/css/stats.css' %}">
     <link rel="stylesheet" href="{% app_static 'stats/css/recommend.css' %}">
+    <link rel="stylesheet" href="{% app_static 'stats/css/report.css' %}">
 {% endblock %}
 
 {% block scitex_app_content %}
@@ -176,6 +177,16 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
         </details>
       </div>
 
+      <section class="stats-report" aria-labelledby="statsReportTitle">
+        <h3 id="statsReportTitle" class="stats-report__title">{% translate "Report" %}</h3>
+        <p class="stats-hint">{% translate "One PDF with assumption checks, the recommended test, sensitivity analyses, post-hoc comparisons, a figure and a methods paragraph." %}</p>
+        <div class="stats-row">
+          <button type="button" class="stats-btn stats-btn--primary" id="statsReportPdf">{% translate "Download report (PDF)" %}</button>
+          <button type="button" class="stats-btn" id="statsReportSave" hidden>{% translate "Save to Files" %}</button>
+        </div>
+        <p id="statsReportStatus" class="stats-hint stats-report__status" role="status" aria-live="polite"></p>
+      </section>
+
       <details class="stx-acc stats-acc">
         <summary>{% translate "Multiple-comparison correction" %}</summary>
         <div class="stx-acc__body">
@@ -222,4 +233,5 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
     <script src="{% app_static 'stats/js/plot.js' %}"></script>
     <script src="{% app_static 'stats/js/app.js' %}"></script>
     <script src="{% app_static 'stats/js/recommend.js' %}"></script>
+    <script src="{% app_static 'stats/js/report.js' %}"></script>
 {% endblock %}

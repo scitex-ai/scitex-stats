@@ -14,7 +14,9 @@ __all__ = ["get_tool_schemas"]
 
 def get_tool_schemas() -> list[types.Tool]:
     """Return all tool schemas for the Stats MCP server."""
-    return [
+    from ._report_schema import report_tool_schema
+
+    return [report_tool_schema(),
         # Test Recommendation
         types.Tool(
             name="recommend_tests",

@@ -195,3 +195,30 @@ msgstr "設定を保存"
 
 msgid "Save plot"
 msgstr "プロットを保存"
+
+msgid "Report"
+msgstr "レポート"
+
+msgid "One PDF with assumption checks, the recommended test, sensitivity analyses, post-hoc comparisons, a figure and a methods paragraph."
+msgstr "前提条件の確認、推奨される検定、感度分析、事後比較、図、方法の段落を1つのPDFにまとめます。"
+
+msgid "Download report (PDF)"
+msgstr "レポートをダウンロード（PDF）"
+
+msgid "Save to Files"
+msgstr "ファイルに保存"
+
+msgid "Invalid request body."
+msgstr "リクエストの内容が正しくありません。"
+
+msgid "A report needs at least two groups of numbers."
+msgstr "レポートには数値の群が2つ以上必要です。"
+
+msgid "Too many values for a report."
+msgstr "レポートに含める値が多すぎます。"
+
+msgid "Sign in to save to Files."
+msgstr "ファイルに保存するにはサインインしてください。"
+
+msgid "Saving to Files is not available here."
+msgstr "この環境ではファイルに保存できません。"
