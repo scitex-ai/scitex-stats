@@ -55,10 +55,10 @@ def main(args):
 
     # Example 3: Many tests
     logger.info("\n=== Example 3: Many tests (m=20) ===")
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
     many_results = []
     for i in range(20):
-        p = np.random.uniform(0.001, 0.1)
+        p = rng.uniform(0.001, 0.1)
         many_results.append({"var_x": f"Var_{i}", "var_y": "Control", "pvalue": p})
 
     corrected_many = correct_bonferroni(many_results, verbose=args.verbose)
@@ -117,9 +117,9 @@ def main(args):
 
     # Plot 3: Before/after comparison
     ax = axes[1, 0]
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
     n_tests = 15
-    p_values = np.random.beta(2, 20, n_tests)
+    p_values = rng.beta(2, 20, n_tests)
     p_adjusted = np.minimum(p_values * n_tests, 1.0)
     x_pos = np.arange(n_tests)
     width = 0.35

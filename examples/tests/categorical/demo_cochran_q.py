@@ -40,7 +40,7 @@ def main(args):
     logger.info("\n[Example 1] Treatment success (0/1) across 4 visits")
     logger.info("-" * 70)
 
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
     # Simulate improving success rate over time
     data = np.array(
         [
@@ -124,7 +124,7 @@ def main(args):
 
     subjects = np.repeat(np.arange(10), 3)
     conditions = np.tile(["Pre", "Mid", "Post"], 10)
-    values = np.random.binomial(1, [0.3, 0.5, 0.7] * 10)
+    values = rng.binomial(1, [0.3, 0.5, 0.7] * 10)
 
     df_long = pd.DataFrame(
         {"Subject": subjects, "TimePoint": conditions, "Success": values}

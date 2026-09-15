@@ -15,7 +15,7 @@ from datetime import datetime
 
 import numpy as np
 
-__all__ = ["run_test_handler"]
+__all__ = ["run_test_handler", "run_test_sync"]
 
 # =============================================================================
 # Test Dispatch Registry - Maps MCP test names to (category, function_name)
@@ -69,6 +69,18 @@ _ONE_SAMPLE = {"ttest_1samp", "shapiro", "normality", "ks_1samp"}
 _MULTI_GROUP = {"anova", "kruskal"}
 _CONTINGENCY = {"chi2", "fisher_exact", "mcnemar"}
 _DATAFRAME_REQUIRED = {"anova_rm", "anova_2way", "friedman", "cochran_q"}
+# NaN excluded position-wise across every column for these designs
+_NAN_PAIRWISE = {
+    "ttest_paired",
+    "wilcoxon",
+    "pearson",
+    "spearman",
+    "kendall",
+    "theilsen",
+    "anova_rm",
+    "friedman",
+    "cochran_q",
+}
 
 
 async def run_test_handler(  # noqa: C901
@@ -99,6 +111,7 @@ async def run_test_handler(  # noqa: C901
         Alternative hypothesis: "two-sided", "less", or "greater".
     """
     try:
+        source = None
         # Resolve data from CSV if needed
         if data_file and columns:
             import pandas as pd
@@ -109,57 +122,100 @@ async def run_test_handler(  # noqa: C901
                 raise ValueError(
                     f"Columns not found: {missing}. Available: {list(df.columns)}"
                 )
-            data = [df[col].dropna().tolist() for col in columns]
+            # NaN is kept so the integrity report can say what was excluded.
+            data = [df[col].tolist() for col in columns]
+            source = {"data_file": str(data_file), "columns": list(columns)}
         elif data is None:
             raise ValueError("Provide 'data' or 'data_file'+'columns'")
 
-        from scitex_stats import tests
-
         loop = asyncio.get_event_loop()
-
-        def do_test():
-            if test_name not in _TEST_DISPATCH:
-                raise ValueError(
-                    f"Unknown test: {test_name}. "
-                    f"Available: {', '.join(sorted(_TEST_DISPATCH.keys()))}"
-                )
-
-            category, func_name = _TEST_DISPATCH[test_name]
-            test_func = getattr(getattr(tests, category), func_name)
-            groups = [np.array(g, dtype=float) for g in data]
-
-            # Call the test function with appropriate arguments
-            if test_name in _TWO_GROUP:
-                result = test_func(groups[0], groups[1], alternative=alternative)
-            elif test_name in _ONE_SAMPLE:
-                result = test_func(groups[0])
-            elif test_name in _MULTI_GROUP:
-                result = test_func(groups)
-            elif test_name in _CONTINGENCY:
-                table = np.array(data)
-                if test_name == "fisher_exact":
-                    result = test_func(table, alternative=alternative)
-                else:
-                    result = test_func(table)
-            elif test_name in _DATAFRAME_REQUIRED:
-                result = _call_dataframe_test(test_func, groups, test_name)
-            else:
-                result = test_func(*groups, alternative=alternative)
-
-            return _convert_to_mcp_format(result)
-
-        result = await loop.run_in_executor(None, do_test)
-
-        return {
-            "success": True,
-            "test_name": test_name,
-            "alternative": alternative,
-            **result,
-            "timestamp": datetime.now().isoformat(),
-        }
+        result = await loop.run_in_executor(
+            None,
+            lambda: run_test_sync(
+                test_name, data=data, alternative=alternative, source=source
+            ),
+        )
+        return {**result, "timestamp": datetime.now().isoformat()}
 
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+def run_test_sync(
+    test_name: str,
+    data: list,
+    alternative: str = "two-sided",
+    nan_policy: str = "omit",
+    source: dict | None = None,
+) -> dict:
+    """Synchronous core of the MCP ``run_test`` tool, with integrity report and receipt."""
+    from scitex_stats import _provenance, tests
+
+    if test_name not in _TEST_DISPATCH:
+        raise ValueError(
+            f"Unknown test: {test_name}. "
+            f"Available: {', '.join(sorted(_TEST_DISPATCH.keys()))}"
+        )
+
+    category, func_name = _TEST_DISPATCH[test_name]
+    test_func = getattr(getattr(tests, category), func_name)
+    names = [f"data[{i}]" for i in range(len(data))]
+    raw, used, integrity = _provenance.sanitize_inputs(
+        dict(zip(names, data)),
+        paired=test_name in _NAN_PAIRWISE,
+        table=test_name in _CONTINGENCY,
+        nan_policy=nan_policy,
+    )
+    groups = [used[n] for n in names]
+
+    # Call the test function with appropriate arguments
+    if test_name in _TWO_GROUP:
+        result = test_func(groups[0], groups[1], alternative=alternative)
+    elif test_name in _ONE_SAMPLE:
+        result = test_func(groups[0])
+    elif test_name in _MULTI_GROUP:
+        result = test_func(groups)
+    elif test_name in _CONTINGENCY:
+        table = np.array(groups)
+        if test_name == "fisher_exact":
+            result = test_func(table, alternative=alternative)
+        else:
+            result = test_func(table)
+    elif test_name in _DATAFRAME_REQUIRED:
+        result = _call_dataframe_test(test_func, groups, test_name)
+    else:
+        result = test_func(*groups, alternative=alternative)
+
+    out = {
+        "success": True,
+        "test_name": test_name,
+        "alternative": alternative,
+        **_convert_to_mcp_format(result),
+        "input_integrity": integrity,
+    }
+    extra = None
+    if source:
+        extra = {"source": {**source, "file_sha256": _file_sha256(source["data_file"])}}
+    return _provenance.attach(
+        out,
+        api="mcp.run_test",
+        test_name=test_name,
+        function=func_name,
+        parameters={"alternative": alternative, "nan_policy": nan_policy},
+        raw_inputs=raw,
+        extra=extra,
+    )
+
+
+def _file_sha256(path: str) -> str:
+    """Same digest scitex-clew records for a loaded file, so the receipt joins its DAG."""
+    import hashlib
+
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 16), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 
 def _call_dataframe_test(test_func, groups, test_name):

@@ -14,8 +14,10 @@ from ._power import power_analysis_handler
 from ._recommend import recommend_tests_handler
 from ._run_test import run_test_handler
 from ._stars import p_to_stars_handler
+from ._verify import verify_result_handler
 
 __all__ = [
+    "verify_result_handler",
     "recommend_tests_handler",
     "run_test_handler",
     "format_results_handler",

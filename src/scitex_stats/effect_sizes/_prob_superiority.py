@@ -189,7 +189,7 @@ def main(args):
     logger.info("Demonstrating probability of superiority P(X > Y)")
 
     # Set random seed
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     # Example 1: Relationship with Cliff's delta
     logger.info("\n=== Example 1: Relationship with Cliff's delta ===")
@@ -209,10 +209,10 @@ def main(args):
     # Example 2: Different effect sizes
     logger.info("\n=== Example 2: Different effect sizes ===")
 
-    control = np.random.normal(0, 1, 50)
+    control = rng.normal(0, 1, 50)
 
     for shift in [0.0, 0.3, 0.6, 1.0]:
-        treatment = np.random.normal(shift, 1, 50)
+        treatment = rng.normal(shift, 1, 50)
         prob = prob_superiority(treatment, control)
         interpretation = interpret_prob_superiority(prob)
 
@@ -230,8 +230,8 @@ def main(args):
     probs = []
 
     for shift in shifts:
-        treatment = np.random.normal(shift, 1, 100)
-        control = np.random.normal(0, 1, 100)
+        treatment = rng.normal(shift, 1, 100)
+        control = rng.normal(0, 1, 100)
         probs.append(prob_superiority(treatment, control))
 
     ax.plot(shifts, probs, "o-", linewidth=2, markersize=8)

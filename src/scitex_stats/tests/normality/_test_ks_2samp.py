@@ -134,15 +134,16 @@ def test_ks_2samp(
     Examples
     --------
     >>> # Two samples from same distribution
-    >>> x = np.random.normal(0, 1, 100)
-    >>> y = np.random.normal(0, 1, 100)
+    >>> rng = np.random.default_rng(42)
+    >>> x = rng.normal(0, 1, 100)
+    >>> y = rng.normal(0, 1, 100)
     >>> result = test_ks_2samp(x, y)
     >>> result['rejected']
     False
 
     >>> # Two samples from different distributions
-    >>> x = np.random.normal(0, 1, 100)
-    >>> y = np.random.normal(2, 1, 100)
+    >>> x = rng.normal(0, 1, 100)
+    >>> y = rng.normal(2, 1, 100)
     >>> result = test_ks_2samp(x, y)
     >>> result['rejected']
     True
@@ -315,29 +316,29 @@ def main(args):
     logger.info("Demonstrating two-sample Kolmogorov-Smirnov test")
 
     # Set random seed
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     # Example 1: Two-sample test - same distribution
     logger.info("\n=== Example 1: Two-sample KS test (same distribution) ===")
 
-    x1 = np.random.normal(0, 1, 100)
-    y1 = np.random.normal(0, 1, 100)
+    x1 = rng.normal(0, 1, 100)
+    y1 = rng.normal(0, 1, 100)
 
     result1 = test_ks_2samp(x1, y1, var_x="Sample 1", var_y="Sample 2", verbose=True)
 
     # Example 2: Two-sample test - different means
     logger.info("\n=== Example 2: Two-sample KS test (different means) ===")
 
-    x2 = np.random.normal(0, 1, 100)
-    y2 = np.random.normal(2, 1, 100)
+    x2 = rng.normal(0, 1, 100)
+    y2 = rng.normal(2, 1, 100)
 
     result2 = test_ks_2samp(x2, y2, var_x="Group A", var_y="Group B", verbose=True)
 
     # Example 3: Two-sample test with visualization
     logger.info("\n=== Example 3: Two-sample KS test with visualization ===")
 
-    x3 = np.random.normal(5, 1, 80)
-    y3 = np.random.exponential(2, 80)
+    x3 = rng.normal(5, 1, 80)
+    y3 = rng.exponential(2, 80)
 
     result3 = test_ks_2samp(
         x3, y3, var_x="Normal", var_y="Exponential", plot=True, verbose=True

@@ -66,11 +66,11 @@ def main(args):
 
     # Example 3: Post-hoc after ANOVA
     logger.info("\n=== Example 3: Post-hoc pairwise comparisons after ANOVA ===")
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
-    group1 = np.random.normal(5, 1, 30)
-    group2 = np.random.normal(7, 1, 30)
-    group3 = np.random.normal(9, 1, 30)
+    group1 = rng.normal(5, 1, 30)
+    group2 = rng.normal(7, 1, 30)
+    group3 = rng.normal(9, 1, 30)
     groups = [group1, group2, group3]
     names = ["Group A", "Group B", "Group C"]
 

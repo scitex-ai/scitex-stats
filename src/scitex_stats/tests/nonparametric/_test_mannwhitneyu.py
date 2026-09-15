@@ -308,21 +308,21 @@ def main(args):  # noqa: C901
     logger.info("Demonstrating Mann-Whitney U test")
 
     # Set random seed
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     # Example 1: Basic usage
     logger.info("\n=== Example 1: Basic usage ===")
 
-    x1 = np.random.normal(5, 1, 30)
-    y1 = np.random.normal(6, 1, 30)
+    x1 = rng.normal(5, 1, 30)
+    y1 = rng.normal(6, 1, 30)
 
     result1 = test_mannwhitneyu(x1, y1, var_x="Group A", var_y="Group B", verbose=True)
 
     # Example 2: Non-normal data
     logger.info("\n=== Example 2: Non-normal (skewed) data ===")
 
-    x2 = np.random.exponential(2, 40)
-    y2 = np.random.exponential(3, 40)
+    x2 = rng.exponential(2, 40)
+    y2 = rng.exponential(3, 40)
 
     result2 = test_mannwhitneyu(
         x2, y2, var_x="Exp(λ=0.5)", var_y="Exp(λ=0.33)", verbose=True
@@ -331,8 +331,8 @@ def main(args):  # noqa: C901
     # Example 3: With outliers
     logger.info("\n=== Example 3: Data with outliers ===")
 
-    x3 = np.concatenate([np.random.normal(0, 1, 35), [10, 12]])
-    y3 = np.random.normal(0.5, 1, 40)
+    x3 = np.concatenate([rng.normal(0, 1, 35), [10, 12]])
+    y3 = rng.normal(0.5, 1, 40)
 
     result3 = test_mannwhitneyu(
         x3, y3, var_x="With Outliers", var_y="Normal", verbose=True
@@ -342,10 +342,10 @@ def main(args):  # noqa: C901
     # Example 4: Ordinal data (Likert scale)
     logger.info("\n=== Example 4: Ordinal data (Likert scale) ===")
 
-    likert1 = np.random.choice(
+    likert1 = rng.choice(
         [1, 2, 3, 4, 5], size=50, p=[0.05, 0.15, 0.40, 0.30, 0.10]
     )
-    likert2 = np.random.choice(
+    likert2 = rng.choice(
         [1, 2, 3, 4, 5], size=50, p=[0.05, 0.10, 0.25, 0.35, 0.25]
     )
 
@@ -361,8 +361,8 @@ def main(args):  # noqa: C901
     # Example 5: One-sided tests
     logger.info("\n=== Example 5: One-sided tests ===")
 
-    x5 = np.random.normal(5, 1, 40)
-    y5 = np.random.normal(6, 1, 40)
+    x5 = rng.normal(5, 1, 40)
+    y5 = rng.normal(6, 1, 40)
 
     logger.info("Two-sided:")
     test_mannwhitneyu(x5, y5, alternative="two-sided", verbose=True)
@@ -373,8 +373,8 @@ def main(args):  # noqa: C901
     # Example 6: With visualization
     logger.info("\n=== Example 6: Complete analysis with visualization ===")
 
-    x6 = np.random.gamma(2, 2, 50)
-    y6 = np.random.gamma(3, 2, 50)
+    x6 = rng.gamma(2, 2, 50)
+    y6 = rng.gamma(3, 2, 50)
 
     try:
         result6 = test_mannwhitneyu(
@@ -395,8 +395,8 @@ def main(args):  # noqa: C901
     from ..parametric._test_ttest import test_ttest_ind
 
     # Normal data - both tests should agree
-    x_norm = np.random.normal(5, 1, 50)
-    y_norm = np.random.normal(5.5, 1, 50)
+    x_norm = rng.normal(5, 1, 50)
+    y_norm = rng.normal(5.5, 1, 50)
 
     logger.info("Mann-Whitney U:")
     test_mannwhitneyu(x_norm, y_norm, verbose=True)
@@ -404,8 +404,8 @@ def main(args):  # noqa: C901
     test_ttest_ind(x_norm, y_norm, verbose=True)
 
     # Non-normal data - MWU more appropriate
-    x_exp = np.random.exponential(2, 50)
-    y_exp = np.random.exponential(2.5, 50)
+    x_exp = rng.exponential(2, 50)
+    y_exp = rng.exponential(2.5, 50)
 
     logger.info("\nFor exponential data:")
     logger.info("Mann-Whitney U:")
@@ -420,8 +420,8 @@ def main(args):  # noqa: C901
     from ._test_brunner_munzel import test_brunner_munzel
 
     # Same shape distributions
-    x8 = np.random.normal(5, 1, 50)
-    y8 = np.random.normal(6, 1, 50)
+    x8 = rng.normal(5, 1, 50)
+    y8 = rng.normal(6, 1, 50)
 
     mwu = test_mannwhitneyu(x8, y8)
     bm = test_brunner_munzel(x8, y8)
@@ -435,8 +435,8 @@ def main(args):  # noqa: C901
     )
 
     # Different shapes
-    x9 = np.random.normal(5, 1, 50)
-    y9 = np.random.normal(6, 3, 50)  # Different variance
+    x9 = rng.normal(5, 1, 50)
+    y9 = rng.normal(6, 3, 50)  # Different variance
 
     mwu2 = test_mannwhitneyu(x9, y9)
     bm2 = test_brunner_munzel(x9, y9)

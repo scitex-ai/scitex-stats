@@ -307,13 +307,13 @@ def main(args):  # noqa: C901
     logger.info("Demonstrating Wilcoxon signed-rank test")
 
     # Set random seed
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     # Example 1: Normal data (compare with paired t-test)
     logger.info("\n=== Example 1: Normal data ===")
 
-    before1 = np.random.normal(10, 2, 30)
-    after1 = before1 + np.random.normal(2, 1, 30)
+    before1 = rng.normal(10, 2, 30)
+    after1 = before1 + rng.normal(2, 1, 30)
 
     result1 = test_wilcoxon(
         before1, after1, var_x="Before", var_y="After", verbose=True
@@ -328,8 +328,8 @@ def main(args):  # noqa: C901
     # Example 2: Skewed data
     logger.info("\n=== Example 2: Skewed data ===")
 
-    before2 = np.random.exponential(2, 30)
-    after2 = before2 + np.random.exponential(1, 30)
+    before2 = rng.exponential(2, 30)
+    after2 = before2 + rng.exponential(1, 30)
 
     result2 = test_wilcoxon(before2, after2, verbose=True)
 
@@ -340,8 +340,8 @@ def main(args):  # noqa: C901
     # Example 3: Data with outliers
     logger.info("\n=== Example 3: Data with outliers ===")
 
-    before3 = np.concatenate([np.random.normal(10, 1, 28), [20, 25]])  # Add outliers
-    after3 = np.concatenate([np.random.normal(12, 1, 28), [22, 27]])
+    before3 = np.concatenate([rng.normal(10, 1, 28), [20, 25]])  # Add outliers
+    after3 = np.concatenate([rng.normal(12, 1, 28), [22, 27]])
 
     result3 = test_wilcoxon(before3, after3, var_x="Pre", var_y="Post", verbose=True)
 
@@ -352,8 +352,8 @@ def main(args):  # noqa: C901
     # Example 4: Small effect
     logger.info("\n=== Example 4: Small effect (borderline) ===")
 
-    before4 = np.random.normal(10, 2, 25)
-    after4 = before4 + np.random.normal(0.3, 1, 25)  # Small change
+    before4 = rng.normal(10, 2, 25)
+    after4 = before4 + rng.normal(0.3, 1, 25)  # Small change
 
     result4 = test_wilcoxon(before4, after4, verbose=True)
 
@@ -364,8 +364,8 @@ def main(args):  # noqa: C901
     # Example 5: One-sided test
     logger.info("\n=== Example 5: One-sided test ===")
 
-    before5 = np.random.normal(10, 2, 30)
-    after5 = before5 + np.random.normal(1.5, 1, 30)
+    before5 = rng.normal(10, 2, 30)
+    after5 = before5 + rng.normal(1.5, 1, 30)
 
     result_two = test_wilcoxon(before5, after5, alternative="two-sided", verbose=True)
     result_less = test_wilcoxon(before5, after5, alternative="less", verbose=True)
@@ -378,8 +378,8 @@ def main(args):  # noqa: C901
     # Example 6: With visualization (demonstrates plt.gcf() and stx.io.save())
     logger.info("\n=== Example 6: With visualization ===")
 
-    before6 = np.random.lognormal(2, 0.5, 40)
-    after6 = before6 * np.random.lognormal(0.15, 0.3, 40)
+    before6 = rng.lognormal(2, 0.5, 40)
+    after6 = before6 * rng.lognormal(0.15, 0.3, 40)
 
     try:
         test_wilcoxon(
@@ -402,8 +402,8 @@ def main(args):  # noqa: C901
     logger.info("\n=== Example 7: Wilcoxon vs Paired t-test ===")
 
     # For normal data
-    normal_before = np.random.normal(10, 2, 50)
-    normal_after = normal_before + np.random.normal(1, 1.5, 50)
+    normal_before = rng.normal(10, 2, 50)
+    normal_after = normal_before + rng.normal(1, 1.5, 50)
 
     from ..parametric._test_ttest import test_ttest_rel
 
@@ -425,8 +425,8 @@ def main(args):  # noqa: C901
 
     results_list = []
     for i in range(5):
-        before = np.random.exponential(2, 30)
-        after = before + np.random.exponential(0.5, 30)
+        before = rng.exponential(2, 30)
+        after = before + rng.exponential(0.5, 30)
         result = test_wilcoxon(before, after, var_x=f"Pre_{i}", var_y=f"Post_{i}")
         results_list.append(result)
 

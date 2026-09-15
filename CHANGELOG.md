@@ -7,6 +7,28 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Provenance receipt on every `run_test`, `full_report` and MCP `run_test`
+  result (`result["provenance"]`, schema `scitex-stats/provenance@1`): test
+  and parameters, per-input SHA-256 with n, seed, library versions, UTC
+  timestamp, result and receipt hashes. See skill `17_provenance-verify.md`.
+- `scitex_stats.verify(result, data=...)`, `scitex-stats verify` CLI and the
+  `verify_result` MCP tool: receipt/result/input hash checks plus a
+  bit-for-bit recompute.
+- `result["input_integrity"]`: NaN exclusions (with indices and reason),
+  type coercions; `run_test(nan_policy="omit"|"raise")`.
+
+### Changed
+- `full_report` bootstrap CIs are seeded by default: `seed=42`, a fresh
+  `numpy.random.default_rng(seed)` per interval (previously unseeded).
+  `random_state=` is a deprecated alias. New `ci_method` field.
+- `run_test` / MCP `run_test` raise `InputIntegrityError` on infinite,
+  non-numeric or empty inputs, and on NaN in contingency tables; NaN in
+  paired designs is excluded pairwise (MCP `data_file` columns were
+  previously `dropna()`-ed independently, which misaligned pairs).
+- Demo and docstring code uses `numpy.random.default_rng` instead of global
+  `np.random.seed` state.
+
 ## [0.2.24] — 2026-06-03
 
 ### Added

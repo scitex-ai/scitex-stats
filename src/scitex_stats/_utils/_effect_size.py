@@ -726,20 +726,20 @@ def main(args):
     logger.info("Demonstrating effect size calculations")
 
     # Set random seed for reproducibility
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     # Example 1: Different effect sizes
     logger.info("\n=== Example 1: Different effect sizes ===")
 
     n = 50
-    control = np.random.normal(0, 1, n)
+    control = rng.normal(0, 1, n)
 
     effect_sizes = [0.0, 0.2, 0.5, 0.8, 1.2]
     results = []
 
     for true_d in effect_sizes:
         # Generate treatment group with specified effect size
-        treatment = np.random.normal(true_d, 1, n)
+        treatment = rng.normal(true_d, 1, n)
 
         # Compute Cohen's d
         computed_d = cohens_d(control, treatment)
@@ -764,8 +764,8 @@ def main(args):
 
     # Generate correlated paired samples
     n_pairs = 30
-    baseline = np.random.normal(0, 1, n_pairs)
-    noise = np.random.normal(0, 0.3, n_pairs)
+    baseline = rng.normal(0, 1, n_pairs)
+    noise = rng.normal(0, 0.3, n_pairs)
     followup = baseline + 0.5 + noise  # Effect size ~0.5
 
     d_independent = cohens_d(baseline, followup, paired=False)
@@ -779,8 +779,8 @@ def main(args):
     logger.info("\n=== Example 3: Correction methods ===")
 
     small_n = 10
-    x_small = np.random.normal(0, 1, small_n)
-    y_small = np.random.normal(0.5, 1, small_n)
+    x_small = rng.normal(0, 1, small_n)
+    y_small = rng.normal(0.5, 1, small_n)
 
     d_standard = cohens_d(x_small, y_small)
     d_hedges = cohens_d(x_small, y_small, correction="hedges")
@@ -830,9 +830,9 @@ def main(args):
     # Example 6: Eta-squared for ANOVA
     logger.info("\n=== Example 6: Eta-squared for ANOVA ===")
 
-    group1 = np.random.normal(0, 1, 30)
-    group2 = np.random.normal(0.5, 1, 30)
-    group3 = np.random.normal(1.0, 1, 30)
+    group1 = rng.normal(0, 1, 30)
+    group2 = rng.normal(0.5, 1, 30)
+    group3 = rng.normal(1.0, 1, 30)
 
     eta2 = eta_squared([group1, group2, group3])
     eta2_interp = interpret_eta_squared(eta2)
@@ -843,8 +843,8 @@ def main(args):
     # Example 7: Eta-squared with different group variances
     logger.info("\n=== Example 7: Effect size comparison across methods ===")
 
-    control = np.random.normal(0, 1, 40)
-    treatment = np.random.normal(0.6, 1, 40)
+    control = rng.normal(0, 1, 40)
+    treatment = rng.normal(0.6, 1, 40)
 
     d = cohens_d(control, treatment)
     delta = cliffs_delta(control, treatment)
@@ -877,8 +877,8 @@ def main(args):
 
     # Plot 2: Distribution visualization
     ax = axes[0, 1]
-    control_demo = np.random.normal(0, 1, 1000)
-    treatment_demo = np.random.normal(0.8, 1, 1000)
+    control_demo = rng.normal(0, 1, 1000)
+    treatment_demo = rng.normal(0.8, 1, 1000)
 
     ax.hist(control_demo, bins=30, alpha=0.5, label="Control", density=True)
     ax.hist(treatment_demo, bins=30, alpha=0.5, label="Treatment", density=True)
@@ -930,8 +930,8 @@ def main(args):
         # Simulate multiple experiments
         ds = []
         for _ in range(100):
-            x = np.random.normal(0, 1, n)
-            y = np.random.normal(0.5, 1, n)  # True d = 0.5
+            x = rng.normal(0, 1, n)
+            y = rng.normal(0.5, 1, n)  # True d = 0.5
             ds.append(cohens_d(x, y))
 
         precisions.append(np.std(ds))
