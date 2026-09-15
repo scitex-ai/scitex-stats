@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from ._messages import fmt_p, note
+from ._messages import fmt_alpha, fmt_p, fmt_stat, note
 
 DIAGNOSTIC_NOTE = note(
     "Assumption tests are diagnostic, not confirmatory: they are not corrected for "
@@ -36,7 +36,7 @@ def _normality_rows(norm: Dict[str, Any]) -> List[Dict[str, Any]]:
             "check": "Shapiro–Wilk", "assumption": "normality", "sample": s["sample"], "n": s["n"],
             "symbol": "W", "statistic": s["W"], "df": None, "p": s["p"],
             "p_apa": fmt_p(s["p"]) if s["p"] is not None else None,
-            "threshold": note("p ≥ %s: normality not rejected", norm["alpha"]),
+            "threshold": note("p ≥ %s: normality not rejected", fmt_alpha(norm["alpha"])),
             "decision": _decision(s["normal"]),
         })
     return rows
@@ -51,7 +51,7 @@ def _variance_rows(var: Dict[str, Any]) -> List[Dict[str, Any]]:
         rows.append({
             "check": name, "assumption": "equal variance", "sample": "all groups", "n": None,
             "symbol": "F", "statistic": entry["statistic"], "df": entry["df"], "p": entry["p"], "p_apa": entry["p_apa"],
-            "threshold": note("p ≥ %s: equal variances not rejected", var["alpha"]) if used else note("Reported only (mean-centred; less robust to non-normality)"),
+            "threshold": note("p ≥ %s: equal variances not rejected", fmt_alpha(var["alpha"])) if used else note("Reported only (mean-centred; less robust to non-normality)"),
             "decision": _decision(entry["p"] >= var["alpha"]) if used else "reported",
         })
     if var.get("variance_ratio") is not None:
@@ -74,9 +74,28 @@ def _count_rows(ec: Dict[str, Any]) -> List[Dict[str, Any]]:
     }]
 
 
+def _with_apa(row: Dict[str, Any]) -> Dict[str, Any]:
+    """Add the APA-formatted line, e.g. 'W = .97, p = .921' or 'F(1, 14) = 0.00, p > .999'."""
+    stat = row["statistic"]
+    if stat is None:
+        row["apa"] = None
+        return row
+    value = fmt_stat(stat, row["symbol"])
+    if row["symbol"]:
+        df = "(" + ", ".join(str(int(d)) if float(d).is_integer() else f"{d:.2f}" for d in row["df"]) + ")" if row["df"] else ""
+        value = f"{row['symbol']}{df} = {value}"
+    row["statistic_apa"] = fmt_stat(stat, row["symbol"])
+    if row["symbol"] and row["n"] is None and row["df"]:
+        row["N"] = int(row["df"][0] + 1 + row["df"][1])
+    size = f", n = {row['n']}" if row["n"] is not None else (f", N = {row['N']}" if row.get("N") else "")
+    row["apa"] = value + (f", p {row['p_apa']}" if row["p_apa"] else "") + (size if row["symbol"] else "")
+    return row
+
+
 def assumption_section(checks: Dict[str, Any], welch_default: bool) -> Dict[str, Any]:
     """Rows for every check that ran, the notes, and Q-Q coordinates per sample."""
     rows = _normality_rows(checks["normality"]) + _variance_rows(checks["equal_variance"]) + _count_rows(checks["expected_counts"])
+    rows = [_with_apa(r) for r in rows]
     notes = [DIAGNOSTIC_NOTE] + ([WELCH_DEFAULT_NOTE] if welch_default else [])
     qq = [
         {"sample": s["sample"], **s["qq"]}

@@ -11,7 +11,7 @@ import numpy as np
 
 from ._assumptions import run_checks, thresholds
 from ._data import Prepared, prepare
-from ._messages import fail, fmt_p, note, ok
+from ._messages import fail, fmt_alpha, fmt_p, note, ok
 
 
 @dataclass(frozen=True)
@@ -104,7 +104,7 @@ def _normality_items(spec: Spec, checks: Dict[str, Any]) -> List[Dict[str, Any]]
         return []
     if not spec.needs_normality:
         return [ok("No normality assumption (rank-based)")]
-    alpha = norm.get("alpha")
+    alpha = fmt_alpha(norm["alpha"]) if norm.get("alpha") is not None else None
     status = norm["status"]
     if status == "met":
         return [ok("Normality not rejected (Shapiro–Wilk p ≥ %s, %s)", alpha, norm["basis"])]

@@ -135,19 +135,16 @@
     }
   }
 
-  function fixed(v, digits) {
-    return v === null || v === undefined ? "" : Number(v).toFixed(digits);
-  }
-
   function checkSegments(r) {
     var segs = [];
     if (r.symbol) {
       segs.push({ text: r.symbol, kind: "sym" });
-      segs.push({ text: (r.df ? "(" + r.df.join(", ") + ")" : "") + " = " + fixed(r.statistic, r.symbol === "W" ? 3 : 2), kind: "text" });
+      segs.push({ text: (r.df ? "(" + r.df.join(", ") + ")" : "") + " = " + (r.statistic_apa || ""), kind: "text" });
     } else {
-      segs.push({ text: fixed(r.statistic, 2), kind: "text" });
+      segs.push({ text: r.statistic_apa || "", kind: "text" });
     }
     if (r.p_apa) segs.push({ text: ", ", kind: "text" }, { text: "p", kind: "sym" }, { text: " " + r.p_apa, kind: "text" });
+    if (r.symbol && (r.n || r.N)) segs.push({ text: ", ", kind: "text" }, { text: r.n ? "n" : "N", kind: "sym" }, { text: " = " + (r.n || r.N), kind: "text" });
     return segs;
   }
 
