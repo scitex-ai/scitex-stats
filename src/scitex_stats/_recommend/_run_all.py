@@ -16,7 +16,7 @@ import numpy as np
 from ._applicability import CATALOG, SPECS, welch_anova
 from ._data import prepare
 from ._decide import recommend_test
-from ._messages import P_HACKING_WARNING, note
+from ._messages import P_HACKING_WARNING, fmt_alpha, note
 from ._result import as_result
 
 
@@ -129,12 +129,12 @@ def _agreement_status(ran, sig, nonsig, alpha) -> Dict[str, Any]:
         status = "disagree"
         item = note(
             "The tests disagree at α = %s (%s of %s significant). Report the primary test; the disagreement is itself a finding worth reporting.",
-            alpha, len(sig), len(ran),
+            fmt_alpha(alpha), len(sig), len(ran),
         )
     else:
         status = "agree"
         item = note(
-            "All %s tests agree at α = %s (%s).", len(ran), alpha,
+            "All %s tests agree at α = %s (%s).", len(ran), fmt_alpha(alpha),
             "significant" if sig else "not significant",
         )
     return {"status": status, "alpha": alpha, "significant": sig, "not_significant": nonsig, "summary": item["text"], "summary_item": item}

@@ -36,6 +36,22 @@ def fmt_p(p: Any) -> str:
     return format_p(p) if p is not None else "n/a"
 
 
+def fmt_alpha(alpha: Any) -> str:
+    """APA α / p threshold: '.05' (no leading zero; a third decimal only when needed)."""
+    from scitex_stats._utils._apa import format_number
+
+    digits = 2 if round(float(alpha), 2) == float(alpha) else 3
+    return format_number(alpha, digits, leading_zero=False)
+
+
+def fmt_stat(value: Any, symbol: Any) -> str:
+    """APA statistic: two decimals; no leading zero when the symbol is bounded by 1 (W, r, …)."""
+    from scitex_stats._utils._apa import format_number
+    from scitex_stats._utils._apa._rules import is_bounded
+
+    return format_number(value, 2, leading_zero=not is_bounded(symbol))
+
+
 P_HACKING_WARNING = note(
     "Sensitivity analyses only. The primary test was fixed before any p-value was seen. "
     "Choosing a test after seeing several p-values (for example, the smallest) inflates "
