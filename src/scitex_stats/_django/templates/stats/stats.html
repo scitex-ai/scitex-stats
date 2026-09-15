@@ -25,6 +25,21 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
     </header>
     <div class="stats-pane__body">
       <p class="stats-hint">{% translate "One group per box. Paste numbers separated by spaces, commas or new lines." %}</p>
+      <div class="stats-options">
+        <label class="stats-field"><span>{% translate "Design" %}</span>
+          <select id="statsDesign">
+            <option value="independent" selected>{% translate "Independent groups" %}</option>
+            <option value="paired">{% translate "Paired / repeated measures" %}</option>
+          </select>
+        </label>
+        <label class="stats-field"><span>{% translate "Measurement scale" %}</span>
+          <select id="statsScale">
+            <option value="continuous" selected>{% translate "Continuous" %}</option>
+            <option value="ordinal">{% translate "Ordinal" %}</option>
+            <option value="categorical">{% translate "Categorical (one row of counts per box)" %}</option>
+          </select>
+        </label>
+      </div>
       <div id="statsGroups" class="stats-groups"></div>
       <div class="stats-row">
         <button type="button" class="stats-btn stats-btn--ghost" id="statsAddGroup">+ {% translate "Add group" %}</button>
@@ -56,9 +71,7 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
         </label>
       </div>
       <div class="stats-row stats-row--actions">
-        <button type="button" class="stats-btn" id="statsRecommend" disabled aria-disabled="true" title="{% translate 'Coming soon' %}">
-          {% translate "Recommend test" %} <span class="stats-badge">{% translate "Coming soon" %}</span>
-        </button>
+        <button type="button" class="stats-btn" id="statsRecommend">{% translate "Recommend test" %}</button>
       </div>
     </div>
   {% endscitex_pane %}
@@ -72,6 +85,22 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
       </div>
     </header>
     <div class="stats-pane__body">
+      <section id="statsSummary" class="stats-summary" aria-live="polite" hidden>
+        <h3 class="stats-summary__title">{% translate "Applicable tests" %}</h3>
+        <ul id="statsRecNotes" class="stats-notes" hidden></ul>
+        <div class="stats-applic-wrap">
+          <table class="stats-applic">
+            <thead><tr><th scope="col"><span class="stats-visually-hidden">{% translate "Applicable" %}</span></th><th scope="col">{% translate "Test" %}</th><th scope="col">{% translate "Reasons" %}</th></tr></thead>
+            <tbody id="statsApplicRows"></tbody>
+          </table>
+        </div>
+        <div id="statsRecCard" class="stats-rec"></div>
+        <figure id="statsPlotSlot" class="stats-plot-slot" data-stats-plot-slot hidden></figure>
+        <div class="stats-row stats-row--actions">
+          <button type="button" class="stats-btn" id="statsRunAll">{% translate "Run all applicable (sensitivity)" %}</button>
+        </div>
+        <div id="statsRunAllOut" class="stats-runall" hidden></div>
+      </section>
       <div id="statsEmpty" class="stats-empty">
         <div class="stats-empty__icon" aria-hidden="true">&sigma;</div>
         <p>{% translate "Enter data, pick a test, then press Calculate." %}</p>
@@ -131,4 +160,5 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
     {% scitex_js_catalog "scitex_stats._django" %}
     <script src="{% app_static 'stats/js/stx-mount.js' %}"></script>
     <script src="{% app_static 'stats/js/app.js' %}"></script>
+    <script src="{% app_static 'stats/js/recommend.js' %}"></script>
 {% endblock %}
