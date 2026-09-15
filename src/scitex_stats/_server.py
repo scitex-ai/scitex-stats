@@ -56,6 +56,69 @@ async def recommend_tests(
     return _json(result)
 
 
+def _recommend_call(fn_name: str, **kwargs) -> str:
+    import scitex_stats._recommend as rec
+
+    try:
+        return _json({"success": True, **_wrap(getattr(rec, fn_name)(**kwargs))})
+    except (TypeError, ValueError) as exc:
+        return _json({"success": False, "error": str(exc)})
+
+
+def _wrap(out):
+    return {"applicability": out} if isinstance(out, list) else out
+
+
+@mcp.tool()
+async def check_applicability(
+    groups: List[List[float]],
+    design: Optional[str] = None,
+    scale: Optional[str] = None,
+    group_names: Optional[List[str]] = None,
+) -> str:
+    """Decide for every test whether it applies to the data (✓/✗ with reasons and assumption checks).
+
+    groups: one list per group (with scale="categorical": a contingency table, rows of counts).
+    design: "independent" or "paired" — state it; None is treated as independent and flagged.
+    scale: "continuous", "ordinal" or "categorical".
+    """
+    return _recommend_call("check_applicability", data=groups, design=design, scale=scale, group_names=group_names)
+
+
+@mcp.tool()
+async def recommend_test(
+    groups: List[List[float]],
+    design: Optional[str] = None,
+    scale: Optional[str] = None,
+    group_names: Optional[List[str]] = None,
+    assume_equal_variance: bool = False,
+) -> str:
+    """Recommend ONE primary test with a plain-language reason, the decision path and secondary alternatives."""
+    return _recommend_call(
+        "recommend_test", data=groups, design=design, scale=scale,
+        group_names=group_names, assume_equal_variance=assume_equal_variance,
+    )
+
+
+@mcp.tool()
+async def run_all_applicable(
+    groups: List[List[float]],
+    design: Optional[str] = None,
+    scale: Optional[str] = None,
+    group_names: Optional[List[str]] = None,
+    primary: Optional[str] = None,
+    alternative: str = "two-sided",
+) -> str:
+    """Run every applicable test: the pre-specified primary plus sensitivity analyses.
+
+    Never selects by p-value; the output carries a p-hacking warning and an agreement report.
+    """
+    return _recommend_call(
+        "run_all_applicable", data=groups, design=design, scale=scale,
+        group_names=group_names, primary=primary, alternative=alternative,
+    )
+
+
 @mcp.tool()
 async def run_test(
     test_name: str,

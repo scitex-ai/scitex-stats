@@ -150,7 +150,7 @@ def _format_tool_signature(tool, compact: bool = False, indent: str = "  ") -> s
 
 def _get_tool_module(name: str) -> str:
     """Get logical module for a tool name."""
-    if "recommend" in name:
+    if "recommend" in name or "applicab" in name:
         return "auto"
     if "correct" in name:
         return "correct"

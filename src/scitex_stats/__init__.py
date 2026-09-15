@@ -10,6 +10,10 @@ Functionalities
   result dict (statistic, pvalue, effect_size, power, formatted, ...).
 - `recommend_tests(StatContext(...))` — design-driven test selection from
   number of groups, sample sizes, outcome type, paired vs between.
+- `check_applicability(data, design)` / `recommend_test(data, design)` /
+  `run_all_applicable(data, design)` — data-driven ✓/✗ with reasons per
+  test, one pre-specified primary test with its decision path, and
+  sensitivity runs that never select by p-value.
 - `effect_sizes`, `power`, `correct`, `posthoc`, `descriptive`,
   `auto` — submodules exposing the primitives behind `run_test`
   (Cohen's d / Cliff's delta / eta-sq / sample-size-ttest /
@@ -150,6 +154,10 @@ _LAZY_ATTRS: dict[str, str] = {
     "get_stat_style": "auto",
     "p_to_stars": "auto",
     "recommend_tests": "auto",
+    # Data-driven applicability / primary recommendation / sensitivity runs
+    "check_applicability": "_recommend",
+    "recommend_test": "_recommend",
+    "run_all_applicable": "_recommend",
     # Descriptive
     "describe": "descriptive",
     # Parametric (6)
@@ -264,6 +272,9 @@ __all__ = [
     "StatStyle",
     "recommend_tests",
     "check_applicable",
+    "check_applicability",
+    "recommend_test",
+    "run_all_applicable",
     "get_stat_style",
     "p_to_stars",
     # Parametric (6)

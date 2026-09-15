@@ -97,3 +97,35 @@ msgstr "FigRecipeで開く"
 
 msgid "Plot of the test result"
 msgstr "検定結果のプロット"
+msgid "Design"
+msgstr "デザイン"
+
+msgid "Independent groups"
+msgstr "独立した群"
+
+msgid "Paired / repeated measures"
+msgstr "対応あり／反復測定"
+
+msgid "Measurement scale"
+msgstr "尺度"
+
+msgid "Continuous"
+msgstr "連続"
+
+msgid "Ordinal"
+msgstr "順序"
+
+msgid "Categorical (one row of counts per box)"
+msgstr "カテゴリ（各ボックスに度数を1行）"
+
+msgid "Applicable tests"
+msgstr "適用できる検定"
+
+msgid "Applicable"
+msgstr "適用可"
+
+msgid "Reasons"
+msgstr "理由"
+
+msgid "Run all applicable (sensitivity)"
+msgstr "適用できる検定をすべて実行（感度分析）"

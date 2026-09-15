@@ -153,6 +153,61 @@ def recommend(request):
     return JsonResponse(_safe({"recommendations": list(recs)}))
 
 
+def _recommend_args(body: Dict[str, Any]) -> Dict[str, Any]:
+    groups = body.get("groups")
+    if not isinstance(groups, list) or not groups:
+        raise ValueError("groups required")
+    names = body.get("group_names")
+    return {
+        "data": groups,
+        "design": body.get("design") or None,
+        "scale": body.get("scale") or None,
+        "group_names": [str(n) for n in names] if isinstance(names, list) else None,
+    }
+
+
+@csrf_exempt
+@require_POST
+def recommend_test(request):
+    """One primary test + decision path + ✓/✗ applicability for the posted groups."""
+    import json
+
+    from scitex_stats import recommend_test as _recommend_test
+
+    body = _parse_body(request, json)
+    if isinstance(body, dict) and "error" in body:
+        return JsonResponse(body, status=body.pop("status", 400))
+    try:
+        out = _recommend_test(**_recommend_args(body), assume_equal_variance=bool(body.get("assume_equal_variance")))
+    except (TypeError, ValueError) as e:
+        return JsonResponse({"error": str(e)}, status=400)
+    return JsonResponse(_safe(out))
+
+
+@csrf_exempt
+@require_POST
+def run_all(request):
+    """Every applicable test in sequence: primary + labelled sensitivity analyses."""
+    import json
+
+    from scitex_stats import run_all_applicable
+
+    body = _parse_body(request, json)
+    if isinstance(body, dict) and "error" in body:
+        return JsonResponse(body, status=body.pop("status", 400))
+    try:
+        out = run_all_applicable(
+            **_recommend_args(body),
+            primary=body.get("primary") or None,
+            alternative=body.get("alternative", "two-sided"),
+            assume_equal_variance=bool(body.get("assume_equal_variance")),
+        )
+    except (TypeError, ValueError) as e:
+        return JsonResponse({"error": str(e)}, status=400)
+    out.pop("recommendation", None)  # the page already holds it
+    return JsonResponse(_safe(out))
+
+
 @csrf_exempt
 @require_http_methods(["POST"])
 def run(request):
