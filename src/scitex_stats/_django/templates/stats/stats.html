@@ -1,12 +1,16 @@
-{% extends "scitex_ui/standalone_shell.html" %}
+{% extends "scitex_app/app_shell.html" %}
 {% load static i18n scitex_i18n scitex_panes %}
+{% comment %}
+Host chrome comes from scitex_app/app_shell.html: the hub maps it to its own
+base page (site header + dock), standalone falls back to scitex-ui's shell.
+{% endcomment %}
 {% block extra_css %}
     <meta name="stx-mount" content="{{ stx_mount }}">
     <link rel="stylesheet" href="{% static 'scitex_ui/css/app/form-controls.css' %}">
     <link rel="stylesheet" href="{% static 'stats/css/stats.css' %}">
 {% endblock %}
 
-{% block app_content %}
+{% block scitex_app_content %}
 <div class="stats-app" data-stats-app>
 {% translate "Data" as label_data %}{% translate "Test" as label_test %}{% translate "Results" as label_results %}
 {% scitex_panes "stats" columns="minmax(0,1.1fr) minmax(0,0.9fr) minmax(0,1.2fr)" active="data" %}
