@@ -408,8 +408,17 @@
     range.selectNodeContents(holder);
     sel.removeAllRanges();
     sel.addRange(range);
+    // Set the data ourselves: the browser's own serialization inlines the page's (dark) theme colours.
+    function onCopy(e) {
+      if (!e.clipboardData) return;
+      e.clipboardData.setData("text/html", clip.html);
+      e.clipboardData.setData("text/plain", clip.text);
+      e.preventDefault();
+    }
+    document.addEventListener("copy", onCopy, true);
     var ok = false;
     try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+    document.removeEventListener("copy", onCopy, true);
     sel.removeAllRanges();
     holder.remove();
     return ok;
