@@ -17,7 +17,7 @@ Segment = Dict[str, str]
 
 GREEK = set("αβγδεζηθικλμνξοπρστυφχψω")
 
-_SUP = str.maketrans("0123456789+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻")
+_SUP = str.maketrans("0123456789+-−", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁻")
 _SUB_CHARS = dict(zip("0123456789+-aehijklmnoprstuvx", "₀₁₂₃₄₅₆₇₈₉₊₋ₐₑₕᵢⱼₖₗₘₙₒₚᵣₛₜᵤᵥₓ"))
 
 
