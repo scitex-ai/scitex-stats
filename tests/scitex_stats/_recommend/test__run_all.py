@@ -28,7 +28,7 @@ def test_exactly_one_primary(normal_equal_var):
 def test_primary_is_listed_first(three_normal_equal):
     # Arrange
     # Act
-    results = run_all_applicable(three_normal_equal, design="independent")["results"]
+    results = run_all_applicable(three_normal_equal, design="independent", assume_equal_variance=True)["results"]
     # Assert
     assert results[0]["role"] == "primary"
 
@@ -36,7 +36,7 @@ def test_primary_is_listed_first(three_normal_equal):
 def test_others_are_sensitivity(three_normal_equal):
     # Arrange
     # Act
-    results = run_all_applicable(three_normal_equal, design="independent")["results"]
+    results = run_all_applicable(three_normal_equal, design="independent", assume_equal_variance=True)["results"]
     # Assert
     assert {r["role"] for r in results[1:]} == {"sensitivity"}
 
@@ -54,7 +54,7 @@ def test_order_is_not_by_p_value(three_normal_equal):
     from scitex_stats._recommend import CATALOG
 
     catalogue = [s.test_id for s in CATALOG]
-    results = run_all_applicable(three_normal_equal, design="independent")["results"]
+    results = run_all_applicable(three_normal_equal, design="independent", assume_equal_variance=True)["results"]
     # Act
     rest = [r["test_id"] for r in results[1:]]
     # Assert
@@ -83,7 +83,7 @@ def test_non_applicable_primary_is_refused(normal_unequal_var):
 
 def test_every_applicable_test_runs(three_normal_equal):
     # Arrange
-    out = run_all_applicable(three_normal_equal, design="independent")
+    out = run_all_applicable(three_normal_equal, design="independent", assume_equal_variance=True)
     # Act
     applicable = {r["test_id"] for r in out["recommendation"]["applicability"] if r["applicable"]}
     # Assert
@@ -93,7 +93,7 @@ def test_every_applicable_test_runs(three_normal_equal):
 def test_every_result_has_a_p_value(three_normal_equal):
     # Arrange
     # Act
-    results = run_all_applicable(three_normal_equal, design="independent")["results"]
+    results = run_all_applicable(three_normal_equal, design="independent", assume_equal_variance=True)["results"]
     # Assert
     assert all(r["pvalue"] is not None for r in results)
 

@@ -89,12 +89,28 @@ def test_paired_nonnormal_is_wilcoxon(paired_nonnormal):
     assert primary == "wilcoxon"
 
 
-def test_three_normal_equal_is_anova(three_normal_equal):
+def test_three_normal_equal_defaults_to_welch_anova(three_normal_equal):
     # Arrange
     # Act
     primary = _primary(three_normal_equal, design="independent")
     # Assert
+    assert primary == "welch_anova"
+
+
+def test_three_normal_equal_with_documented_reason_is_anova(three_normal_equal):
+    # Arrange
+    # Act
+    primary = _primary(three_normal_equal, design="independent", assume_equal_variance=True)
+    # Assert
     assert primary == "anova"
+
+
+def test_documented_reason_does_not_override_unequal_variances(three_normal_unequal):
+    # Arrange
+    # Act
+    primary = _primary(three_normal_unequal, design="independent", assume_equal_variance=True)
+    # Assert
+    assert primary == "welch_anova"
 
 
 def test_three_normal_unequal_is_welch_anova(three_normal_unequal):

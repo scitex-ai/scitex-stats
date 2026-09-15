@@ -9,6 +9,7 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
     <meta name="csrf-token" content="{{ csrf_token }}">
     <link rel="stylesheet" href="{% app_static 'scitex_ui/css/app/form-controls.css' %}">
     <link rel="stylesheet" href="{% app_static 'stats/css/stats.css' %}">
+    <link rel="stylesheet" href="{% app_static 'stats/css/recommend.css' %}">
 {% endblock %}
 
 {% block scitex_app_content %}
@@ -96,6 +97,7 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
           </table>
         </div>
         <div id="statsRecCard" class="stats-rec"></div>
+        <div id="statsAssumptions" class="stats-assumptions"></div>
         <figure id="statsPlotSlot" class="stats-plot-slot" data-stats-plot-slot hidden></figure>
         <div class="stats-row stats-row--actions">
           <button type="button" class="stats-btn" id="statsRunAll">{% translate "Run all applicable (sensitivity)" %}</button>

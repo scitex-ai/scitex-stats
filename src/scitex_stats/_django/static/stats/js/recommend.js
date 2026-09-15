@@ -135,6 +135,82 @@
     }
   }
 
+  function fixed(v, digits) {
+    return v === null || v === undefined ? "" : Number(v).toFixed(digits);
+  }
+
+  function checkSegments(r) {
+    var segs = [];
+    if (r.symbol) {
+      segs.push({ text: r.symbol, kind: "sym" });
+      segs.push({ text: (r.df ? "(" + r.df.join(", ") + ")" : "") + " = " + fixed(r.statistic, r.symbol === "W" ? 3 : 2), kind: "text" });
+    } else {
+      segs.push({ text: fixed(r.statistic, 2), kind: "text" });
+    }
+    if (r.p_apa) segs.push({ text: ", ", kind: "text" }, { text: "p", kind: "sym" }, { text: " " + r.p_apa, kind: "text" });
+    return segs;
+  }
+
+  var SVG = "http://www.w3.org/2000/svg";
+  function svgEl(tag, attrs) {
+    var node = document.createElementNS(SVG, tag);
+    Object.keys(attrs).forEach(function (k) { node.setAttribute(k, attrs[k]); });
+    return node;
+  }
+
+  // Minimal normal Q-Q plot: points against the fitted reference line.
+  function qqPlot(q) {
+    var size = 120, pad = 14;
+    var xs = q.theoretical, ys = q.observed;
+    var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
+    var lineY = function (x) { return q.line.slope * x + q.line.intercept; };
+    var yv = ys.concat([lineY(x0), lineY(x1)]);
+    var y0 = Math.min.apply(null, yv), y1 = Math.max.apply(null, yv);
+    var sx = function (x) { return pad + (x - x0) / ((x1 - x0) || 1) * (size - 2 * pad); };
+    var sy = function (y) { return size - pad - (y - y0) / ((y1 - y0) || 1) * (size - 2 * pad); };
+    var svg = svgEl("svg", { viewBox: "0 0 " + size + " " + size, class: "stats-qq__svg", role: "img" });
+    svg.appendChild(svgEl("rect", { x: 0.5, y: 0.5, width: size - 1, height: size - 1, class: "stats-qq__frame" }));
+    svg.appendChild(svgEl("line", { x1: sx(x0), y1: sy(lineY(x0)), x2: sx(x1), y2: sy(lineY(x1)), class: "stats-qq__line" }));
+    xs.forEach(function (x, i) { svg.appendChild(svgEl("circle", { cx: sx(x), cy: sy(ys[i]), r: 2.2, class: "stats-qq__pt" })); });
+    var fig = el("figure", "stats-qq");
+    svg.setAttribute("aria-label", app.fmt(_("Normal Q-Q plot: %s"), [_(q.sample)]));
+    fig.append(svg, el("figcaption", "", _(q.sample)));
+    return fig;
+  }
+
+  function renderAssumptions(rec) {
+    var box = $("statsAssumptions");
+    box.textContent = "";
+    var sec = rec.assumption_checks;
+    if (!sec || !sec.rows.length) return;
+    box.appendChild(el("h3", "stats-summary__title", _("Assumption checks")));
+    var table = el("table", "stats-applic stats-applic--checks");
+    var head = el("tr");
+    [_("Check"), _("Sample"), _("Result"), _("Threshold"), _("Decision")].forEach(function (h) {
+      var th = el("th", "", h); th.scope = "col"; head.appendChild(th);
+    });
+    var thead = el("thead");
+    thead.appendChild(head);
+    var tbody = el("tbody");
+    sec.rows.forEach(function (r) {
+      var tr = el("tr", "is-" + r.decision.replace(/\s+/g, "-"));
+      var result = el("td", "stats-applic__stat");
+      app.setSegments(result, checkSegments(r));
+      tr.append(el("td", "", _(r.check)), el("td", "", _(r.sample)), result, itemNode("td", r.threshold), el("td", "stats-check__decision", _(r.decision)));
+      tbody.appendChild(tr);
+    });
+    table.append(thead, tbody);
+    var wrap = el("div", "stats-applic-wrap");
+    wrap.appendChild(table);
+    box.appendChild(wrap);
+    sec.notes.forEach(function (n) { box.appendChild(itemNode("p", n, "stats-check-note")); });
+    if (sec.qq.length) {
+      var grid = el("div", "stats-qq-grid");
+      sec.qq.forEach(function (q) { grid.appendChild(qqPlot(q)); });
+      box.appendChild(grid);
+    }
+  }
+
   async function recommend(opts) {
     var payload = currentPayload();
     if (!payload) { lastRec = null; setVisible(false); return; }
@@ -148,6 +224,7 @@
       renderNotes([{ msg: (r.body && r.body.error) || "Request failed (HTTP %s).", args: r.body && r.body.error ? [] : [r.status] }]);
       $("statsApplicRows").textContent = "";
       $("statsRecCard").textContent = "";
+      $("statsAssumptions").textContent = "";
       $("statsRunAll").hidden = true;
       setVisible(true);
       return;
@@ -156,6 +233,7 @@
     renderNotes(lastRec.notes);
     renderApplicability(lastRec);
     renderCard(lastRec);
+    renderAssumptions(lastRec);
     $("statsRunAll").hidden = !lastRec.applicability.some(function (t) { return t.applicable; });
     $("statsRunAllOut").hidden = true;
     setVisible(true);

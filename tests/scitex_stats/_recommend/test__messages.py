@@ -28,15 +28,18 @@ def _emitted(fixtures):
             ids.add(rec["primary"]["label"])
         ids |= {i["msg"] for i in items} | {a for i in items for a in i["args"] if isinstance(a, str) and a.islower()}
         ids |= {row["label"] for row in rec["applicability"]}
+        sec = rec["assumption_checks"]
+        ids |= {n["msg"] for n in sec["notes"]} | {r["threshold"]["msg"] for r in sec["rows"]}
+        ids |= {r[k] for r in sec["rows"] for k in ("check", "decision", "sample") if not r[k].startswith(("Group ", "differences", "residuals"))}
     return ids
 
 
 def test_text_renders_args():
     # Arrange
     # Act
-    item = messages.fail("Needs exactly 2 groups; there are %s", 3)
+    item = messages.ok("Groups: %s", 3)
     # Assert
-    assert item["text"] == "Needs exactly 2 groups; there are 3"
+    assert item["text"] == "Groups: 3"
 
 
 def test_fmt_p_is_apa():
