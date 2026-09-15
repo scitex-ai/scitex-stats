@@ -126,6 +126,8 @@ _LAZY_ATTRS: dict[str, str] = {
     # APA 7 reporting (format + validate from one rule table)
     "apa_render": "_utils._apa",
     "validate_apa": "_utils._apa",
+    # Provenance receipt verification
+    "verify": "_verify",
     # Stats ↔ SciTeX bundle I/O (optional scitex-io; extra [bundle])
     "Stats": "_integration",
     "BUNDLE_AVAILABLE": "_integration",
@@ -240,6 +242,8 @@ __all__ = [
     "to_json_safe",
     "apa_render",
     "validate_apa",
+    # Provenance receipt verification
+    "verify",
     # Stats ↔ SciTeX bundle I/O (optional scitex-io; extra [bundle])
     "Stats",
     "BUNDLE_AVAILABLE",

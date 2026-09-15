@@ -58,6 +58,7 @@ rule and empirical verification table.
 - [13_mcp-tools.md](13_mcp-tools.md) — MCP tools for AI agents
 - [15_six-stat-reporting.md](15_six-stat-reporting.md) — Six-stat reporting doctrine (n, CI, method, p, effect size, statistic) + full_report()
 - [16_apa7-reporting.md](16_apa7-reporting.md) — Exact APA 7 line per test (result["apa"]), table/descriptives forms, validate_apa(), with APA 7 section per rule
+- [17_provenance-verify.md](17_provenance-verify.md) — Provenance receipts, seed=42 determinism, input integrity, verify() before reporting any number
 
 ### Reference
 - [22_test-catalog.md](22_test-catalog.md) — All 23 statistical tests with categories
@@ -83,6 +84,7 @@ scitex-stats <command> [options]
 | `stats_normality_test` | Normality testing |
 | `stats_format_results` | Format for publication |
 | `stats_p_to_stars` | p-value to significance stars |
+| `stats_verify_result` | Verify a result's receipt, data hashes and statistics by recompute |
 
 
 ## Environment

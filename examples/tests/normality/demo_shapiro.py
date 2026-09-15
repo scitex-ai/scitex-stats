@@ -36,18 +36,18 @@ def main(args):
     logger.info("Demonstrating Shapiro-Wilk normality test")
 
     # Set random seed
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     # Example 1: Normal data
     logger.info("\n=== Example 1: Normal data ===")
 
-    x_normal = np.random.normal(0, 1, 100)
+    x_normal = rng.normal(0, 1, 100)
     _ = test_shapiro(x_normal, var_x="Normal", verbose=True)
 
     # Example 2: Non-normal data (exponential)
     logger.info("\n=== Example 2: Non-normal data (exponential) ===")
 
-    x_exp = np.random.exponential(2, 100)
+    x_exp = rng.exponential(2, 100)
     _ = test_shapiro(x_exp, var_x="Exponential", verbose=True)
 
     # Example 3: With Q-Q plot
@@ -55,8 +55,8 @@ def main(args):
 
     x_mixed = np.concatenate(
         [
-            np.random.normal(0, 1, 90),
-            np.random.normal(5, 1, 10),  # Outliers
+            rng.normal(0, 1, 90),
+            rng.normal(5, 1, 10),  # Outliers
         ]
     )
 
@@ -67,9 +67,9 @@ def main(args):
     # Example 4: Multiple samples check
     logger.info("\n=== Example 4: Check multiple samples ===")
 
-    x1 = np.random.normal(0, 1, 50)
-    x2 = np.random.exponential(2, 50)
-    x3 = np.random.normal(0, 1, 50)
+    x1 = rng.normal(0, 1, 50)
+    x2 = rng.exponential(2, 50)
+    x3 = rng.normal(0, 1, 50)
 
     check_result = test_normality(
         x1, x2, x3, var_names=["Sample A", "Sample B", "Sample C"], warn=True
@@ -82,11 +82,11 @@ def main(args):
     logger.info("\n=== Example 5: Distribution comparison ===")
 
     distributions = {
-        "Normal": np.random.normal(0, 1, 100),
-        "Exponential": np.random.exponential(2, 100),
-        "Uniform": np.random.uniform(-3, 3, 100),
-        "Gamma": np.random.gamma(2, 2, 100),
-        "t-dist (df=3)": np.random.standard_t(3, 100),
+        "Normal": rng.normal(0, 1, 100),
+        "Exponential": rng.exponential(2, 100),
+        "Uniform": rng.uniform(-3, 3, 100),
+        "Gamma": rng.gamma(2, 2, 100),
+        "t-dist (df=3)": rng.standard_t(3, 100),
     }
 
     results_comp = []

@@ -281,13 +281,13 @@ def main(args):
     logger.info("Demonstrating paired samples t-test")
 
     # Set random seed
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     # Example 1: Significant paired difference
     logger.info("\n=== Example 1: Significant paired difference ===")
 
-    before = np.random.normal(10, 2, 30)
-    after = before + np.random.normal(2, 1, 30)  # Correlated increase
+    before = rng.normal(10, 2, 30)
+    after = before + rng.normal(2, 1, 30)  # Correlated increase
 
     test_ttest_rel(before, after, var_x="Before", var_y="After")
 

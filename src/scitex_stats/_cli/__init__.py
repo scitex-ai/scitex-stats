@@ -45,6 +45,7 @@ from .mcp import (
 from .skills_group import skills_group as _skills_group
 from .gui import gui as _gui
 from .validate_apa import validate_apa_cmd as _validate_apa_cmd
+from .verify import verify as _verify_cmd
 from .stats import (
     run_format_pvalue as _run_format_pvalue,
     run_tests_describe as _run_tests_describe,
@@ -474,6 +475,7 @@ main.add_command(_validate_apa_cmd, name="validate-apa")
 # import is cheap (reads only DEFAULT_PORT); the scitex-app SDK is pulled
 # lazily inside the subcommands, so a base install (no [server]) still works.
 main.add_command(_gui, name="gui")
+main.add_command(_verify_cmd, name="verify")
 
 
 # §1a install-shell-completion/print-shell-completion + optional scitex-dev
@@ -495,18 +497,14 @@ def _entry(argv=None) -> int:
         return int(e.code or 0)
 
 
+# audit §4 — inject version into root --help
+try:
+    from importlib.metadata import version as _v
+    main.help = f"scitex-stats (v{_v('scitex-stats')}) — " + (main.help or "").lstrip()
+except Exception:
+    pass
+
 if __name__ == "__main__":
     sys.exit(_entry())
 
 # EOF
-
-
-# audit §4 — inject version into root --help
-try:
-    from importlib.metadata import version as _v
-    main.help = (
-        f"scitex-stats (v{_v('scitex-stats')}) — "
-        + (main.help or "").lstrip()
-    )
-except Exception:
-    pass

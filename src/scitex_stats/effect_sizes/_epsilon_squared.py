@@ -174,14 +174,14 @@ def main(args):
     logger.info("Demonstrating epsilon-squared effect size for Kruskal-Wallis")
 
     # Set random seed
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     # Example 1: Three groups with non-normal distributions
     logger.info("\n=== Example 1: Three skewed groups ===")
 
-    group1 = np.random.exponential(1, 30)
-    group2 = np.random.exponential(1.5, 30)
-    group3 = np.random.exponential(2, 30)
+    group1 = rng.exponential(1, 30)
+    group2 = rng.exponential(1.5, 30)
+    group3 = rng.exponential(2, 30)
 
     eps2 = epsilon_squared([group1, group2, group3])
     interpretation = interpret_epsilon_squared(eps2)
@@ -195,9 +195,9 @@ def main(args):
     from ._eta_squared import eta_squared
 
     # Normal data
-    norm1 = np.random.normal(0, 1, 40)
-    norm2 = np.random.normal(0.8, 1, 40)
-    norm3 = np.random.normal(1.5, 1, 40)
+    norm1 = rng.normal(0, 1, 40)
+    norm2 = rng.normal(0.8, 1, 40)
+    norm3 = rng.normal(1.5, 1, 40)
 
     eps2_norm = epsilon_squared([norm1, norm2, norm3])
     eta2_norm = eta_squared([norm1, norm2, norm3])
@@ -205,9 +205,9 @@ def main(args):
     logger.info(f"Normal data:   ε² = {eps2_norm:.3f}, η² = {eta2_norm:.3f}")
 
     # Skewed data
-    skew1 = np.random.exponential(1, 40)
-    skew2 = np.random.exponential(2, 40)
-    skew3 = np.random.exponential(3, 40)
+    skew1 = rng.exponential(1, 40)
+    skew2 = rng.exponential(2, 40)
+    skew3 = rng.exponential(3, 40)
 
     eps2_skew = epsilon_squared([skew1, skew2, skew3])
     eta2_skew = eta_squared([skew1, skew2, skew3])
@@ -219,8 +219,8 @@ def main(args):
     logger.info("\n=== Example 3: Different effect sizes ===")
 
     for scale in [1.0, 1.5, 2.0, 3.0]:
-        g1 = np.random.exponential(1, 30)
-        g2 = np.random.exponential(scale, 30)
+        g1 = rng.exponential(1, 30)
+        g2 = rng.exponential(scale, 30)
 
         eps2 = epsilon_squared([g1, g2])
         interpretation = interpret_epsilon_squared(eps2)
@@ -250,8 +250,8 @@ def main(args):
     eta2_values = []
 
     for scale in scales:
-        g1 = np.random.exponential(1, 50)
-        g2 = np.random.exponential(scale, 50)
+        g1 = rng.exponential(1, 50)
+        g2 = rng.exponential(scale, 50)
 
         eps2_values.append(epsilon_squared([g1, g2]))
         eta2_values.append(eta_squared([g1, g2]))

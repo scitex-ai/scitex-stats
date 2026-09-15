@@ -439,14 +439,14 @@ def demo(verbose=False):
     # Example 5: Many tests
     logger.info("\n=== Example 5: Large scale comparison (m=100) ===")
 
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     # Simulate 100 tests: 20 true positives, 80 true negatives
     many_results = []
 
     # True positives (small p-values)
     for i in range(20):
-        p = np.random.beta(1, 50)  # Small p-values
+        p = rng.beta(1, 50)  # Small p-values
         many_results.append(
             {
                 "var_x": f"Var_{i}",
@@ -458,7 +458,7 @@ def demo(verbose=False):
 
     # True negatives (large p-values)
     for i in range(20, 100):
-        p = np.random.uniform(0.1, 1.0)  # Large p-values
+        p = rng.uniform(0.1, 1.0)  # Large p-values
         many_results.append(
             {
                 "var_x": f"Var_{i}",

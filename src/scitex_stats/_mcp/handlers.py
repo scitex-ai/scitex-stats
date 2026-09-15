@@ -21,9 +21,11 @@ from ._handlers import (
     power_analysis_handler,
     recommend_tests_handler,
     run_test_handler,
+    verify_result_handler,
 )
 
 __all__ = [
+    "verify_result_handler",
     "recommend_tests_handler",
     "run_test_handler",
     "format_results_handler",

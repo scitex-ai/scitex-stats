@@ -250,19 +250,19 @@ def main(args):
     logger.info("Demonstrating one-sample t-test")
 
     # Set random seed
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     # Example 1: Test against zero
     logger.info("\n=== Example 1: Test against zero ===")
 
-    x1 = np.random.normal(2, 1, 30)  # Mean around 2, should be significant vs 0
+    x1 = rng.normal(2, 1, 30)  # Mean around 2, should be significant vs 0
 
     test_ttest_1samp(x1, popmean=0, var_x="Differences")
 
     # Example 2: Test against non-zero value
     logger.info("\n=== Example 2: Test against reference value ===")
 
-    scores = np.random.normal(100, 15, 50)
+    scores = rng.normal(100, 15, 50)
 
     test_ttest_1samp(scores, popmean=100, var_x="Test Scores")
 

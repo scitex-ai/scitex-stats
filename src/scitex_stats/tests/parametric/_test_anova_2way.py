@@ -168,17 +168,17 @@ def test_anova_2way(  # noqa: C901
     >>> from scitex_stats.tests.parametric import test_anova_2way
     >>>
     >>> # Example: Drug (2 levels) × Gender (2 levels)
-    >>> np.random.seed(42)
+    >>> rng = np.random.default_rng(42)
     >>> n_per_cell = 10
     >>>
     >>> data = pd.DataFrame({
     ...     'Drug': ['Placebo']*20 + ['Active']*20,
     ...     'Gender': (['Male']*10 + ['Female']*10) * 2,
     ...     'Score': np.concatenate([
-    ...         np.random.normal(50, 10, 10),  # Placebo, Male
-    ...         np.random.normal(55, 10, 10),  # Placebo, Female
-    ...         np.random.normal(65, 10, 10),  # Active, Male
-    ...         np.random.normal(75, 10, 10),  # Active, Female (interaction)
+    ...         rng.normal(50, 10, 10),  # Placebo, Male
+    ...         rng.normal(55, 10, 10),  # Placebo, Female
+    ...         rng.normal(65, 10, 10),  # Active, Male
+    ...         rng.normal(75, 10, 10),  # Active, Female (interaction)
     ...     ])
     ... })
     >>>

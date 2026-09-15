@@ -155,11 +155,11 @@ def posthoc_tukey(
     >>> from scitex_stats.posthoc import posthoc_tukey
     >>>
     >>> # Example: Compare 4 treatment groups
-    >>> np.random.seed(42)
-    >>> control = np.random.normal(10, 2, 20)
-    >>> treatment1 = np.random.normal(12, 2, 20)
-    >>> treatment2 = np.random.normal(11, 2, 20)
-    >>> treatment3 = np.random.normal(13, 2, 20)
+    >>> rng = np.random.default_rng(42)
+    >>> control = rng.normal(10, 2, 20)
+    >>> treatment1 = rng.normal(12, 2, 20)
+    >>> treatment2 = rng.normal(11, 2, 20)
+    >>> treatment3 = rng.normal(13, 2, 20)
     >>>
     >>> results = posthoc_tukey(
     ...     [control, treatment1, treatment2, treatment3],
@@ -298,11 +298,11 @@ if __name__ == "__main__":
     logger.info("\n[Example 1] Basic Tukey HSD after significant ANOVA")
     logger.info("-" * 70)
 
-    np.random.seed(42)
-    control = np.random.normal(10, 2, 20)
-    treatment1 = np.random.normal(12, 2, 20)
-    treatment2 = np.random.normal(11, 2, 20)
-    treatment3 = np.random.normal(13, 2, 20)
+    rng = np.random.default_rng(42)
+    control = rng.normal(10, 2, 20)
+    treatment1 = rng.normal(12, 2, 20)
+    treatment2 = rng.normal(11, 2, 20)
+    treatment3 = rng.normal(13, 2, 20)
 
     # First run ANOVA
     from ..tests.parametric import test_anova
@@ -332,9 +332,9 @@ if __name__ == "__main__":
     logger.info("\n[Example 2] Unbalanced design (different sample sizes)")
     logger.info("-" * 70)
 
-    group_a = np.random.normal(50, 10, 15)
-    group_b = np.random.normal(60, 10, 25)
-    group_c = np.random.normal(55, 10, 20)
+    group_a = rng.normal(50, 10, 15)
+    group_b = rng.normal(60, 10, 25)
+    group_c = rng.normal(55, 10, 20)
 
     results_unbalanced = posthoc_tukey(
         [group_a, group_b, group_c], group_names=["A", "B", "C"]

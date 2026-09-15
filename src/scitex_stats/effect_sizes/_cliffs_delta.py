@@ -187,7 +187,7 @@ def main(args):
     logger.info("Demonstrating Cliff's delta effect size")
 
     # Set random seed
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     # Example 1: Basic usage
     logger.info("\n=== Example 1: Basic usage ===")
@@ -228,10 +228,10 @@ def main(args):
     # Example 3: Different effect sizes
     logger.info("\n=== Example 3: Different effect sizes ===")
 
-    control = np.random.normal(0, 1, 50)
+    control = rng.normal(0, 1, 50)
 
     for shift in [0.0, 0.3, 0.6, 1.0]:
-        treatment = np.random.normal(shift, 1, 50)
+        treatment = rng.normal(shift, 1, 50)
         delta = cliffs_delta(control, treatment)
         interpretation = interpret_cliffs_delta(delta)
 
@@ -244,8 +244,8 @@ def main(args):
 
     # Plot 1: Distribution comparison
     ax = axes[0]
-    x_demo = np.random.exponential(2, 200)
-    y_demo = np.random.exponential(3, 200)
+    x_demo = rng.exponential(2, 200)
+    y_demo = rng.exponential(3, 200)
 
     ax.hist(x_demo, bins=30, alpha=0.5, label="Group X", density=True)
     ax.hist(y_demo, bins=30, alpha=0.5, label="Group Y", density=True)
