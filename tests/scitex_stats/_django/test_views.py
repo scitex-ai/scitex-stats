@@ -211,6 +211,15 @@ def test_run_ttest_returns_apa_formatted(client, two_groups):
     assert "t =" in body["formatted"]
 
 
+def test_run_ttest_returns_apa_segments_with_italic_symbols(client, two_groups):
+    # Arrange
+    a, b = two_groups
+    # Act
+    body = _post(client, "/api/run", {"test_name": "ttest_ind", "data": a.tolist(), "data2": b.tolist()}).json()
+    # Assert
+    assert {"text": "p", "kind": "sym"} in body["apa"]["segments"]
+
+
 def test_run_unknown_test_returns_400(client, two_groups):
     # Arrange
     a, b = two_groups
