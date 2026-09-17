@@ -11,6 +11,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import pathlib
 
 from .test_views import client  # noqa: E402,F401  (shared Django bootstrap + fixture)
 
@@ -391,6 +392,32 @@ def test_project_save_endpoint_stores_a_rendered_plot(tmp_path, client):  # noqa
         response = client.post("/api/project-save", data=payload, content_type="application/json")
     # Assert
     assert response.status_code == 201 and (tmp_path / "cohort" / "stats" / "plots" / "plot.png").read_bytes() == png
+
+
+
+def test_quick_analysis_mode_hides_every_project_write_control():
+    # Arrange: Quick analysis is the STATELESS alternative — no project file
+    # listing and no write-back buttons, so the mode cannot half-write.
+    js = (
+        pathlib.Path(__file__).resolve().parents[3]
+        / "src/scitex_stats/_django/static/stats/js/app.js"
+    ).read_text(encoding="utf-8")
+    # Act
+    apply_mode = js.split("function applyMode()", 1)[1].split("function setSaveStatus", 1)[0]
+    # Assert
+    assert "statsProjectFiles" in apply_mode and "statsSaveRow" in apply_mode and "statsSavePlot" in apply_mode
+
+
+def test_plot_save_prefers_the_rendered_figure_then_the_spec():
+    # Arrange
+    js = (
+        pathlib.Path(__file__).resolve().parents[3]
+        / "src/scitex_stats/_django/static/stats/js/app.js"
+    ).read_text(encoding="utf-8")
+    # Act
+    save_plot = js.split("async function savePlot()", 1)[1].split("\n  }", 1)[0]
+    # Assert
+    assert "saveRenderedPlot()" in save_plot and "plot-spec.json" in save_plot
 
 
 # EOF

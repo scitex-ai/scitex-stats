@@ -232,6 +232,8 @@
     if (panel) panel.hidden = !(hasProject && mode === "project");
     var saves = $("statsSaveRow");
     if (saves) saves.hidden = !(hasProject && mode === "project");
+    var plotSave = $("statsSavePlot");
+    if (plotSave) plotSave.hidden = !(hasProject && mode === "project");
     var toggle = $("statsModeToggle");
     if (toggle) {
       toggle.hidden = !hasProject;
