@@ -179,6 +179,11 @@ packages = ["src/scitex_stats"]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short --cov=scitex_stats --cov-report=term-missing"
+# Slow layers are gated by an env var so the default suite stays fast and
+# hermetic: `RUN_E2E=1` for tests/e2e (real browser + real server).
+markers = [
+    "e2e: slow end-to-end journey tests; gate with RUN_E2E=1",
+]
 
 [tool.coverage.run]
 # parallel + multiprocessing concurrency so child Python interpreters
