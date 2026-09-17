@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional, Sequence
 import numpy as np
 
 from scitex_stats._utils._apa import format_number, format_p
-from scitex_stats._utils._apa._segments import Segment, S, T, plain, seg
+from scitex_stats._utils._apa._segments import S, Segment, T, plain, seg
 from scitex_stats.posthoc._auto import RANK_METHODS
 
 from . import _analysis, _figure, _methods
@@ -70,6 +70,7 @@ def _meta(prep: Prepared, ctx: Dict[str, Any]) -> List[Dict[str, Any]]:
         (_t("Generated (UTC)"), _t(ctx["generated_at"])),
         (_t("Input"), _t(prep.source)),
         (_t("Input SHA-256"), [seg(prep.input_sha256, "code")]),
+        (_t("Analysis data SHA-256"), [seg(prep.analysis_sha256, "code")]),
         (_t("Design"), _t(("Within-subject (repeated measures)" if prep.design == "within" else "Between-group (independent)")
                           + f", {len(prep.names)} {'conditions' if prep.design == 'within' else 'groups'}")),
         (_t("Groups"), _t(", ".join(prep.names))),
@@ -270,11 +271,16 @@ def build_report(
     seed: int = 42,
     posthoc: str = "auto",
     friedman_method: str = "nemenyi",
+    equal_variances: Optional[bool] = None,
     title: str = "Statistical report",
     y_label: str = "Value",
     timestamp: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Run the whole analysis and return the renderer-neutral report model."""
+    """Run the whole analysis and return the renderer-neutral report model.
+    ``equal_variances`` is the caller's ADVANCE DECLARATION for the ANOVA path; it defaults to
+    ``None`` ("not declared"), which keeps the post-hoc on Games-Howell. The report never infers
+    it from the observed Brown-Forsythe result.
+"""
     from scitex_stats import __version__, _provenance
     from scitex_stats.posthoc import run_posthoc
 
@@ -292,7 +298,10 @@ def build_report(
     ph = None
     if k >= 3 and posthoc != "never":
         ph = run_posthoc(prep.groups, primary_test, group_names=prep.names, alpha=alpha,
-                         omnibus_pvalue=primary_p, equal_variances=an["equal_variances"] if primary_test == "anova" else None,
+                         omnibus_pvalue=primary_p,
+                         # The caller's DECLARATION, never the observed check: passing
+                         # an["equal_variances"] made Tukey a data-dependent choice.
+                         equal_variances=equal_variances,
                          friedman_method=friedman_method, when="always" if posthoc == "always" else "significant", seed=seed)
         if ph.get("omnibus"):
             ph["omnibus"]["name"] = an["primary"]["label"]

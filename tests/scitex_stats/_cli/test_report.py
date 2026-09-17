@@ -101,4 +101,19 @@ def test_generate_report_refuses_to_overwrite_without_yes(csv_path, tmp_path):
     assert (refused.exit_code, out.read_bytes() == b"earlier report", allowed.exit_code) == (1, True, 0)
 
 
+def test_generate_report_refuses_to_overwrite_an_existing_sidecar(csv_path, tmp_path):
+    """The guard used to check only --out, so an existing same-stem .html was
+    silently replaced."""
+    # Arrange: nothing at the named PDF path, but an HTML sidecar already there.
+    out = tmp_path / "report.pdf"
+    sidecar = tmp_path / "report.html"
+    sidecar.write_text("earlier report", encoding="utf-8")
+    args = ["generate-report", str(csv_path), "--out", str(out), "--format", "html"]
+    # Act
+    refused = CliRunner().invoke(main, args)
+    allowed = CliRunner().invoke(main, args + ["--yes"])
+    # Assert
+    assert (refused.exit_code, "already exist" in refused.output, allowed.exit_code, sidecar.read_text(encoding="utf-8") != "earlier report") == (1, True, 0, True)
+
+
 # EOF

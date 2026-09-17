@@ -7,7 +7,7 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, List
 
-from scitex_stats._utils._apa._segments import Segment, S, T, seg
+from scitex_stats._utils._apa._segments import S, Segment, T, seg
 from scitex_stats.posthoc._auto import POSTHOC_REFERENCES
 
 REFERENCES = {

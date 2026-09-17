@@ -2,8 +2,10 @@
 # File: src/scitex_stats/reporting/_pdf/_inputs.py
 """Turn report input (CSV path, DataFrame, dict, list of lists) into named groups.
 
-Nothing is dropped silently: every excluded cell is listed with its reason,
-and the SHA-256 of the raw input is computed with the provenance hasher.
+Nothing is dropped silently: every excluded cell is listed with its reason, and the
+SHA-256 the report shows as "Input SHA-256" covers the cells AS GIVEN - non-numeric
+text included - while "Analysis data SHA-256" covers the normalized float arrays the
+tests actually ran on.
 """
 
 from __future__ import annotations
@@ -28,6 +30,7 @@ class Prepared:
     exclusions: List[Dict[str, Any]] = field(default_factory=list)
     n_raw: List[int] = field(default_factory=list)
     input_sha256: str = ""
+    analysis_sha256: str = ""
     source: str = ""
 
 
@@ -83,7 +86,23 @@ def _columns(data: Any, spec: Dict[str, Any]) -> Dict[str, List[Any]]:
         if group_col and value_col:
             out: Dict[str, List[Any]] = {}
             subject_col = spec.get("subject_col")
-            frame = data.sort_values(subject_col, kind="mergesort") if subject_col else data
+            if subject_col:
+                # Align BY SUBJECT ID, because the ids are the only thing that says
+                # which B value belongs to which A value. Sorting by subject and then
+                # discarding the id appended each condition independently, so a
+                # missing cell paired subject 2's A with subject 3's B - different
+                # people compared against each other.
+                per_condition: Dict[str, Dict[Any, Any]] = {}
+                for subject, key, value in zip(data[subject_col], data[group_col].astype(str), data[value_col]):
+                    per_condition.setdefault(key, {})[subject] = value
+                shared = sorted(set.intersection(*(set(v) for v in per_condition.values()))) if per_condition else []
+                spec["subject_exclusions"] = [
+                    {"group": key, "subject": subject, "reason": "subject has no cell in every condition (listwise)"}
+                    for key, values in per_condition.items()
+                    for subject in sorted(set(values) - set(shared))
+                ]
+                return {key: [values[subject] for subject in shared] for key, values in per_condition.items()}
+            frame = data
             for key, value in zip(frame[group_col].astype(str), frame[value_col]):
                 out.setdefault(key, []).append(value)
             return out
@@ -161,11 +180,27 @@ def prepare(data: Any, design: Any = "between", group_names: Optional[Sequence[s
         if g.size < 2:
             raise ValueError(f"Group {name!r} has {g.size} usable value(s); at least 2 are needed.")
 
-    digest = _provenance.combine_hashes({f"{i}:{n}": _provenance.hash_array(raw_arrays[n]) for i, n in enumerate(names)})
+    # TWO digests, because they answer different questions. `input_sha256` covers the
+    # cells AS GIVEN (non-numeric text included), so inputs that differ only as "foo"
+    # versus "bar" no longer collide; `analysis_sha256` covers the normalized float
+    # arrays the analysis actually ran on. The report shows both.
+    raw_records = {
+        f"{i}:{name}": ["" if cell is None else str(cell) for cell in columns[name]]
+        for i, name in enumerate(names)
+    }
+    digest = _provenance.hash_json(raw_records)
+    analysis_digest = _provenance.combine_hashes(
+        {f"{i}:{n}": _provenance.hash_array(raw_arrays[n]) for i, n in enumerate(names)}
+    )
+    for item in spec.get("subject_exclusions", []):
+        if item["group"] in names:
+            exclusions.append({"group": item["group"], "row": 0, "value": str(item["subject"]),
+                               "reason": item["reason"]})
     exclusions.sort(key=lambda e: (names.index(e["group"]), e["row"]))
     source = str(data) if isinstance(data, (str, Path)) else type(data).__name__
-    return Prepared(names=names, groups=groups, design=spec["type"], exclusions=exclusions,
-                    n_raw=n_raw, input_sha256=digest, source=Path(source).name if isinstance(data, (str, Path)) else source)
+    return Prepared(names=names, groups=groups, design=spec["type"], exclusions=exclusions, n_raw=n_raw,
+                    input_sha256=digest, analysis_sha256=analysis_digest,
+                    source=Path(source).name if isinstance(data, (str, Path)) else source)
 
 
 __all__ = ["DESIGNS", "Prepared", "prepare"]

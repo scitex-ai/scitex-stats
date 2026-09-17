@@ -42,15 +42,22 @@ def report(data, out, design, group_col, value_col, subject_col, alpha, posthoc,
         $ scitex-stats generate-report long.csv --group-col condition --value-col score --design within
         $ scitex-stats generate-report data.csv --dry-run --json
     """
-    from scitex_stats.reporting._pdf import RendererUnavailable, build_report
+    from scitex_stats.reporting._pdf import (
+        RendererUnavailable,
+        build_report,
+        planned_paths,
+    )
     from scitex_stats.reporting._pdf import report as _report
 
     if not dry_run and not overwrite:
-        existing = Path(out)
-        if existing.exists():
-            # `generate` is a mutating verb: say what would be lost instead of
-            # replacing a report someone already wrote.
-            click.echo(f"Error: {out} exists; pass --yes to overwrite it.", err=True)
+        wanted = [f.strip() for f in formats.split(",") if f.strip()]
+        # The named output AND every sidecar the writer would produce: checking only
+        # --out silently replaced an existing same-stem .html, .md and figure.
+        candidates = [Path(out)] + [path for path in planned_paths(out, wanted) if path != Path(out)]
+        existing = [path for path in candidates if path.exists()]
+        if existing:
+            listed = ", ".join(str(path) for path in existing)
+            click.echo(f"Error: {listed} already exist(s); pass --yes to overwrite.", err=True)
             sys.exit(1)
 
     spec = {"type": design}

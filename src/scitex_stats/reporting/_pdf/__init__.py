@@ -2,7 +2,7 @@
 # File: src/scitex_stats/reporting/_pdf/__init__.py
 """Bundled statistical report: analysis model -> PDF / HTML / Markdown."""
 
-from ._api import FORMATS, report
+from ._api import FORMATS, planned_paths, report
 from ._build import SECTIONS, build_report, model_text
 from ._html import render_html
 from ._markdown import render_markdown
@@ -16,6 +16,7 @@ __all__ = [
     "html_to_pdf",
     "model_text",
     "pdf_renderer",
+    "planned_paths",
     "render_html",
     "render_markdown",
     "report",

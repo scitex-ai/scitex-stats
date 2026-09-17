@@ -115,7 +115,7 @@ def render_html(model: Dict[str, Any]) -> str:
         '<html lang="en"><head><meta charset="utf-8">',
         '<meta name="viewport" content="width=device-width, initial-scale=1">',
         f"<title>{html.escape(model['title'])}</title>",
-        f'<meta name="generator" content="scitex-stats">',
+        '<meta name="generator" content="scitex-stats">',
         f'<meta name="dcterms.created" content="{stamp}">',
         f'<meta name="dcterms.modified" content="{stamp}">',
         f"<style>{CSS}</style></head><body>",

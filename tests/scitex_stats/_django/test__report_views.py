@@ -12,12 +12,15 @@ pytest.importorskip("django")
 pytest.importorskip("scitex_app")
 pytest.importorskip("scitex_ui")
 
-from .test_views import _post, client  # noqa: E402,F401  (shared Django bootstrap + fixture)
-
 from django.test import RequestFactory, override_settings  # noqa: E402
 
 from scitex_stats._django import _report_views  # noqa: E402
 from scitex_stats.reporting._pdf import pdf_renderer  # noqa: E402
+
+from .test_views import (  # noqa: E402,F401  (shared Django bootstrap + fixture)
+    _post,
+    client,
+)
 
 SAMPLE = {
     "groups": [[5.1, 4.9, 5.6, 5.8, 6.0, 5.4, 5.2, 5.7], [6.3, 6.8, 6.1, 7.0, 6.6, 6.9, 6.4, 7.2],

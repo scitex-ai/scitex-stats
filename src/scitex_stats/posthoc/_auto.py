@@ -91,10 +91,17 @@ def select_posthoc(
         return {"method": None, "label": None, "correction": None, "applicable": False,
                 "reason": f"Post-hoc comparisons need 3 or more groups (got {n_groups})."}
     if test == "anova":
-        if equal_variances is False:
-            method, reason = "games_howell", "Variances differ (Brown–Forsythe test), so Games–Howell, which does not assume equal variances."
+        # Tukey requires the equal-variance assumption to have been DECLARED in
+        # advance. It is never chosen because the sample happens to look
+        # homogeneous: an undeclared design stays on Games–Howell, which assumes
+        # nothing. (The Brown–Forsythe result is still reported as a diagnostic;
+        # it is not allowed to make this choice.)
+        if equal_variances is True:
+            method, reason = "tukey", "Equal variances were declared in advance, so Tukey HSD."
+        elif equal_variances is False:
+            method, reason = "games_howell", "Variances were declared unequal in advance, so Games–Howell, which does not assume equal variances."
         else:
-            method, reason = "tukey", "Variances are homogeneous (Brown–Forsythe test), so Tukey HSD."
+            method, reason = "games_howell", "Equal variances were not declared in advance, so Games–Howell, which does not assume equal variances."
     elif test == "welch_anova":
         method, reason = "games_howell", "Welch's ANOVA was used because variances differ, so Games–Howell, which does not assume equal variances."
     elif test == "anova_rm":
@@ -290,8 +297,22 @@ def _paired_t_holm(blocks, alpha, level):
         n = d.size
         sd = np.std(d, ddof=1)
         if sd == 0:
-            t, p, ci = 0.0, 1.0, None
-        else:
+            # A constant difference has no variability to test, so no t and no p
+            # exist. The old code reported t=0, p=1, i.e. it called a constant
+            # difference of 1 "no effect" - the opposite of what the data say.
+            # Undefined is the honest answer, and it is labelled as such instead of
+            # being given a number nobody can compute.
+            mean_diff = float(d.mean())
+            raw.append(None)
+            out.append({"i": i, "j": j, "statistic": None, "stat_symbol": "t", "df": float(n - 1),
+                        "p_unadjusted": None, "mean_diff": mean_diff, "diff_ci": None,
+                        "undefined": ("every paired difference is zero: the paired test is undefined "
+                                      "(there is no variability to test)"
+                                      if mean_diff == 0 else
+                                      "the paired difference is constant and non-zero: the paired test is "
+                                      "undefined (zero standard error), so no t and no p exist")})
+            continue
+        if True:
             se = sd / np.sqrt(n)
             t = float(d.mean() / se)
             p = float(2 * stats.t.sf(abs(t), n - 1))
@@ -300,8 +321,13 @@ def _paired_t_holm(blocks, alpha, level):
         raw.append(p)
         out.append({"i": i, "j": j, "statistic": t, "stat_symbol": "t", "df": float(n - 1),
                     "p_unadjusted": p, "mean_diff": float(d.mean()), "diff_ci": ci})
-    for row, adj in zip(out, _holm(raw)):
-        row["p_adjusted"] = adj
+    # Holm over the DEFINED p-values only: an undefined pair has no p to adjust, and
+    # inventing one would put it in the family-wise budget it never entered.
+    defined = [index for index, value in enumerate(raw) if value is not None]
+    for index, adj in zip(defined, _holm([raw[index] for index in defined])):
+        out[index]["p_adjusted"] = adj
+    for row in out:
+        row.setdefault("p_adjusted", None)
     return out
 
 
@@ -370,7 +396,10 @@ def run_posthoc(
     omnibus_pvalue : float, optional
         The omnibus p already computed; recomputed with scipy when omitted.
     equal_variances : bool, optional
-        ANOVA only. When omitted, decided by the Brown–Forsythe test at ``alpha``.
+        ANOVA only, and it is the caller's ADVANCE DECLARATION — never inferred from
+        the data. Omitted (or ``None``) means "not declared", which keeps the
+        post-hoc on Games–Howell instead of granting Tukey on the strength of a
+        sample that merely looks homogeneous.
     friedman_method : {"nemenyi", "wilcoxon"}
     when : {"significant", "always"}
         ``"significant"`` runs comparisons only after a significant omnibus;
@@ -396,11 +425,14 @@ def run_posthoc(
         raise ValueError(f"Expected {k} group names, got {len(names)}")
 
     variance_check = None
-    if test == "anova" and k >= 3 and equal_variances is None:
+    if test == "anova" and k >= 3:
+        # REPORTED, never decisive: the equal-variance assumption must come from the
+        # caller's advance declaration (`equal_variances`), not from the data this
+        # run happens to have drawn. Deciding from it is the data-dependent choice
+        # the report doctrine forbids.
         bf = stats.levene(*arrays, center="median")
-        equal_variances = bool(bf.pvalue >= alpha)
         variance_check = {"test": "Brown–Forsythe (Levene, median-centred)", "statistic": float(bf.statistic),
-                          "pvalue": float(bf.pvalue), "alpha": alpha, "equal_variances": equal_variances}
+                          "pvalue": float(bf.pvalue), "alpha": alpha, "equal_variances": bool(bf.pvalue >= alpha)}
     choice = select_posthoc(test, k, equal_variances=equal_variances, friedman_method=friedman_method)
     base: Dict[str, Any] = {**choice, "ran": False, "alpha": alpha, "group_names": names,
                             "variance_check": variance_check, "flags": [], "comparisons": [],
@@ -456,7 +488,7 @@ def run_posthoc(
             eff = {"effect_size": _matched_rank_biserial(x, y), "effect_size_metric": "matched-pairs rank-biserial r",
                    "effect_ci": _boot_ci(_matched_rank_biserial, [x, y], seed + n, confidence, paired=True)}
             eff_ci_method = f"percentile bootstrap over subjects ({_N_BOOT} resamples, seed {seed + n})"
-        p_adj = float(row["p_adjusted"])
+        p_adj = None if row.get("p_adjusted") is None else float(row["p_adjusted"])
         diff_ci = row.pop("diff_ci", None)
         eff_ci = eff.pop("effect_ci")
         bounded = method in RANK_METHODS
@@ -465,9 +497,9 @@ def run_posthoc(
             **row, **eff,
             "p_adjusted": p_adj,
             "p_apa": format_p(p_adj),
-            "p_adjusted_exact": format_p_exact(p_adj),
+            "p_adjusted_exact": None if p_adj is None else format_p_exact(p_adj),
             "p_unadjusted_apa": format_p(row["p_unadjusted"]) if row.get("p_unadjusted") is not None else None,
-            "significant": bool(p_adj < alpha),
+            "significant": bool(p_adj is not None and p_adj < alpha),
             "effect_ci_lower": eff_ci[0] if eff_ci else None,
             "effect_ci_upper": eff_ci[1] if eff_ci else None,
             "effect_ci_apa": format_ci(*eff_ci, confidence, leading_zero=not bounded) if eff_ci else None,

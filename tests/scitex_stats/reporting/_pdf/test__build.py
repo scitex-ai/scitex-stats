@@ -238,4 +238,37 @@ def test_a_report_with_japanese_names_warns_when_no_cjk_font_is_installed():
     assert ("no CJK font is installed" in text) == (not cjk_font_available())
 
 
+def test_long_within_design_pairs_by_subject_id(tmp_path):
+    """The reported reproduction: subject ids were sorted and then discarded, so a
+    missing cell paired subject 2's A with subject 4's B. Both conditions keep
+    subjects 1 and 3 here, and the dropped ones are reported."""
+    # Arrange
+    rows = ["subject,condition,score",
+            "1,A,1.0", "2,A,2.0", "3,A,3.0",
+            "1,B,11.0", "3,B,13.0", "4,B,14.0"]
+    path = tmp_path / "long.csv"
+    path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    # Act
+    model = build_report(str(path), {"type": "within", "group_col": "condition", "value_col": "score",
+                                     "subject_col": "subject"}, timestamp=STAMP)
+    text = _text(_section(model, "data")["blocks"])
+    # Assert
+    assert ("A | 2 | 1 | 2.00" in text, "B | 2 | 1 | 12.00" in text, "subject has no cell in every condition" in text) == (True, True, True)
+
+
+def test_the_input_hash_covers_the_raw_cells_not_the_normalized_values():
+    """The reported reproduction: invalid raw values were replaced by NaN before
+    hashing, so inputs differing only as "foo" versus "bar" produced the same digest
+    while their exclusion records differed. The shown digest is now the RAW input's,
+    and the normalized analysis data is hashed separately."""
+    # Arrange
+    # Act
+    a = build_report({"A": [1, 2, "foo", 4], "B": [2, 3, 4, 5]}, "between", timestamp=STAMP)
+    b = build_report({"A": [1, 2, "bar", 4], "B": [2, 3, 4, 5]}, "between", timestamp=STAMP)
+    again = build_report({"A": [1, 2, "foo", 4], "B": [2, 3, 4, 5]}, "between", timestamp=STAMP)
+    # Assert
+    assert (a["summary"]["input_sha256"] != b["summary"]["input_sha256"],
+            a["summary"]["input_sha256"] == again["summary"]["input_sha256"]) == (True, True)
+
+
 # EOF

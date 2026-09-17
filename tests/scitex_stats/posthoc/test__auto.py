@@ -66,12 +66,22 @@ def test_select_posthoc_rejects_unknown_friedman_method():
         call()
 
 
-def test_anova_uses_brown_forsythe_to_pick_tukey_for_homogeneous_groups():
+def test_anova_without_a_declaration_stays_games_howell_even_when_groups_look_homogeneous():
+    """The reported reproduction: homogeneous groups made Brown-Forsythe grant
+    Tukey, i.e. the choice depended on the data. Undeclared means undeclared."""
     # Arrange
     # Act
     out = run_posthoc([A, B, C], "anova")
     # Assert
-    assert out["method"] == "tukey" and out["variance_check"]["equal_variances"] is True
+    assert out["method"] == "games_howell" and out["variance_check"]["equal_variances"] is True
+
+
+def test_anova_with_a_declaration_in_advance_uses_tukey():
+    # Arrange: the caller declares equal variances; the data is not consulted.
+    # Act
+    out = run_posthoc(HETERO, "anova", equal_variances=True)
+    # Assert
+    assert out["method"] == "tukey"
 
 
 def test_anova_picks_games_howell_when_variances_differ():
@@ -218,6 +228,18 @@ def test_references_follow_the_procedure():
     out = run_posthoc([A, B, C], "kruskal")
     # Assert
     assert any(r.startswith("Dunn, O. J.") for r in out["references"]) and any(r.startswith("Holm, S.") for r in out["references"])
+
+
+def test_a_constant_nonzero_paired_difference_is_undefined_not_no_effect():
+    """The reported reproduction: a constant difference of 1 came back as t=0, p=1 -
+    "no effect" - which is the opposite of a perfectly consistent difference."""
+    # Arrange: every subject differs by exactly 1 between adjacent conditions.
+    # Act
+    out = run_posthoc([[1.0, 2.0, 3.0, 4.0], [2.0, 3.0, 4.0, 5.0], [3.0, 4.0, 5.0, 6.0]], "anova_rm")
+    first = out["comparisons"][0]
+    # Assert
+    assert (first["statistic"], first["p_unadjusted"], first["p_adjusted"], first["significant"],
+            "zero standard error" in first.get("undefined", "")) == (None, None, None, False, True)
 
 
 # EOF

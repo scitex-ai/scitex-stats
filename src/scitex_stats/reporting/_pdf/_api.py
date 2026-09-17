@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, Iterable, Optional, Sequence, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
 
 from ._build import SECTIONS, build_report
 from ._html import render_html
@@ -20,6 +20,26 @@ def _figure_svg(model: Dict[str, Any]) -> str:
     return section["blocks"][0]["svg"]
 
 
+def planned_paths(output: Union[str, Path], formats: Iterable[str]) -> List[Path]:
+    """The files :func:`report` would write for ``output`` and ``formats``.
+
+    Single source of truth for the writer and for anything that must not clobber an
+    existing report. The CLI's overwrite guard used to check only ``--out``, so an
+    existing same-stem ``.html``, ``.md`` or figure was silently replaced.
+    """
+    base = Path(output)
+    wanted = tuple(formats)
+    paths: List[Path] = []
+    if "html" in wanted:
+        paths.append(base.with_suffix(".html"))
+    if "md" in wanted:
+        paths.append(base.with_name(base.stem + "-figure-1.svg"))
+        paths.append(base.with_suffix(".md"))
+    if "pdf" in wanted:
+        paths.append(base.with_suffix(".pdf"))
+    return paths
+
+
 def report(
     data: Any,
     design: Any = "between",
@@ -31,6 +51,7 @@ def report(
     seed: int = 42,
     posthoc: str = "auto",
     friedman_method: str = "nemenyi",
+    equal_variances: Optional[bool] = None,
     title: str = "Statistical report",
     y_label: str = "Value",
     timestamp: Optional[str] = None,
@@ -77,7 +98,8 @@ def report(
     if unknown:
         raise ValueError(f"Unknown format(s) {sorted(unknown)}; choose from {FORMATS}")
     model = build_report(data, design, group_names=group_names, alpha=alpha, seed=seed, posthoc=posthoc,
-                         friedman_method=friedman_method, title=title, y_label=y_label, timestamp=timestamp)
+                         friedman_method=friedman_method, equal_variances=equal_variances,
+                         title=title, y_label=y_label, timestamp=timestamp)
     out: Dict[str, Any] = {"model": model, "summary": model["summary"],
                            "sections": [t for _, t in SECTIONS], "paths": {}}
     base = Path(output) if output is not None else None
@@ -108,6 +130,6 @@ def report(
     return out
 
 
-__all__ = ["FORMATS", "report"]
+__all__ = ["FORMATS", "planned_paths", "report"]
 
 # EOF
