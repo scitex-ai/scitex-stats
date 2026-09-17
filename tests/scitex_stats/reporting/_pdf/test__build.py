@@ -271,4 +271,16 @@ def test_the_input_hash_covers_the_raw_cells_not_the_normalized_values():
             a["summary"]["input_sha256"] == again["summary"]["input_sha256"]) == (True, True)
 
 
+def test_the_report_shows_both_digests_with_their_labels():
+    """The user-visible half of the provenance fix: the meta section must say which
+    hash is which, so a reader can tell the raw input's digest from the analysis
+    data's."""
+    # Arrange
+    model = build_report(THREE, "between", timestamp=STAMP)
+    # Act
+    text = _text(_section(model, "meta")["blocks"])
+    # Assert
+    assert ("Input SHA-256" in text, "Analysis data SHA-256" in text, model["summary"]["input_sha256"][:12] in text) == (True, True, True)
+
+
 # EOF
