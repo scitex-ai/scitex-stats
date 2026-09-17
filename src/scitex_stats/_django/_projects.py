@@ -19,6 +19,8 @@ stays distinguishable from the app's outputs.
 
 from __future__ import annotations
 
+import base64
+import binascii
 import json
 import os
 import time
@@ -41,6 +43,8 @@ DATA_EXTENSIONS = (".csv", ".tsv")
 # One import must stay a browser-sized payload; larger files are refused with a
 # legible error rather than half-loaded.
 MAX_IMPORT_BYTES = 5 * 1024 * 1024
+# Same ceiling for what we write back — a rendered plot or a result bundle.
+MAX_ARTIFACT_BYTES = 5 * 1024 * 1024
 # What the app writes back into the project.
 SAVE_KINDS = ("config", "results", "plots", "provenance")
 UNSAFE_NAME_CHARS = ("/", "\\", "\x00")
@@ -147,12 +151,18 @@ def read_data_file(project_id: Optional[str], name: str) -> Optional[str]:
 
 
 def save_artifact(
-    project_id: Optional[str], kind: str, name: str, payload: Any
+    project_id: Optional[str],
+    kind: str,
+    name: str,
+    payload: Any,
+    payload_base64: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
     """Write one artifact into ``<project>/stats/<kind>/`` and describe it.
 
     Returns ``None`` for every refusal (unknown project, unknown kind, unsafe
-    name). ``payload`` is written as JSON when it is not already a string.
+    name, invalid base64, oversized binary). ``payload_base64`` writes the
+    decoded BYTES — that is how a rendered plot (PNG/SVG) is stored; otherwise
+    the payload is written as JSON when it is not already a string.
     """
     base = project_dir(project_id)
     if base is None or kind not in SAVE_KINDS:
@@ -165,8 +175,19 @@ def save_artifact(
     target = _safe_child(target_dir, name)
     if target is None:
         return None
-    text = payload if isinstance(payload, str) else json.dumps(payload, indent=2, sort_keys=True, default=str)
-    target.write_text(text, encoding="utf-8")
+    if payload_base64 is not None:
+        try:
+            binary = base64.b64decode(payload_base64, validate=True)
+        except (binascii.Error, ValueError):
+            return None
+        if len(binary) > MAX_ARTIFACT_BYTES:
+            return None
+        target.write_bytes(binary)
+    else:
+        text = payload if isinstance(payload, str) else json.dumps(payload, indent=2, sort_keys=True, default=str)
+        if len(text.encode("utf-8")) > MAX_ARTIFACT_BYTES:
+            return None
+        target.write_text(text, encoding="utf-8")
     return {
         "project": project_id,
         "kind": kind,

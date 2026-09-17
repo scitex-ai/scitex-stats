@@ -335,4 +335,62 @@ def test_index_offers_quick_analysis_as_the_explicit_alternative(client):  # noq
     assert "Quick analysis" in html and 'id="statsSaveRow"' in html
 
 
+
+def test_save_artifact_writes_decoded_base64_bytes(tmp_path):
+    # Arrange: a real PNG signature, so the file proves bytes and not text.
+    import base64 as b64
+
+    _project_with_data(tmp_path)
+    png = b"\x89PNG\r\n\x1a\n" + b"payload"
+    # Act
+    with _projects_root(tmp_path):
+        saved = _projects.save_artifact("cohort", "plots", "plot.png", None, payload_base64=b64.b64encode(png).decode())
+    # Assert
+    assert (tmp_path / "cohort" / saved["path"]).read_bytes() == png
+
+
+def test_save_artifact_refuses_invalid_base64(tmp_path):
+    # Arrange
+    _project_with_data(tmp_path)
+    # Act
+    with _projects_root(tmp_path):
+        saved = _projects.save_artifact("cohort", "plots", "plot.png", None, payload_base64="not base64 !!")
+    # Assert
+    assert saved is None
+
+
+def test_save_artifact_refuses_an_oversized_binary(tmp_path):
+    # Arrange: base64 of one byte over the write cap.
+    import base64 as b64
+
+    _project_with_data(tmp_path)
+    oversized = b64.b64encode(b"x" * (_projects.MAX_ARTIFACT_BYTES + 1)).decode()
+    # Act
+    with _projects_root(tmp_path):
+        saved = _projects.save_artifact("cohort", "plots", "plot.png", None, payload_base64=oversized)
+    # Assert
+    assert saved is None
+
+
+def test_project_save_endpoint_stores_a_rendered_plot(tmp_path, client):  # noqa: F811
+    # Arrange
+    import base64 as b64
+
+    _project_with_data(tmp_path)
+    png = b"\x89PNG\r\n\x1a\n" + b"pixels"
+    payload = json.dumps(
+        {
+            "project": "cohort",
+            "kind": "plots",
+            "name": "plot.png",
+            "payload_base64": b64.b64encode(png).decode(),
+        }
+    )
+    # Act
+    with _projects_root(tmp_path):
+        response = client.post("/api/project-save", data=payload, content_type="application/json")
+    # Assert
+    assert response.status_code == 201 and (tmp_path / "cohort" / "stats" / "plots" / "plot.png").read_bytes() == png
+
+
 # EOF

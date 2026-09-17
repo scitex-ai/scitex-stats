@@ -271,9 +271,11 @@
     try { return JSON.parse(pre.textContent); } catch (e) { return null; }
   }
 
-  async function saveArtifact(kind, name, payload) {
+  async function saveArtifact(kind, name, payload, payloadBase64) {
     if (!projectId()) { setSaveStatus(_("No project is active.")); return; }
-    var res = await api("/api/project-save", { project: projectId(), kind: kind, name: name, payload: payload });
+    var body = { project: projectId(), kind: kind, name: name, payload: payload };
+    if (payloadBase64) body.payload_base64 = payloadBase64;
+    var res = await api("/api/project-save", body);
     setSaveStatus(res.ok ? fmt(_("Saved %s to the project"), [res.body.path || name]) : _("Save failed."));
   }
 
@@ -293,10 +295,26 @@
     return saveArtifact("config", "config.json", currentConfig());
   }
 
-  function savePlot() {
+  async function saveRenderedPlot() {
+    var link = $("statsPlotPng");
+    var href = link && !link.hidden ? link.getAttribute("href") : "";
+    if (!href) return false;
+    var response = await fetch(href);
+    if (!response.ok) return false;
+    var view = new Uint8Array(await response.arrayBuffer());
+    var binary = "";
+    for (var i = 0; i < view.length; i++) binary += String.fromCharCode(view[i]);
+    await saveArtifact("plots", "plot.png", null, window.btoa(binary));
+    return true;
+  }
+
+  async function savePlot() {
+    // Prefer the RENDERED plot: a project should get the figure, not only its
+    // spec. The spec is the fallback when no image has been drawn yet.
+    if (await saveRenderedPlot()) return;
     var spec = window.stxStatsPlot && window.stxStatsPlot.spec ? window.stxStatsPlot.spec() : null;
     if (!spec) { setSaveStatus(_("Draw a plot first.")); return; }
-    return saveArtifact("plots", "plot-spec.json", spec);
+    await saveArtifact("plots", "plot-spec.json", spec);
   }
 
   // ---- Test -------------------------------------------------------------

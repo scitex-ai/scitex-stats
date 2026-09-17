@@ -459,7 +459,11 @@ def project_save(request):
     if isinstance(body, dict) and "error" in body:
         return JsonResponse(body, status=body.pop("status", 400))
     saved = _projects.save_artifact(
-        body.get("project"), body.get("kind"), body.get("name"), body.get("payload")
+        body.get("project"),
+        body.get("kind"),
+        body.get("name"),
+        body.get("payload"),
+        payload_base64=body.get("payload_base64"),
     )
     if saved is None:
         return JsonResponse({"error": "not saved"}, status=403)
