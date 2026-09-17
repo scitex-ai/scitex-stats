@@ -1485,4 +1485,76 @@ def test_save_refuses_an_svg_in_a_foreign_namespace(tmp_path):
     assert (wrong, right["name"]) == (None, "plot.svg")
 
 
+class _RaisingFspath:
+    """A PathLike whose __fspath__ is host code that raises."""
+
+    def __fspath__(self):
+        raise RuntimeError("__fspath__ blew up")
+
+
+class _BytesFspath:
+    """A PathLike that resolves to bytes: fspath succeeds, the answer is unusable."""
+
+    def __fspath__(self):
+        return b"/tmp/not-a-str"
+
+
+class _RaisingFspathStorage:
+    def project_path(self, project_id, request=None):
+        return _RaisingFspath()
+
+    def can_write(self, project_id, request=None):
+        return True
+
+
+class _BytesFspathStorage:
+    def project_path(self, project_id, request=None):
+        return _BytesFspath()
+
+    def can_write(self, project_id, request=None):
+        return True
+
+
+class _RaisingDescriptorStorage:
+    """Reading the attribute itself raises: getattr(default) does not cover it."""
+
+    @property
+    def project_path(self):
+        raise RuntimeError("descriptor blew up while inspecting project_path")
+
+    @property
+    def can_write(self):
+        raise RuntimeError("descriptor blew up while inspecting can_write")
+
+
+RAISING_FSPATH_STORAGE = "tests.scitex_stats._django.test__projects._RaisingFspathStorage"
+BYTES_FSPATH_STORAGE = "tests.scitex_stats._django.test__projects._BytesFspathStorage"
+RAISING_DESCRIPTOR_STORAGE = "tests.scitex_stats._django.test__projects._RaisingDescriptorStorage"
+
+
+@pytest.mark.parametrize(
+    "storage_path", [RAISING_FSPATH_STORAGE, BYTES_FSPATH_STORAGE, RAISING_DESCRIPTOR_STORAGE]
+)
+def test_a_hostile_pathlike_or_descriptor_refuses_at_both_endpoints(tmp_path, storage_path):  # noqa: F811
+    """Both gaps reported on a4ce6cf: a raising __fspath__ (and an invalid bytes
+    result), and a descriptor that raises while the capability is inspected. Each
+    answered 500; each must be a refusal with nothing written."""
+    # Arrange
+    from django.test import Client, override_settings
+
+    root = _host_project(tmp_path)
+    enforcing = Client(enforce_csrf_checks=True)
+    token = enforcing.get("/?project=host-cohort").content.decode().split('name="csrf-token" content="')[1].split('"')[0]
+    payload = json.dumps({"project": "host-cohort", "kind": "results", "name": "result.json", "payload": {"a": 1}})
+    # Act
+    with override_settings(SCITEX_PROJECT_PROVIDER=HOST_PROVIDER_PATH, SCITEX_PROJECT_STORAGE=storage_path), _host_root(root):
+        read_status = enforcing.get("/api/project-files?project=host-cohort").status_code
+        write_status = enforcing.post(
+            "/api/project-save?project=host-cohort", data=payload, content_type="application/json", HTTP_X_CSRFTOKEN=token
+        ).status_code
+        listed = _projects.list_data_files("host-cohort")
+    # Assert
+    assert (read_status, write_status, listed, (root / "stats").exists()) == (403, 403, None, False)
+
+
 # EOF

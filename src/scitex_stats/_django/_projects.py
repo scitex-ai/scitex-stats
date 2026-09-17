@@ -220,6 +220,21 @@ class NoHostStorage:
         return False
 
 
+def _method_of(candidate: Any, name: str) -> Any:
+    """The named callable on ``candidate``, or ``None``.
+
+    ``getattr(obj, name, None)`` only swallows ``AttributeError``: a property or
+    other descriptor that RAISES while being read propagates straight out of the
+    inspection and becomes a 500. Inspection is not the place to discover that
+    host code is broken — a raising descriptor means "not a capability".
+    """
+    try:
+        attribute = getattr(candidate, name, None)
+    except Exception:  # noqa: BLE001 - a hostile descriptor is a refusal, not a crash
+        return None
+    return attribute if callable(attribute) else None
+
+
 def _is_capability(candidate: Any) -> bool:
     """True when ``candidate`` is a USABLE capability INSTANCE.
 
@@ -233,7 +248,7 @@ def _is_capability(candidate: Any) -> bool:
     """
     if isinstance(candidate, type):
         return False
-    return all(callable(getattr(candidate, name, None)) for name in ("project_path", "can_write"))
+    return all(_method_of(candidate, name) is not None for name in ("project_path", "can_write"))
 
 
 def _capability(candidate: Any) -> Any:
@@ -260,16 +275,23 @@ def _capability(candidate: Any) -> Any:
 def _capability_path(store: Any, project_id: Optional[str], request: Any) -> Optional[str]:
     """The path this capability gives for ``project_id``, or ``None``.
 
-    A capability is host code: if it raises, the app refuses. Anything that is not
-    a path (a bool, a list, ``None``, bytes) is a refusal too — never a coercion
-    that invents a directory out of whatever came back.
+    A capability is host code: if it raises — or hands back something that only
+    LOOKS like a path — the app refuses. ``os.fspath`` is guarded too, because a
+    custom ``__fspath__`` is host code that can raise, and its result must be a
+    ``str`` (a ``bytes`` path is not something this app will open).
     """
+    method = _method_of(store, "project_path")
+    if method is None:
+        return None
     try:
-        answer = store.project_path(str(project_id), request)
+        answer = method(str(project_id), request)
+        if isinstance(answer, str):
+            return answer
+        if isinstance(answer, os.PathLike):
+            resolved = os.fspath(answer)
+            return resolved if isinstance(resolved, str) else None
     except Exception:  # noqa: BLE001 - a broken capability refuses; it does not 500 the app
         return None
-    if isinstance(answer, (str, os.PathLike)):
-        return os.fspath(answer)
     return None
 
 
@@ -279,8 +301,11 @@ def _capability_allows_write(store: Any, project_id: Optional[str], request: Any
     ``bool(answer)`` is not enough: the string ``"false"`` is truthy, and it
     authorized a write to a read-only project before this check existed.
     """
+    method = _method_of(store, "can_write")
+    if method is None:
+        return False
     try:
-        answer = store.can_write(str(project_id), request)
+        answer = method(str(project_id), request)
     except Exception:  # noqa: BLE001 - same rule: a broken capability refuses
         return False
     return answer is True
