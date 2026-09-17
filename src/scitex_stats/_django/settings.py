@@ -72,6 +72,18 @@ globals().update(i18n_settings())
 
 ROOT_URLCONF = "scitex_stats._django._standalone_urls"
 
+# Project scope (SDK contract, scitex-ui): the app renders the picker, the HOST
+# supplies the project list. A hub mount overrides both settings with its own
+# provider; standalone falls back to local folders (see _projects.py).
+SCITEX_PROJECT_PROVIDER = "scitex_stats._django._projects:provider"
+# A URL NAME, not a path: reverse() resolves it against the active urlconf, so
+# the same setting works standalone ("/api/project-scope") and under a hub
+# prefix. It must be the APPLICATION-namespaced name — urls.py declares
+# `app_name = "stats"`, and Django then exposes the name only as
+# "stats:api_project_scope" (the bare name raises NoReverseMatch, which the SDK
+# guard turns into "no picker" silently — measured, not assumed).
+SCITEX_PROJECT_PROVIDER_URL = "stats:api_project_scope"
+
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -80,6 +92,10 @@ TEMPLATES = [
         "OPTIONS": {
             "context_processors": [
                 "django.template.context_processors.request",
+                # The app declares "scope": "project" in its manifest, so the
+                # templates need `app_scope` to decide whether the shared
+                # project picker renders (SDK contract, scitex-app).
+                "scitex_app._app_scope.app_scope_context",
             ],
         },
     },

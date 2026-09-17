@@ -2,7 +2,7 @@
   "name": "stats_calculator",
   "slug": "stats",
   "label": "Stats",
-  "scope": "user",
+  "scope": "project",
   "pip_package": "scitex-stats",
   "icon": "fas fa-chart-bar",
   "order": 27,

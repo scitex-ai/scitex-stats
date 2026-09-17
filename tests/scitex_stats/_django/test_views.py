@@ -57,6 +57,12 @@ if not settings.configured:
         DATABASES={},
         STATIC_URL="/static/",
         DEFAULT_AUTO_FIELD="django.db.models.BigAutoField",
+        # Project scope: the shared picker renders only when a provider URL is
+        # configured (the SDK guard). This block configures Django itself, so it
+        # takes the literal path; the value the app actually SHIPS (the
+        # namespaced URL name "stats:api_project_scope") is pinned separately,
+        # by resolving it under the standalone urlconf.
+        SCITEX_PROJECT_PROVIDER_URL="/api/project-scope",
     )
 
 django.setup()
@@ -379,6 +385,52 @@ def test_index_has_data_test_results_panes(client):
     html = client.get("/").content.decode()
     # Assert
     assert all(f'data-stx-pane="{p}"' in html for p in ("data", "test", "results"))
+
+
+def test_index_shows_the_leaf_title_and_package_version_once(client):
+    # Arrange
+    import scitex_stats
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
+    assert (
+        html.count('<header class="stats-app-header"') == 1
+        and html.count('<h1 class="stats-app-header__title">Stats</h1>') == 1
+        and html.count('class="stats-app-header__version"') == 1
+        and f"v{scitex_stats.__version__}" in html
+    )
+
+
+def test_index_puts_the_shared_picker_in_the_canonical_slot(client):
+    # Arrange
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
+    assert (
+        '<div class="stx-app-header__slot--project-selector">' in html
+        and "data-stx-project-picker" in html
+        and 'data-provider-url="/api/project-scope"' in html
+    )
+
+
+def test_shipped_provider_url_name_resolves_under_the_standalone_urlconf():
+    # Arrange
+    from django.test import override_settings
+    from django.urls import reverse
+    # Act
+    with override_settings(ROOT_URLCONF="scitex_stats._django._standalone_urls"):
+        url = reverse("stats:api_project_scope")
+    # Assert
+    assert url == "/api/project-scope"
+
+
+def test_app_settings_declare_the_namespaced_provider_url_name():
+    # Arrange
+    from scitex_stats._django import settings as app_settings
+    # Act
+    declared = app_settings.SCITEX_PROJECT_PROVIDER_URL
+    # Assert
+    assert declared == "stats:api_project_scope"
 
 
 def test_safe_turns_nan_into_null():

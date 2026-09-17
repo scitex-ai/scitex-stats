@@ -89,10 +89,18 @@ def _safe(payload: Any) -> Any:
 
 def index(request):
     """Serve the Statistics page (Data | Test | Results panes)."""
+    from scitex_stats import __version__
     from scitex_ui.branding import shell_context
+
+    from . import _projects
 
     context = shell_context("Statistics", panes=SHELL_PANES)
     context["stx_mount"] = mount_prefix(request)
+    # App-header identity: OUR package version (never the host's) and the
+    # project this request resolves to, so the shared picker renders the
+    # current one instead of guessing.
+    context["stats_version"] = __version__
+    context["current_project"] = _projects.current_project_id(request)
     html = render_to_string("stats/stats.html", context, request=request)
     return HttpResponse(html)
 
