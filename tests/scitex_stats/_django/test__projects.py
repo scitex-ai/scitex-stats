@@ -969,4 +969,235 @@ def test_save_endpoint_refuses_a_read_only_member(tmp_path, client):  # noqa: F8
     assert status == 403
 
 
+# ---------------------------------------------------------------------------
+# Third review round: fail-closed host storage, class registrations, real SVG
+# validation, and no-follow at EVERY path component.
+# ---------------------------------------------------------------------------
+
+
+class _ReadOnlyCohortProvider:
+    """Lists a single project for this caller, and nothing about writing."""
+
+    def list_projects(self, request=None):
+        return [ProjectEntry(id="cohort", name="cohort", detail="alice")]
+
+    def last_visited(self, request=None):
+        return None
+
+    def remember(self, request, project_id):
+        return None
+
+
+_readonly_provider = _ReadOnlyCohortProvider()
+READONLY_PROVIDER_PATH = "tests.scitex_stats._django.test__projects._readonly_provider"
+
+
+class _StatefulClassStorage:
+    """Registered as a CLASS (the documented form): the state only exists once
+    instantiated, so handing callers the class object breaks every call."""
+
+    def __init__(self):
+        self.calls = 0
+
+    def project_path(self, project_id, request=None):
+        self.calls += 1
+        return str(pathlib.Path(os.environ["SCITEX_STATS_TEST_HOST_ROOT"]))
+
+    def can_write(self, project_id, request=None):
+        return True
+
+
+class _UninstantiableStorage:
+    def __init__(self, required):  # no arg-free construction: a broken registration
+        self.required = required
+
+    def project_path(self, project_id, request=None):
+        return None
+
+    def can_write(self, project_id, request=None):
+        return False
+
+
+STATE_FUL_CLASS_PATH = "tests.scitex_stats._django.test__projects._StatefulClassStorage"
+UNINSTANTIABLE_PATH = "tests.scitex_stats._django.test__projects._UninstantiableStorage"
+
+
+def test_a_host_without_storage_fails_closed_instead_of_using_the_local_root(tmp_path):
+    """The exact fall-through: the host lists one project, and a same-named,
+    writable folder exists under the standalone root."""
+    # Arrange
+    local_root = tmp_path / "local"
+    local_project = local_root / "cohort"
+    local_project.mkdir(parents=True)
+    (local_project / "local-only.csv").write_text("a\n1\n")
+    host_root = tmp_path / "host"
+    host_root.mkdir()
+    (host_root / "real.csv").write_text("a\n1\n")
+    from django.test import override_settings
+
+    # Act: host provider registered, NO storage capability of any kind.
+    with override_settings(SCITEX_PROJECT_PROVIDER=READONLY_PROVIDER_PATH, SCITEX_PROJECT_STORAGE=""), _projects_root(local_root):
+        listed = _projects.list_data_files("cohort")
+        saved = _projects.save_artifact("cohort", "results", "result.json", {"a": 1})
+    # Assert
+    assert (listed, saved, (local_project / "stats").exists()) == (None, None, False)
+
+
+def test_a_storage_class_registration_is_instantiated(tmp_path):
+    # Arrange: the dotted path names a class, not an instance.
+    host_root = tmp_path / "host"
+    host_root.mkdir()
+    (host_root / "real.csv").write_text("a\n1\n")
+    from django.test import override_settings
+
+    with override_settings(SCITEX_PROJECT_PROVIDER=HOST_PROVIDER_PATH, SCITEX_PROJECT_STORAGE=STATE_FUL_CLASS_PATH), _host_root(host_root):
+        # Act
+        capability = _projects.storage()
+        listed = _projects.list_data_files("host-cohort", None)
+    # Assert
+    assert (type(capability).__name__, [f["name"] for f in listed]) == ("_StatefulClassStorage", ["real.csv"])
+
+
+def test_an_uninstantiable_storage_registration_refuses_rather_than_crashing(tmp_path):
+    # Arrange: the registered class cannot be constructed without arguments.
+    host_root = tmp_path / "host"
+    host_root.mkdir()
+    (host_root / "real.csv").write_text("a\n1\n")
+    from django.test import override_settings
+
+    # Act
+    with override_settings(SCITEX_PROJECT_PROVIDER=HOST_PROVIDER_PATH, SCITEX_PROJECT_STORAGE=UNINSTANTIABLE_PATH), _host_root(host_root):
+        listed = _projects.list_data_files("host-cohort")
+        saved = _projects.save_artifact("host-cohort", "results", "result.json", {"a": 1})
+    # Assert
+    assert (listed, saved) == (None, None)
+
+
+def test_save_refuses_an_svg_that_does_not_parse_as_svg(tmp_path):
+    # Arrange: a name that promises SVG over content that is not an SVG document.
+    import base64
+
+    _project_with_data(tmp_path)
+    bad_root = base64.b64encode(b"<svg-not-svg>bad</svg-not-svg>").decode()
+    bad_xml = base64.b64encode(b"<svg><unclosed>").decode()
+    dtd = base64.b64encode(b'<?xml version="1.0"?><!DOCTYPE svg [<!ENTITY x "y">]><svg>&x;</svg>').decode()
+    good = base64.b64encode(b'<svg xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1"/></svg>').decode()
+    # Act
+    with _projects_root(tmp_path):
+        wrong_root = _projects.save_artifact("cohort", "plots", "plot.svg", None, payload_base64=bad_root)
+        unparsable = _projects.save_artifact("cohort", "plots", "plot.svg", None, payload_base64=bad_xml)
+        with_entities = _projects.save_artifact("cohort", "plots", "plot.svg", None, payload_base64=dtd)
+        valid = _projects.save_artifact("cohort", "plots", "plot.svg", None, payload_base64=good)
+    # Assert
+    assert (wrong_root, unparsable, with_entities, valid["name"]) == (None, None, None, "plot.svg")
+
+
+def test_a_symlinked_ancestor_of_the_project_is_refused(tmp_path):
+    # Arrange: the project dir is real, but the directory holding it is a symlink
+    # — refusing only the last component would have followed it.
+    real_parent = tmp_path / "real-parent"
+    project = real_parent / "cohort"
+    project.mkdir(parents=True)
+    (project / "secret.csv").write_text("a\n1\n")
+    linked_parent = tmp_path / "linked-parent"
+    linked_parent.symlink_to(real_parent, target_is_directory=True)
+    # Act
+    with _projects_root(tmp_path):
+        linked = _projects.list_data_files("cohort")
+    # Assert
+    assert linked is None
+
+
+class _HubSlugProvider:
+    """Hub-shaped: project ids are ``owner/slug`` and detail is display metadata."""
+
+    def list_projects(self, request=None):
+        base = pathlib.Path(os.environ["SCITEX_STATS_TEST_HUB_ROOT"])
+        if not (base / "alice" / "cohort").is_dir():
+            return []
+        return [ProjectEntry(id="alice/cohort", name="cohort", detail="alice")]
+
+    def last_visited(self, request=None):
+        return None
+
+    def remember(self, request, project_id):
+        return None
+
+
+class _HubSlugStorage:
+    """The hub's write capability: it owns the owner/slug -> path mapping."""
+
+    def project_path(self, project_id, request=None):
+        owner, _, slug = str(project_id).partition("/")
+        if not owner or not slug:
+            return None
+        base = pathlib.Path(os.environ["SCITEX_STATS_TEST_HUB_ROOT"])
+        return str(base / owner / slug)
+
+    def can_write(self, project_id, request=None):
+        return os.environ.get("SCITEX_STATS_TEST_WRITE", "yes") == "yes"
+
+
+_hub_provider = _HubSlugProvider()
+HUB_PROVIDER_PATH = "tests.scitex_stats._django.test__projects._hub_provider"
+_hub_storage = _HubSlugStorage()
+HUB_STORAGE_PATH = "tests.scitex_stats._django.test__projects._hub_storage"
+
+
+@contextlib.contextmanager
+def _hub_root(path):
+    previous = os.environ.get("SCITEX_STATS_TEST_HUB_ROOT")
+    os.environ["SCITEX_STATS_TEST_HUB_ROOT"] = str(path)
+    try:
+        yield
+    finally:
+        if previous is None:
+            os.environ.pop("SCITEX_STATS_TEST_HUB_ROOT", None)
+        else:
+            os.environ["SCITEX_STATS_TEST_HUB_ROOT"] = previous
+
+
+def test_a_hub_owner_slug_project_reads_and_writes_through_the_capability(tmp_path):
+    """The real Hub shape: ids are `owner/slug`, detail is the owner, and only
+    the storage capability knows the path — including for a multi-component id,
+    which the standalone name policy would refuse."""
+    # Arrange
+    base = tmp_path / "hub"
+    project = base / "alice" / "cohort"
+    project.mkdir(parents=True)
+    (project / "measurements.csv").write_text("a,b\n5.1,6.3\n")
+    from django.test import override_settings
+
+    # Act
+    with override_settings(SCITEX_PROJECT_PROVIDER=HUB_PROVIDER_PATH, SCITEX_PROJECT_STORAGE=HUB_STORAGE_PATH), _hub_root(base):
+        listed = _projects.list_data_files("alice/cohort")
+        text = _projects.read_data_file("alice/cohort", "measurements.csv")
+        saved = _projects.save_artifact("alice/cohort", "results", "result.json", {"a": 1})
+    # Assert
+    assert ([f["name"] for f in listed], text.splitlines()[0], saved["path"]) == (
+        ["measurements.csv"],
+        "a,b",
+        "stats/results/result.json",
+    )
+
+
+def test_a_hub_slug_project_is_refused_by_the_endpoint_when_the_storage_says_no(tmp_path, client):  # noqa: F811
+    # Arrange: the hub lists the project (read) but the capability refuses writes.
+    base = tmp_path / "hub"
+    (base / "alice" / "cohort").mkdir(parents=True)
+    (base / "alice" / "cohort" / "measurements.csv").write_text("a,b\n5.1,6.3\n")
+    from django.test import Client, override_settings
+
+    enforcing = Client(enforce_csrf_checks=True)
+    token = enforcing.get("/?project=alice%2Fcohort").content.decode().split('name="csrf-token" content="')[1].split('"')[0]
+    payload = json.dumps({"project": "alice/cohort", "kind": "results", "name": "result.json", "payload": {"a": 1}})
+    # Act
+    with override_settings(SCITEX_PROJECT_PROVIDER=HUB_PROVIDER_PATH, SCITEX_PROJECT_STORAGE=HUB_STORAGE_PATH), _hub_root(base), _write_capability("no"):
+        status = enforcing.post(
+            "/api/project-save?project=alice%2Fcohort", data=payload, content_type="application/json", HTTP_X_CSRFTOKEN=token
+        ).status_code
+    # Assert
+    assert status == 403
+
+
 # EOF

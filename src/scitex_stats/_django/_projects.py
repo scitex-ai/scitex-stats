@@ -205,38 +205,68 @@ class StandaloneProjectStorage:
         return True
 
 
+class NoHostStorage:
+    """A host is installed but supplied no usable storage: refuse everything.
+
+    Falling back to the standalone local root here is exactly what a hostile
+    setup wants: a host that lists one read-only project would otherwise resolve
+    to a same-named, WRITABLE folder under ``SCITEX_STATS_PROJECTS_ROOT``.
+    """
+
+    def project_path(self, project_id: str, request: Any = None) -> Optional[str]:
+        return None
+
+    def can_write(self, project_id: str, request: Any = None) -> bool:
+        return False
+
+
+def _capability(candidate: Any) -> Any:
+    """Turn a registration into a storage capability, or ``None``.
+
+    A dotted path may name a CLASS (the documented form) or an instance. A class
+    must be instantiated FIRST: a runtime-checkable Protocol matches a class
+    object too — its methods exist as attributes — so returning it hands callers
+    a capability whose every call is a missing-``self`` ``AttributeError``
+    instead of a refusal.
+    """
+    if isinstance(candidate, type):
+        try:
+            candidate = candidate()
+        except Exception:  # noqa: BLE001 - a broken registration must refuse, not crash
+            return None
+    elif callable(candidate) and not isinstance(candidate, ProjectStorage):
+        try:
+            candidate = candidate()
+        except Exception:  # noqa: BLE001
+            return None
+    return candidate if isinstance(candidate, ProjectStorage) else None
+
+
 def storage(request: Any = None) -> Any:
     """The request-aware storage capability: the host's, else the local one.
 
-    Order: an explicit ``SCITEX_PROJECT_STORAGE`` (dotted path), then a host
-    provider that itself exposes the capability, then the standalone local
-    storage. The host wins over the local folders in every case — asking the
-    local root inside a hub mount would read a directory the host never
-    authorized.
+    With a HOST provider installed only the host may say where files are, and a
+    missing or unusable host capability fails CLOSED (``NoHostStorage``) rather
+    than falling through to local folders; a broken registration is treated the
+    same way instead of crashing the request.
     """
     from django.conf import settings
     from django.utils.module_loading import import_string
+
+    host = provider(request)
+    fallback = NoHostStorage() if not isinstance(host, LocalProjectProvider) else StandaloneProjectStorage()
 
     dotted = str(getattr(settings, STORAGE_SETTING, "") or "").strip()
     if dotted:
         try:
             registered = import_string(dotted)
-        except Exception:  # noqa: BLE001 - a broken registration falls through, never crashes a request
-            registered = None
-        if isinstance(registered, ProjectStorage):
-            return registered
-        if callable(registered):
-            try:
-                built = registered()
-            except Exception:  # noqa: BLE001
-                built = None
-            if isinstance(built, ProjectStorage):
-                return built
+        except Exception:  # noqa: BLE001 - a broken registration refuses, never crashes a request
+            return fallback
+        return _capability(registered) or fallback
 
-    host = provider(request)
-    if not isinstance(host, LocalProjectProvider) and isinstance(host, ProjectStorage):
-        return host
-    return StandaloneProjectStorage()
+    if isinstance(host, LocalProjectProvider):
+        return StandaloneProjectStorage()
+    return _capability(host) or fallback
 
 
 def can_write(project_id: Optional[str], request: Any = None) -> bool:
@@ -251,26 +281,28 @@ def is_safe_name(name: Optional[str]) -> bool:
     return bool(name) and bool(SAFE_NAME.match(str(name)))
 
 
-def _open_root_no_follow(path: str) -> Optional[int]:
-    """``O_DIRECTORY|O_NOFOLLOW`` descriptor for a project root, via its parent.
+def _open_path_no_follow(path: str) -> Optional[int]:
+    """Walk ``path`` from the filesystem root, opening EVERY component no-follow.
 
-    The last component is opened with ``O_NOFOLLOW``: a project root that IS a
-    symlink is refused instead of being followed into whatever it points at —
-    which is how an authorized root could cross into another project even while
-    its children were refused. The parent is the trusted anchor the storage
-    capability handed us.
+    Refusing only the final component left the ancestors: a replaced parent
+    directory (a symlink) redirected the whole traversal into another project
+    while every child check still passed. So the walk starts at ``/`` and no
+    component is ever followed — a symlink at any level is a refusal.
     """
-    parent, name = os.path.split(os.path.abspath(path))
+    components = [part for part in os.path.normpath(os.path.abspath(path)).split(os.sep) if part]
     try:
-        parent_fd = os.open(parent or "/", os.O_RDONLY | os.O_DIRECTORY)
+        current = os.open(os.sep, os.O_RDONLY | os.O_DIRECTORY)
     except OSError:
         return None
-    try:
-        return os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent_fd)
-    except OSError:
-        return None
-    finally:
-        os.close(parent_fd)
+    for component in components:
+        try:
+            nxt = os.open(component, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=current)
+        except OSError:
+            os.close(current)
+            return None
+        os.close(current)
+        current = nxt
+    return current
 
 
 def _project_dir_fd(project_id: Optional[str], request: Any = None) -> Optional[int]:
@@ -279,7 +311,8 @@ def _project_dir_fd(project_id: Optional[str], request: Any = None) -> Optional[
     The descriptor — not a path string — is what every later operation is
     anchored to, which is what removes the resolve-then-open race: once this fd
     exists, a name can only ever resolve inside this directory. The path comes
-    from the storage CAPABILITY, never from the provider entry.
+    from the storage CAPABILITY, never from the provider entry, and the walk to
+    it refuses a symlink at any level.
     """
     entry = authorized_project(project_id, request)
     if entry is None:
@@ -287,7 +320,7 @@ def _project_dir_fd(project_id: Optional[str], request: Any = None) -> Optional[
     path = storage(request).project_path(str(project_id), request)
     if not path:
         return None
-    return _open_root_no_follow(str(path))
+    return _open_path_no_follow(str(path))
 
 
 def _open_child_dir(parent_fd: int, name: str, create: bool = False) -> Optional[int]:
@@ -325,6 +358,28 @@ def _unlink(name: str, dir_fd: int) -> None:
         pass
 
 
+def _svg_is_valid(body: bytes) -> bool:
+    """An SVG must actually parse, have an ``svg`` root, and carry no DTD.
+
+    A name is not a format: ``<svg-not-svg>bad</svg-not-svg>`` is well-formed
+    enough to look like SVG and was accepted before, while a DOCTYPE/ENTITY
+    declaration is the shape that makes an XML parser do more than read.
+    """
+    try:
+        text = body.decode("utf-8")
+    except UnicodeDecodeError:
+        return False
+    if "<!DOCTYPE" in text or "<!ENTITY" in text:
+        return False
+    from xml.etree import ElementTree
+
+    try:
+        root = ElementTree.fromstring(text)
+    except ElementTree.ParseError:
+        return False
+    return root.tag.split("}")[-1] == "svg"
+
+
 def _content_is_wrong(extension: str, body: bytes) -> bool:
     """True when ``body`` is not the content its extension promises.
 
@@ -341,8 +396,7 @@ def _content_is_wrong(extension: str, body: bytes) -> bool:
     if extension == ".png":
         return not body.startswith(b"\x89PNG\r\n\x1a\n")
     if extension == ".svg":
-        head = body[:2048].decode("utf-8", errors="replace").lstrip()
-        return not (head.startswith("<svg") or head.startswith("<?xml"))
+        return not _svg_is_valid(body)
     return False
 
 
