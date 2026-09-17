@@ -9,7 +9,13 @@ import sys
 
 import pytest
 
-from scitex_stats.reporting._pdf import SECTIONS, build_report, model_text, render_html, render_markdown
+from scitex_stats.reporting._pdf import (
+    SECTIONS,
+    build_report,
+    model_text,
+    render_html,
+    render_markdown,
+)
 
 THREE = {"Control": [5.1, 4.9, 5.6, 5.8, 6.0, 5.4, 5.2, 5.7], "Drug A": [6.3, 6.8, 6.1, 7.0, 6.6, 6.9, 6.4, 7.2],
          "Drug B": [5.9, 6.2, "", 6.0, 5.8, "n/a", 6.4, 6.1]}
