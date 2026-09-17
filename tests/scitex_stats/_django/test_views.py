@@ -480,4 +480,70 @@ def test_app_config_label():
     assert StatsCalculatorConfig.label == "stats_calculator"
 
 
-# EOF
+# ---------------------------------------------------------------------------
+# Hub mount contract: the hub includes this app's urls under ITS OWN prefix
+# (e.g. /apps/stats/), so every route and the mount marker the client joins
+# API paths with must work under a prefix, not only at the root.
+# ---------------------------------------------------------------------------
+
+
+def _prefixed_urlconf(prefix="apps/stats/"):
+    """A urlconf shaped like a hub mount: our urls under a prefix."""
+    import types
+
+    from django.urls import include, path
+
+    module = types.ModuleType("stats_prefixed_urlconf")
+    module.urlpatterns = [path(prefix, include("scitex_stats._django.urls"))]
+    return module
+
+
+def test_index_carries_the_prefix_marker_when_mounted_by_the_hub(client):
+    # Arrange
+    from django.test import override_settings
+    # Act
+    with override_settings(ROOT_URLCONF=_prefixed_urlconf()):
+        html = client.get("/apps/stats/").content.decode()
+    # Assert
+    assert 'name="stx-mount" content="/apps/stats"' in html
+
+
+def test_api_routes_answer_under_the_hub_prefix(client):
+    # Arrange
+    from django.test import override_settings
+    # Act
+    with override_settings(ROOT_URLCONF=_prefixed_urlconf()):
+        status = client.get("/apps/stats/api/tests").status_code
+    # Assert
+    assert status == 200
+
+
+# Off-loopback ALLOWED_HOSTS is decided by the STANDALONE settings module at
+# import time, so it is verified in a child interpreter (this process already
+# configured Django with its own settings).
+OFF_LOOPBACK_SCRIPT = """
+import django
+from django.test import Client
+
+django.setup()
+client = Client(raise_request_exception=False)
+print(client.get("/", HTTP_HOST="10.0.0.5").status_code)
+print(client.get("/", HTTP_HOST="not-configured.example").status_code)
+"""
+
+
+def test_off_loopback_host_is_accepted_only_when_configured():
+    # Arrange
+    import os
+    import subprocess
+    import sys
+
+    env = dict(os.environ)
+    env["DJANGO_SETTINGS_MODULE"] = "scitex_stats._django.settings"
+    env["SCITEX_STATS_ALLOWED_HOSTS"] = "10.0.0.5"
+    # Act
+    proc = subprocess.run(
+        [sys.executable, "-c", OFF_LOOPBACK_SCRIPT], capture_output=True, text=True, env=env
+    )
+    # Assert
+    assert proc.stdout.split() == ["200", "400"], proc.stderr[-1500:]
