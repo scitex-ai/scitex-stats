@@ -15,26 +15,37 @@ Filesystem rules, all enforced on DESCRIPTORS rather than paths:
   all (fail-closed, and the provider is asked with the request);
 * names are single components from a strict ASCII pattern — no separators, no
   dots-only, bounded length;
+* project roots are opened from their TRUSTED PARENT with ``O_NOFOLLOW``, so an
+  authorized root that is itself a symlink is refused instead of crossing into
+  another project;
 * children are opened ``O_NOFOLLOW`` relative to the project directory's file
   descriptor, so a symlink cannot smuggle a read or write out of the project
   (and there is no resolve-then-open window to race: the descriptor is the
   anchor, not a path string);
-* writes go to a hidden temp file in the TARGET directory and are moved into
-  place with ``os.replace`` — atomic, same directory — and never overwrite: an
-  existing artifact gets the next free ``.vN`` suffix instead.
+* writes reserve the artifact name with ``os.link`` — which fails rather than
+  overwrites — after the bytes are complete, so two writers racing for the same
+  name cannot both report it, neither loses its payload, and no reader ever sees
+  a partial artifact. An existing artifact takes the next free ``.vN`` suffix;
+* the bytes have to BE what the extension promises (JSON parses, PNG has the PNG
+  magic, SVG starts as XML), because a name is a promise later readers trust.
+
+Where a project's files live is asked of an explicit, request-aware STORAGE
+capability — never ``ProjectEntry.detail``, which the SDK defines as display
+metadata (the hub puts the owner's username there, not a path).
 """
 
 from __future__ import annotations
 
 import base64
 import binascii
+import itertools
 import json
 import os
 import re
 import stat
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Protocol, Tuple, runtime_checkable
 
 from scitex_ui.project_scope import (
     PROJECT_QUERY_PARAM,
@@ -69,6 +80,16 @@ ARTIFACT_DIR = "stats"
 # No separators, no leading dot, no "..", no NUL — and the same pattern is used
 # for reads and writes, so a name accepted once is accepted everywhere.
 SAFE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+# The bound is on the FINAL name, and every save reserves room for a version
+# suffix: a 64-character name is fine for the first save and then has nowhere to
+# go, which would silently lose the second save's payload. So the base name must
+# leave room for ".vNNN".
+MAX_NAME = 64
+VERSION_ROOM = len(".v999")
+
+# The host registers where its projects' files live — and who may write them —
+# through this setting (a dotted path to a request-aware storage capability).
+STORAGE_SETTING = "SCITEX_PROJECT_STORAGE"
 
 # The app's own "stateless" switch. Absence of ?project= is NOT enough to
 # mean Quick analysis: the SDK precedence resumes the LAST VISITED project in
@@ -146,9 +167,110 @@ def authorized_project(project_id: Optional[str], request: Any = None) -> Option
     return None
 
 
+@runtime_checkable
+class ProjectStorage(Protocol):
+    """Where an authorized project's files live, and whether THIS request may write.
+
+    A separate capability from :class:`ProjectProvider`, because the provider's
+    entries are a *listing*: the hub lists read-only collaborators too, and its
+    ``ProjectEntry.detail`` is display metadata (the owner's username), not a
+    path. Reading either as a filesystem path fails or resolves an unrelated
+    directory that merely shares the project's name.
+    """
+
+    def project_path(self, project_id: str, request: Any) -> Optional[str]:
+        """The project's storage root, or ``None`` when this request has none."""
+        ...
+
+    def can_write(self, project_id: str, request: Any) -> bool:
+        """True when this request may WRITE into the project — read is not write."""
+        ...
+
+
+class StandaloneProjectStorage:
+    """Local folders: the project is ``<root>/<id>`` and the local user owns it.
+
+    The path is returned UNRESOLVED on purpose: the root open is what refuses a
+    symlinked project directory (``O_NOFOLLOW``), and containment comes from the
+    id being a single safe component. Resolving here would follow exactly the
+    link the root open exists to refuse.
+    """
+
+    def project_path(self, project_id: str, request: Any = None) -> Optional[str]:
+        if not is_safe_name(project_id):
+            return None
+        return str(projects_root() / str(project_id))
+
+    def can_write(self, project_id: str, request: Any = None) -> bool:
+        return True
+
+
+def storage(request: Any = None) -> Any:
+    """The request-aware storage capability: the host's, else the local one.
+
+    Order: an explicit ``SCITEX_PROJECT_STORAGE`` (dotted path), then a host
+    provider that itself exposes the capability, then the standalone local
+    storage. The host wins over the local folders in every case — asking the
+    local root inside a hub mount would read a directory the host never
+    authorized.
+    """
+    from django.conf import settings
+    from django.utils.module_loading import import_string
+
+    dotted = str(getattr(settings, STORAGE_SETTING, "") or "").strip()
+    if dotted:
+        try:
+            registered = import_string(dotted)
+        except Exception:  # noqa: BLE001 - a broken registration falls through, never crashes a request
+            registered = None
+        if isinstance(registered, ProjectStorage):
+            return registered
+        if callable(registered):
+            try:
+                built = registered()
+            except Exception:  # noqa: BLE001
+                built = None
+            if isinstance(built, ProjectStorage):
+                return built
+
+    host = provider(request)
+    if not isinstance(host, LocalProjectProvider) and isinstance(host, ProjectStorage):
+        return host
+    return StandaloneProjectStorage()
+
+
+def can_write(project_id: Optional[str], request: Any = None) -> bool:
+    """True only when the request resolves a project AND may write into it."""
+    if not project_id or authorized_project(project_id, request) is None:
+        return False
+    return bool(storage(request).can_write(str(project_id), request))
+
+
 def is_safe_name(name: Optional[str]) -> bool:
     """True for a single, strict path component (the only shape we ever open)."""
     return bool(name) and bool(SAFE_NAME.match(str(name)))
+
+
+def _open_root_no_follow(path: str) -> Optional[int]:
+    """``O_DIRECTORY|O_NOFOLLOW`` descriptor for a project root, via its parent.
+
+    The last component is opened with ``O_NOFOLLOW``: a project root that IS a
+    symlink is refused instead of being followed into whatever it points at —
+    which is how an authorized root could cross into another project even while
+    its children were refused. The parent is the trusted anchor the storage
+    capability handed us.
+    """
+    parent, name = os.path.split(os.path.abspath(path))
+    try:
+        parent_fd = os.open(parent or "/", os.O_RDONLY | os.O_DIRECTORY)
+    except OSError:
+        return None
+    try:
+        return os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent_fd)
+    except OSError:
+        return None
+    finally:
+        os.close(parent_fd)
 
 
 def _project_dir_fd(project_id: Optional[str], request: Any = None) -> Optional[int]:
@@ -156,28 +278,16 @@ def _project_dir_fd(project_id: Optional[str], request: Any = None) -> Optional[
 
     The descriptor — not a path string — is what every later operation is
     anchored to, which is what removes the resolve-then-open race: once this fd
-    exists, a name can only ever resolve inside this directory.
+    exists, a name can only ever resolve inside this directory. The path comes
+    from the storage CAPABILITY, never from the provider entry.
     """
     entry = authorized_project(project_id, request)
     if entry is None:
         return None
-    detail = str(getattr(entry, "detail", "") or "").strip()
-    if not detail:
+    path = storage(request).project_path(str(project_id), request)
+    if not path:
         return None
-    path = Path(detail)
-    if isinstance(provider(request), LocalProjectProvider):
-        # The local provider promises to stay inside its own root, so that is
-        # the containment we enforce. A HOST provider is the authority for its
-        # entries (the hub may hand out a path outside any local root).
-        root = projects_root().resolve()
-        resolved = path.resolve()
-        if resolved != root and root not in resolved.parents:
-            return None
-        path = resolved
-    try:
-        return os.open(str(path), os.O_RDONLY | os.O_DIRECTORY)
-    except OSError:
-        return None
+    return _open_root_no_follow(str(path))
 
 
 def _open_child_dir(parent_fd: int, name: str, create: bool = False) -> Optional[int]:
@@ -196,24 +306,44 @@ def _open_child_dir(parent_fd: int, name: str, create: bool = False) -> Optional
         return None
 
 
-def _next_free_name(dir_fd: int, name: str) -> str:
-    """``name`` if free, else ``<stem>.v2<ext>``, ``<stem>.v3<ext>``, …
+def _candidates(name: str):
+    """``name``, then ``<stem>.v2<ext>``, ``<stem>.v3<ext>``, … in order.
 
-    Artifacts are never overwritten silently: the caller is told which path was
-    written, so a second save cannot destroy the first one's evidence.
+    Every candidate stays within the name bound because the base name already
+    left ``VERSION_ROOM`` for the suffix (checked at the API boundary).
     """
     stem, ext = os.path.splitext(name)
-    candidate = name
-    version = 1
-    while True:
+    yield name
+    for version in range(2, 1000):
+        yield f"{stem}.v{version}{ext}"
+
+
+def _unlink(name: str, dir_fd: int) -> None:
+    try:
+        os.unlink(name, dir_fd=dir_fd)
+    except OSError:
+        pass
+
+
+def _content_is_wrong(extension: str, body: bytes) -> bool:
+    """True when ``body`` is not the content its extension promises.
+
+    A name is a promise every later reader trusts: a ``.json`` result that is not
+    JSON, or a ``.png`` plot that is not a PNG, is a corrupt artifact wearing a
+    valid name.
+    """
+    if extension == ".json":
         try:
-            os.stat(candidate, dir_fd=dir_fd, follow_symlinks=False)
-        except FileNotFoundError:
-            return candidate
-        except OSError:
-            return candidate
-        version += 1
-        candidate = f"{stem}.v{version}{ext}"
+            json.loads(body.decode("utf-8"))
+        except (UnicodeDecodeError, ValueError):
+            return True
+        return False
+    if extension == ".png":
+        return not body.startswith(b"\x89PNG\r\n\x1a\n")
+    if extension == ".svg":
+        head = body[:2048].decode("utf-8", errors="replace").lstrip()
+        return not (head.startswith("<svg") or head.startswith("<?xml"))
+    return False
 
 
 def list_data_files(project_id: Optional[str], request: Any = None) -> Optional[List[Dict[str, Any]]]:
@@ -290,36 +420,52 @@ def read_data_file(project_id: Optional[str], name: str, request: Any = None) ->
     return b"".join(chunks).decode("utf-8", errors="replace")
 
 
+# Temp names must be unique per WRITER, not per process: two threads saving the
+# same artifact in one process would otherwise collide on the temp file itself
+# (O_EXCL) and one of them would lose its payload.
+_TEMP_COUNTER = itertools.count()
+
+
 def _write_bytes(dir_fd: int, name: str, payload: bytes) -> Optional[str]:
-    """Atomically write ``payload`` into ``dir_fd`` under a never-used name."""
-    target = _next_free_name(dir_fd, name)
-    temp = f".{target}.tmp.{os.getpid()}"
+    """Write ``payload`` under a never-used name, reserving that name atomically.
+
+    The name is claimed with ``os.link``, which fails with ``EEXIST`` instead of
+    overwriting, so two writers racing for the same artifact cannot both report
+    it and neither loses its payload — the loser simply takes the next free
+    version. The bytes are complete (and fsynced) before the name exists, so no
+    reader ever sees a half-written artifact, and the temporary file never
+    outlives the call.
+    """
+    temp = f".{name}.tmp.{os.getpid()}.{next(_TEMP_COUNTER)}"
     try:
         fd = os.open(temp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=dir_fd)
     except OSError:
         return None
     try:
-        os.write(fd, payload)
+        view = memoryview(payload)
+        while view:
+            written = os.write(fd, view)
+            if written <= 0:
+                raise OSError("short write")
+            view = view[written:]
         os.fsync(fd)
     except OSError:
         os.close(fd)
-        try:
-            os.unlink(temp, dir_fd=dir_fd)
-        except OSError:
-            pass
+        _unlink(temp, dir_fd)
         return None
     os.close(fd)
-    try:
-        # Same directory, so the move is atomic: readers see the old name or the
-        # complete new file, never a half-written artifact.
-        os.replace(temp, target, src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
-    except OSError:
+
+    for candidate in _candidates(name):
         try:
-            os.unlink(temp, dir_fd=dir_fd)
+            os.link(temp, candidate, src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
+        except FileExistsError:
+            continue
         except OSError:
-            pass
-        return None
-    return target
+            break
+        _unlink(temp, dir_fd)
+        return candidate
+    _unlink(temp, dir_fd)
+    return None
 
 
 def save_artifact(
@@ -332,16 +478,22 @@ def save_artifact(
 ) -> Optional[Dict[str, Any]]:
     """Write one artifact into ``<project>/stats/<kind>/`` and describe it.
 
-    Returns ``None`` for every refusal: unauthorized project (including "no
-    active project", which is the stateless Quick analysis state), unknown kind,
-    a name or extension outside that kind's policy, invalid base64, or a payload
-    over the kind's cap. A successful write keeps the bytes it validated — the
-    same ``payload`` is encoded once and written atomically.
+    Returns ``None`` for every refusal: no active project or a read-only one
+    (the write capability is asked separately — the hub lists read-only
+    collaborators too, so a listing is not write authority), unknown kind, a name
+    or extension outside that kind's policy, a name with no room for the version
+    suffix, invalid base64, a payload over the kind's cap, or bytes that are not
+    what the extension promises. A successful write keeps the bytes it validated
+    and reserves its name atomically.
     """
     policy = KIND_POLICY.get(str(kind))
     if policy is None or not is_safe_name(name):
         return None
     safe_name = str(name)
+    if len(safe_name) + VERSION_ROOM > MAX_NAME:
+        # Room for the version suffix is part of the policy: a name that cannot
+        # be versioned would silently lose the SECOND save's payload.
+        return None
     extension = os.path.splitext(safe_name)[1].lower()
     cap = policy.get(extension)
     if cap is None:
@@ -355,9 +507,11 @@ def save_artifact(
     else:
         text = payload if isinstance(payload, str) else json.dumps(payload, indent=2, sort_keys=True, default=str)
         body = text.encode("utf-8")
-    if len(body) > cap:
+    if len(body) > cap or _content_is_wrong(extension, body):
         return None
 
+    if not can_write(project_id, request):
+        return None
     dir_fd = _project_dir_fd(project_id, request)
     if dir_fd is None:
         return None

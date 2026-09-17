@@ -430,9 +430,11 @@ def test_plot_save_prefers_the_rendered_figure_then_the_spec():
 
 
 class _EnvRootHostProvider:
-    """Host-shaped provider whose single project root comes from an env var.
+    """Host-shaped provider whose single project comes from an env var.
 
-    Defined here (and registered by dotted path below) because
+    ``detail`` carries DISPLAY metadata, exactly as the SDK defines the field
+    (the hub puts the owner's username there) — never a filesystem path. Defined
+    here (and registered by dotted path below) because
     ``host_project_provider()`` resolves ``SCITEX_PROJECT_PROVIDER`` with
     ``import_string`` at request time — this module is importable as
     ``tests.scitex_stats._django.test__projects``.
@@ -442,7 +444,7 @@ class _EnvRootHostProvider:
         root = pathlib.Path(os.environ["SCITEX_STATS_TEST_HOST_ROOT"])
         if not root.is_dir():
             return []
-        return [ProjectEntry(id="host-cohort", name="host-cohort", detail=str(root))]
+        return [ProjectEntry(id="host-cohort", name="host-cohort", detail="alice")]
 
     def last_visited(self, request=None):
         return None
@@ -451,8 +453,29 @@ class _EnvRootHostProvider:
         return None
 
 
+class _EnvRootStorage:
+    """The host's storage capability for the fixture above.
+
+    Separate from the provider on purpose: the provider is a listing (the hub
+    lists read-only collaborators too), while this decides where the files are
+    and who may write them. ``SCITEX_STATS_TEST_WRITE`` makes a read-only member
+    exercisable without a second provider.
+    """
+
+    def project_path(self, project_id, request=None):
+        if project_id != "host-cohort":
+            return None
+        root = pathlib.Path(os.environ["SCITEX_STATS_TEST_HOST_ROOT"])
+        return str(root) if root.is_dir() else None
+
+    def can_write(self, project_id, request=None):
+        return os.environ.get("SCITEX_STATS_TEST_WRITE", "yes") == "yes"
+
+
 _host_provider = _EnvRootHostProvider()
 HOST_PROVIDER_PATH = "tests.scitex_stats._django.test__projects._host_provider"
+_host_storage = _EnvRootStorage()
+HOST_STORAGE_PATH = "tests.scitex_stats._django.test__projects._host_storage"
 
 
 @contextlib.contextmanager
@@ -480,7 +503,7 @@ def test_host_provider_decides_the_listing_when_registered(tmp_path):
     # Act
     from django.test import override_settings
 
-    with override_settings(SCITEX_PROJECT_PROVIDER=HOST_PROVIDER_PATH), _projects_root(local_root), _host_root(host_root):
+    with override_settings(SCITEX_PROJECT_PROVIDER=HOST_PROVIDER_PATH, SCITEX_PROJECT_STORAGE=HOST_STORAGE_PATH), _projects_root(local_root), _host_root(host_root):
         listed = _projects.list_data_files("host-cohort")
     # Assert
     assert [f["name"] for f in listed] == ["host-file.csv"]
@@ -770,6 +793,180 @@ def test_quick_mode_hides_the_project_panel_server_side(tmp_path, client):  # no
         html = client.get("/?quick=1").content.decode()
     # Assert
     assert "data-stats-project-panel hidden" in html and 'data-stats-project="None"' in html
+
+
+# ---------------------------------------------------------------------------
+# Second review round: hub-provider compatibility (detail is metadata), no-follow
+# ROOT opening, exclusive version reservation, content validity, write gate.
+# ---------------------------------------------------------------------------
+
+
+@contextlib.contextmanager
+def _write_capability(value):
+    previous = os.environ.get("SCITEX_STATS_TEST_WRITE")
+    os.environ["SCITEX_STATS_TEST_WRITE"] = value
+    try:
+        yield
+    finally:
+        if previous is None:
+            os.environ.pop("SCITEX_STATS_TEST_WRITE", None)
+        else:
+            os.environ["SCITEX_STATS_TEST_WRITE"] = previous
+
+
+@contextlib.contextmanager
+def _cwd(path):
+    previous = os.getcwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(previous)
+
+
+def test_hub_detail_is_metadata_and_a_same_named_directory_is_never_read(tmp_path):
+    """The hub's detail is the owner's username, and a folder of that name can sit
+    in the process's working directory: a relative read of it would be another
+    project's files. Without a storage capability the app refuses instead."""
+    # Arrange
+    workdir = tmp_path / "cwd"
+    (workdir / "alice").mkdir(parents=True)
+    (workdir / "alice" / "decoy.csv").write_text("a\n1\n")
+    host_root = tmp_path / "host"
+    host_root.mkdir()
+    (host_root / "real.csv").write_text("a\n1\n")
+    from django.test import override_settings
+
+    # Act
+    with override_settings(SCITEX_PROJECT_PROVIDER=HOST_PROVIDER_PATH, SCITEX_PROJECT_STORAGE=""), _host_root(host_root), _cwd(workdir):
+        without_storage = _projects.list_data_files("host-cohort")
+        with override_settings(SCITEX_PROJECT_STORAGE=HOST_STORAGE_PATH):
+            with_storage = _projects.list_data_files("host-cohort")
+    # Assert
+    assert (without_storage, [f["name"] for f in with_storage]) == (None, ["real.csv"])
+
+
+def test_a_symlinked_project_root_is_refused(tmp_path):
+    # Arrange: the project under the root is a symlink to a sibling project.
+    root = tmp_path / "root"
+    real = root / "real-cohort"
+    real.mkdir(parents=True)
+    (real / "secret.csv").write_text("a\n1\n")
+    (root / "cohort").symlink_to(real, target_is_directory=True)
+    # Act
+    with _projects_root(root):
+        listed = _projects.list_data_files("cohort")
+        read = _projects.read_data_file("cohort", "secret.csv")
+    # Assert
+    assert (listed, read) == (None, None)
+
+
+PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"\x00\x00\x00\rIHDR" + b"\x00" * 32
+
+
+def test_save_refuses_bytes_that_are_not_what_the_extension_promises(tmp_path):
+    # Arrange: right names, wrong bytes — text claiming to be JSON, and a PNG name
+    # holding text.
+    import base64
+
+    _project_with_data(tmp_path)
+    # Act
+    with _projects_root(tmp_path):
+        as_json = _projects.save_artifact(
+            "cohort", "results", "result.json", None, payload_base64=base64.b64encode(b"not json").decode()
+        )
+        as_png = _projects.save_artifact(
+            "cohort", "plots", "plot.png", None, payload_base64=base64.b64encode(b"just text").decode()
+        )
+        real_png = _projects.save_artifact(
+            "cohort", "plots", "plot.png", None, payload_base64=base64.b64encode(PNG_BYTES).decode()
+        )
+    # Assert
+    assert (as_json, as_png, real_png["name"]) == (None, None, "plot.png")
+
+
+def test_save_refuses_a_name_with_no_room_for_a_version_suffix(tmp_path):
+    # Arrange: 65 characters fit the pattern, but versioning would exceed the bound
+    # and the SECOND save would have nowhere to go.
+    _project_with_data(tmp_path)
+    too_long = "r" * 55 + ".json"  # 60 characters: fits the pattern, no room to version
+    fits = "r" * 54 + ".json"      # 59: ".v2" still lands inside the 64-character bound
+    # Act
+    with _projects_root(tmp_path):
+        refused = _projects.save_artifact("cohort", "results", too_long, {"a": 1})
+        first = _projects.save_artifact("cohort", "results", fits, {"a": 1})
+        second = _projects.save_artifact("cohort", "results", fits, {"a": 2})
+    # Assert
+    assert (refused, first["name"], second["name"]) == (None, fits, "r" * 54 + ".v2.json")
+
+
+def test_concurrent_saves_keep_every_payload(tmp_path):
+    # Arrange: four writers race for the same artifact name, released together.
+    import threading
+
+    _project_with_data(tmp_path)
+    barrier = threading.Barrier(4)
+    names = []
+    lock = threading.Lock()
+
+    def writer(index):
+        barrier.wait()
+        saved = _projects.save_artifact("cohort", "results", "race.json", {"writer": index})
+        with lock:
+            names.append(saved["name"] if saved else None)
+
+    # Act
+    with _projects_root(tmp_path):
+        threads = [threading.Thread(target=writer, args=(index,)) for index in range(4)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+    # Assert
+    directory = tmp_path / "cohort" / "stats" / "results"
+    written = sorted(path.name for path in directory.iterdir())
+    contents = {path.read_text() for path in directory.iterdir()}
+    expected = {json.dumps({"writer": index}, indent=2, sort_keys=True) for index in range(4)}
+    assert (sorted(names), written, contents == expected) == (
+        ["race.json", "race.v2.json", "race.v3.json", "race.v4.json"],
+        ["race.json", "race.v2.json", "race.v3.json", "race.v4.json"],
+        True,
+    )
+
+
+def test_a_read_only_member_lists_the_project_but_cannot_save(tmp_path):
+    # Arrange: the host lists the project for this caller, who may only read.
+    host_root = tmp_path / "host"
+    host_root.mkdir()
+    (host_root / "real.csv").write_text("a\n1\n")
+    from django.test import override_settings
+
+    # Act
+    with override_settings(SCITEX_PROJECT_PROVIDER=HOST_PROVIDER_PATH, SCITEX_PROJECT_STORAGE=HOST_STORAGE_PATH), _host_root(host_root), _write_capability("no"):
+        listed = _projects.list_data_files("host-cohort")
+        saved = _projects.save_artifact("host-cohort", "results", "result.json", {"a": 1})
+    # Assert
+    assert ([f["name"] for f in listed], saved, (host_root / "stats").exists()) == (["real.csv"], None, False)
+
+
+def test_save_endpoint_refuses_a_read_only_member(tmp_path, client):  # noqa: F811
+    # Arrange: the read-only caller does carry a valid CSRF token, so a refusal is
+    # the write gate's, not the middleware's.
+    from django.test import Client, override_settings
+
+    host_root = tmp_path / "host"
+    host_root.mkdir()
+    (host_root / "real.csv").write_text("a\n1\n")
+    enforcing = Client(enforce_csrf_checks=True)
+    token = enforcing.get("/?project=host-cohort").content.decode().split('name="csrf-token" content="')[1].split('"')[0]
+    payload = json.dumps({"project": "host-cohort", "kind": "config", "name": "config.json", "payload": {}})
+    # Act
+    with override_settings(SCITEX_PROJECT_PROVIDER=HOST_PROVIDER_PATH, SCITEX_PROJECT_STORAGE=HOST_STORAGE_PATH), _host_root(host_root), _write_capability("no"):
+        status = enforcing.post(
+            "/api/project-save?project=host-cohort", data=payload, content_type="application/json", HTTP_X_CSRFTOKEN=token
+        ).status_code
+    # Assert
+    assert status == 403
 
 
 # EOF
