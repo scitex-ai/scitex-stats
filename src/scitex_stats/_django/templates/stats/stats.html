@@ -20,11 +20,11 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
   project picker in the slot the scitex-ui stylesheet pins (order 1, left,
   never right-aligned) and finally the app's own actions.
   {% endcomment %}
-  <header class="stats-app-header" data-stats-header data-stats-project="{{ current_project }}">
+  <header class="stats-app-header" data-stats-header data-stats-project="{{ stats_current_project_id }}">
     <h1 class="stats-app-header__title">{% translate "Stats" %}</h1>
     <span class="stats-app-header__version" data-stats-version>v{{ stats_version }}</span>
     <div class="stx-app-header__slot--project-selector">
-      {% scitex_project_picker scope="project" current=current_project %}
+      {% scitex_project_picker scope="project" current=stats_current_project_id %}
     </div>
     <div class="stats-app-header__actions" data-stats-header-actions>
       <button type="button" class="stats-btn stats-btn--ghost" id="statsModeToggle" data-stats-mode-toggle hidden>{% translate "Quick analysis" %}</button>
@@ -45,9 +45,9 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
       from the provider-backed endpoint, server-rendered here; Quick analysis
       (below) is the explicit stateless alternative.
       {% endcomment %}
-      <section class="stats-project" id="statsProjectFiles" data-stats-project-panel{% if not current_project %} hidden{% endif %}>
+      <section class="stats-project" id="statsProjectFiles" data-stats-project-panel{% if not stats_current_project_id %} hidden{% endif %}>
         <h3 class="stats-project__title">{% translate "Project data" %}</h3>
-        <ul class="stats-project__list" data-stats-project="{{ current_project }}">
+        <ul class="stats-project__list" data-stats-project="{{ stats_current_project_id }}">
           {% for f in project_files %}
           <li class="stats-project__file">
             <button type="button" class="stats-btn stats-btn--ghost stats-project__import" data-file="{{ f.name }}">{{ f.name }}</button>

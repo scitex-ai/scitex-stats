@@ -11,16 +11,14 @@ whole point of compass §12 L451/#210: logic in the package, thin app UI).
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from django.apps import apps as _django_apps
-from django.conf import settings as django_settings
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpResponse, JsonResponse
 from django.template.loader import render_to_string
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_GET, require_POST, require_http_methods
-
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 from scitex_app._django import mount_prefix
 
 # The dotted INSTALLED_APPS entry a host must carry for these views to work
@@ -89,8 +87,9 @@ def _safe(payload: Any) -> Any:
 
 def index(request):
     """Serve the Statistics page (Data | Test | Results panes)."""
-    from scitex_stats import __version__
     from scitex_ui.branding import shell_context
+
+    from scitex_stats import __version__
 
     from . import _projects
 
@@ -100,11 +99,14 @@ def index(request):
     # project this request resolves to, so the shared picker renders the
     # current one instead of guessing.
     context["stats_version"] = __version__
-    context["current_project"] = _projects.current_project_id(request)
+    # NAMESPACED on purpose: the Hub's global template uses `current_project` for its
+    # own Project MODEL (its tree preseed calls `.pk` on it). Exporting our id under
+    # that name shadowed the model with a string and 500-ed every mounted request.
+    context["stats_current_project_id"] = _projects.current_project_id(request)
     # Project-default mode renders the active project's AUTHORIZED files. An
     # unauthorized/absent project yields [] here and the panel stays hidden,
     # so the page never hints at data the caller cannot read.
-    context["project_files"] = _projects.list_data_files(context["current_project"], request) or []
+    context["project_files"] = _projects.list_data_files(context["stats_current_project_id"], request) or []
     html = render_to_string("stats/stats.html", context, request=request)
     return HttpResponse(html)
 

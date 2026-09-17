@@ -17,6 +17,7 @@ Arrange/Act/Assert markers (the repo's STX-TQ convention, per test_api.py).
 from __future__ import annotations
 
 import json
+import pathlib
 
 import pytest
 
@@ -552,3 +553,42 @@ def test_off_loopback_host_is_accepted_only_when_configured():
     )
     # Assert
     assert proc.stdout.split() == ["200", "400"], proc.stderr[-1500:]
+
+
+def test_the_index_never_exports_its_project_id_as_the_hubs_current_project(client, tmp_path):  # noqa: F811,F401
+    """Hub-shaped regression for the mounted 500: the Hub's global template consumes
+    `current_project` as its own Project MODEL (its tree preseed calls `.pk` on it),
+    so Stats exporting a string under that name shadowed the model and broke every
+    mounted request. The Hub's consumer must still work, and Stats must publish its
+    id under the namespaced name."""
+    # Arrange: the Hub's context, and a project of ours to resolve.
+    import os
+
+    from django.template import Context, Template
+
+    from scitex_stats._django import _projects
+
+    class HubProject:
+        pk = 7
+
+    class _HubConsumer:
+        """The Hub's own template: it dereferences the model, not a string."""
+
+        template = Template("{{ current_project.pk }} and {{ stats_current_project_id }}")
+
+    root = tmp_path / "projects"
+    (root / "cohort").mkdir(parents=True)
+    previous = os.environ.get(_projects.ROOT_ENV)
+    os.environ[_projects.ROOT_ENV] = str(root)
+    try:
+        # Act
+        page = client.get("/?project=cohort").content.decode()
+        hub_rendered = _HubConsumer.template.render(Context({"current_project": HubProject(), "stats_current_project_id": "cohort"}))
+        exported_bare = 'context["current_project"]' in pathlib.Path("src/scitex_stats/_django/views.py").read_text()
+    finally:
+        if previous is None:
+            os.environ.pop(_projects.ROOT_ENV, None)
+        else:
+            os.environ[_projects.ROOT_ENV] = previous
+    # Assert
+    assert (hub_rendered.strip(), 'data-stats-project="cohort"' in page, exported_bare) == ("7 and cohort", True, False)
