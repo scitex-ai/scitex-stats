@@ -182,24 +182,121 @@
     );
   }
 
+  function loadCsvText(text, name) {
+    var lines = String(text).split(/\r?\n/).filter(function (l) { return l.trim(); });
+    var sep = (name || "").toLowerCase().endsWith(".tsv") || (lines[0] || "").indexOf("\t") >= 0 ? "\t" : ",";
+    var rows = lines.map(function (l) { return l.split(sep); });
+    var cols = rows.reduce(function (m, r) { return Math.max(m, r.length); }, 0);
+    var groups = [];
+    for (var c = 0; c < cols; c++) {
+      var col = rows
+        .map(function (r) { return r[c] === undefined ? NaN : Number(String(r[c]).trim()); })
+        .filter(function (n) { return Number.isFinite(n); });
+      if (col.length) groups.push(col);
+    }
+    if (groups.length) setGroups(groups);
+    else showError(_("No numeric columns found in this file."));
+  }
+
   function loadCsv(file) {
     var reader = new FileReader();
-    reader.onload = function () {
-      var lines = String(reader.result).split(/\r?\n/).filter(function (l) { return l.trim(); });
-      var sep = file.name.endsWith(".tsv") || (lines[0] || "").indexOf("\t") >= 0 ? "\t" : ",";
-      var rows = lines.map(function (l) { return l.split(sep); });
-      var cols = rows.reduce(function (m, r) { return Math.max(m, r.length); }, 0);
-      var groups = [];
-      for (var c = 0; c < cols; c++) {
-        var col = rows
-          .map(function (r) { return r[c] === undefined ? NaN : Number(String(r[c]).trim()); })
-          .filter(function (n) { return Number.isFinite(n); });
-        if (col.length) groups.push(col);
-      }
-      if (groups.length) setGroups(groups);
-      else showError(_("No numeric columns found in this file."));
-    };
+    reader.onload = function () { loadCsvText(reader.result, file.name); };
     reader.readAsText(file);
+  }
+
+  // ---- Project-default mode --------------------------------------------
+  // Default is the active project: its authorized CSV/TSV files are listed
+  // server-side and imported through the provider-backed endpoints. Quick
+  // analysis is the explicit stateless alternative, and the choice sticks
+  // across reloads. Without a project the app is stateless by definition,
+  // which is why the toggle disappears instead of offering an empty project.
+  function projectId() {
+    var root = document.querySelector("[data-stats-project]");
+    var id = root ? root.getAttribute("data-stats-project") : "";
+    return id && id !== "None" ? id : "";
+  }
+
+  function currentMode() {
+    var stored = null;
+    try { stored = window.localStorage.getItem("stats:mode"); } catch (e) { stored = null; }
+    if (stored === "quick" || stored === "project") return stored;
+    return projectId() ? "project" : "quick";
+  }
+
+  function applyMode() {
+    var mode = currentMode();
+    var hasProject = !!projectId();
+    var app = document.querySelector("[data-stats-app]");
+    if (app) app.setAttribute("data-stats-mode", hasProject ? mode : "quick");
+    var panel = $("statsProjectFiles");
+    if (panel) panel.hidden = !(hasProject && mode === "project");
+    var saves = $("statsSaveRow");
+    if (saves) saves.hidden = !(hasProject && mode === "project");
+    var toggle = $("statsModeToggle");
+    if (toggle) {
+      toggle.hidden = !hasProject;
+      toggle.textContent = mode === "project" ? _("Quick analysis") : _("Use project data");
+    }
+    setSaveStatus("");
+  }
+
+  function setSaveStatus(message) {
+    var line = $("statsSaveStatus");
+    if (line) line.textContent = message || "";
+  }
+
+  async function importProjectFile(name) {
+    var res = await api("/api/project-import?project=" + encodeURIComponent(projectId()) + "&name=" + encodeURIComponent(name));
+    if (!res.ok) { showError(_("That project file is not available.")); return; }
+    loadCsvText(res.body.text, res.body.name);
+    setSaveStatus(fmt(_("Imported %s"), [res.body.name]));
+  }
+
+  function currentConfig() {
+    var test = selectedTest();
+    return {
+      project: projectId(),
+      test: test ? test.name : null,
+      design: $("statsDesign").value,
+      scale: $("statsScale").value,
+      alternative: $("statsAlt").value,
+      popmean: $("statsPopmean") ? Number($("statsPopmean").value) : null,
+      group_sizes: readGroups().map(function (g) { return g.length; }),
+    };
+  }
+
+  function lastResult() {
+    var pre = $("statsJson");
+    if (!pre || !pre.textContent.trim()) return null;
+    try { return JSON.parse(pre.textContent); } catch (e) { return null; }
+  }
+
+  async function saveArtifact(kind, name, payload) {
+    if (!projectId()) { setSaveStatus(_("No project is active.")); return; }
+    var res = await api("/api/project-save", { project: projectId(), kind: kind, name: name, payload: payload });
+    setSaveStatus(res.ok ? fmt(_("Saved %s to the project"), [res.body.path || name]) : _("Save failed."));
+  }
+
+  async function saveResults() {
+    var result = lastResult();
+    if (!result) { setSaveStatus(_("Run a test first.")); return; }
+    await saveArtifact("results", "result.json", result);
+  }
+
+  async function saveProvenance() {
+    var result = lastResult();
+    if (!result || !result.provenance) { setSaveStatus(_("No provenance in the current result.")); return; }
+    await saveArtifact("provenance", "provenance.json", result.provenance);
+  }
+
+  function saveConfig() {
+    return saveArtifact("config", "config.json", currentConfig());
+  }
+
+  function savePlot() {
+    var spec = window.stxStatsPlot && window.stxStatsPlot.spec ? window.stxStatsPlot.spec() : null;
+    if (!spec) { setSaveStatus(_("Draw a plot first.")); return; }
+    return saveArtifact("plots", "plot-spec.json", spec);
   }
 
   // ---- Test -------------------------------------------------------------
@@ -526,6 +623,26 @@
     $("statsCorrect").addEventListener("click", correct);
     $("statsPosthoc").addEventListener("click", posthoc);
     $("statsCopy").addEventListener("click", copyResult);
+    applyMode();
+    var modeToggle = $("statsModeToggle");
+    if (modeToggle) {
+      modeToggle.addEventListener("click", function () {
+        var next = currentMode() === "project" ? "quick" : "project";
+        try { window.localStorage.setItem("stats:mode", next); } catch (e) { /* private browsing */ }
+        applyMode();
+      });
+    }
+    var filePanel = $("statsProjectFiles");
+    if (filePanel) {
+      filePanel.addEventListener("click", function (event) {
+        var button = event.target.closest(".stats-project__import");
+        if (button) importProjectFile(button.getAttribute("data-file"));
+      });
+    }
+    $("statsSaveResults").addEventListener("click", saveResults);
+    $("statsSaveProvenance").addEventListener("click", saveProvenance);
+    $("statsSaveConfig").addEventListener("click", saveConfig);
+    $("statsSavePlot").addEventListener("click", savePlot);
     try {
       var t = await api("/api/tests");
       if (t.ok && Array.isArray(t.body.tests)) {

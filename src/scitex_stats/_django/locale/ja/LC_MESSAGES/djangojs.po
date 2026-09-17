@@ -594,3 +594,27 @@ msgstr "判定"
 
 msgid "Normal Q-Q plot: %s"
 msgstr "正規 Q-Q プロット：%s"
+
+msgid "Quick analysis"
+msgstr "クイック分析"
+
+msgid "Use project data"
+msgstr "プロジェクトのデータを使う"
+
+msgid "That project file is not available."
+msgstr "そのプロジェクトのファイルは利用できません。"
+
+msgid "No project is active."
+msgstr "有効なプロジェクトがありません。"
+
+msgid "Run a test first."
+msgstr "先に検定を実行してください。"
+
+msgid "No provenance in the current result."
+msgstr "現在の結果に来歴がありません。"
+
+msgid "Draw a plot first."
+msgstr "先にプロットを描画してください。"
+
+msgid "Save failed."
+msgstr "保存に失敗しました。"

@@ -26,6 +26,11 @@ urlpatterns = [
         project_listing_view(_projects.provider),
         name="api_project_scope",
     ),
+    # Project-default mode: list the active project's data, import one file,
+    # and write artifacts back into the project.
+    path("api/project-files", views.project_files, name="project_files"),
+    path("api/project-import", views.project_import, name="project_import"),
+    path("api/project-save", views.project_save, name="project_save"),
     path("api/tests", views.tests, name="tests"),
     path("api/recommend", views.recommend, name="recommend"),
     path("api/recommend-test", views.recommend_test, name="recommend_test"),

@@ -101,6 +101,10 @@ def index(request):
     # current one instead of guessing.
     context["stats_version"] = __version__
     context["current_project"] = _projects.current_project_id(request)
+    # Project-default mode renders the active project's AUTHORIZED files. An
+    # unauthorized/absent project yields [] here and the panel stays hidden,
+    # so the page never hints at data the caller cannot read.
+    context["project_files"] = _projects.list_data_files(context["current_project"]) or []
     html = render_to_string("stats/stats.html", context, request=request)
     return HttpResponse(html)
 
@@ -405,6 +409,61 @@ def _parse_body(request, json):
         return json.loads(request.body.decode("utf-8") or "{}")
     except (ValueError, UnicodeDecodeError):
         return {"error": "invalid JSON body", "status": 400}
+
+
+# ---------------------------------------------------------------------------
+# Project-default mode: the active project's data, and the artifacts written
+# back to it. Every route is fail-closed through _projects (an unauthorized
+# project id has no path at all), so a host that mounts this app behind its
+# own auth still cannot read a project the provider does not list for the
+# caller.
+# ---------------------------------------------------------------------------
+
+
+@require_GET
+def project_files(request):
+    """List the active project's authorized CSV/TSV files."""
+    from . import _projects
+
+    project = request.GET.get("project", "")
+    files = _projects.list_data_files(project)
+    if files is None:
+        return JsonResponse({"error": "project not accessible"}, status=403)
+    return JsonResponse({"project": project, "files": files})
+
+
+@require_GET
+def project_import(request):
+    """Read one authorized project data file so the client can load it."""
+    from . import _projects
+
+    project = request.GET.get("project", "")
+    name = request.GET.get("name", "")
+    text = _projects.read_data_file(project, name)
+    if text is None:
+        # One refusal for every reason: unknown project, traversal, wrong
+        # format, missing, oversized. A caller learns only "not available".
+        return JsonResponse({"error": "file not available"}, status=403)
+    return JsonResponse({"project": project, "name": name, "text": text})
+
+
+@csrf_exempt
+@require_POST
+def project_save(request):
+    """Write a config / results / plot / provenance artifact into the project."""
+    import json
+
+    from . import _projects
+
+    body = _parse_body(request, json)
+    if isinstance(body, dict) and "error" in body:
+        return JsonResponse(body, status=body.pop("status", 400))
+    saved = _projects.save_artifact(
+        body.get("project"), body.get("kind"), body.get("name"), body.get("payload")
+    )
+    if saved is None:
+        return JsonResponse({"error": "not saved"}, status=403)
+    return JsonResponse(saved, status=201)
 
 
 # EOF

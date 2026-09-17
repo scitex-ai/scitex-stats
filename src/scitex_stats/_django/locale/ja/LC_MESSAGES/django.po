@@ -168,3 +168,30 @@ msgstr "理由"
 
 msgid "Run all applicable (sensitivity)"
 msgstr "適用できる検定をすべて実行（感度分析）"
+
+msgid "Stats"
+msgstr "Stats"
+
+msgid "Project data"
+msgstr "プロジェクトのデータ"
+
+msgid "No CSV or TSV files in this project yet."
+msgstr "このプロジェクトにはまだ CSV / TSV ファイルがありません。"
+
+msgid "Quick analysis"
+msgstr "クイック分析"
+
+msgid "Use project data"
+msgstr "プロジェクトのデータを使う"
+
+msgid "Save results"
+msgstr "結果を保存"
+
+msgid "Save provenance"
+msgstr "来歴を保存"
+
+msgid "Save config"
+msgstr "設定を保存"
+
+msgid "Save plot"
+msgstr "プロットを保存"
