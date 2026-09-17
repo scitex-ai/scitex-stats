@@ -3,6 +3,9 @@
 
 from __future__ import annotations
 
+import hashlib
+import pathlib
+
 import pytest
 
 import scitex_stats as ss
@@ -125,6 +128,25 @@ def test_csv_path_input_is_accepted(tmp_path):
     result = ss.report(csv, output=None, formats=["md"], timestamp=STAMP)
     # Assert
     assert result["summary"]["n"] == [6, 6, 5]
+
+
+@needs_pdf
+def test_pdf_bytes_are_identical_for_the_same_input_and_timestamp(tmp_path):
+    """The deliverable, at the byte level: same input and timestamp -> same PDF.
+
+    The PDF's dates come from the report's timestamp (`dcterms.created`), so the
+    artifact is dated by the ANALYSIS rather than by the moment it was rendered.
+    """
+    # Arrange
+    fitz = pytest.importorskip("fitz")
+    first = ss.report(THREE, design="between", output=tmp_path / "a.pdf", formats=["pdf"], timestamp=STAMP)
+    second = ss.report(THREE, design="between", output=tmp_path / "b.pdf", formats=["pdf"], timestamp=STAMP)
+    # Act
+    digests = {hashlib.sha256(pathlib.Path(r["paths"]["pdf"]).read_bytes()).hexdigest() for r in (first, second)}
+    with fitz.open(first["paths"]["pdf"]) as doc:
+        created = str(doc.metadata.get("creationDate", ""))
+    # Assert
+    assert (len(digests), "20260101000000" in created) == (1, True)
 
 
 # EOF

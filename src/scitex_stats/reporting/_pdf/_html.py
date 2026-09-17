@@ -105,12 +105,19 @@ def _block(block: Dict[str, Any]) -> str:
 
 
 def render_html(model: Dict[str, Any]) -> str:
+    # `dcterms.created`/`dcterms.modified` are what WeasyPrint turns into the PDF's
+    # /CreationDate and /ModDate. They are set from the report's own timestamp, so
+    # the artifact is dated by the ANALYSIS, not by the moment it was rendered -
+    # which is also what makes two runs over the same input byte-identical.
+    stamp = html.escape(str(model.get("generated_at") or ""))
     parts = [
         "<!DOCTYPE html>",
         '<html lang="en"><head><meta charset="utf-8">',
         '<meta name="viewport" content="width=device-width, initial-scale=1">',
         f"<title>{html.escape(model['title'])}</title>",
         f'<meta name="generator" content="scitex-stats">',
+        f'<meta name="dcterms.created" content="{stamp}">',
+        f'<meta name="dcterms.modified" content="{stamp}">',
         f"<style>{CSS}</style></head><body>",
         f"<h1>{html.escape(model['title'])}</h1>",
         f'<p class="subtitle">{html.escape(model["subtitle"])}</p>',
