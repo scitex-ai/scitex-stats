@@ -1,5 +1,5 @@
 {% extends "scitex_app/app_shell.html" %}
-{% load static i18n scitex_i18n scitex_panes scitex_static %}
+{% load static i18n scitex_i18n scitex_panes scitex_static scitex_project_picker %}
 {% comment %}
 Host chrome comes from scitex_app/app_shell.html: the hub maps it to its own
 base page (site header + dock), standalone falls back to scitex-ui's shell.
@@ -7,6 +7,7 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
 {% block extra_css %}
     <meta name="stx-mount" content="{{ stx_mount }}">
     <meta name="csrf-token" content="{{ csrf_token }}">
+    {% scitex_project_provider_meta %}
     <link rel="stylesheet" href="{% app_static 'scitex_ui/css/app/form-controls.css' %}">
     <link rel="stylesheet" href="{% app_static 'stats/css/stats.css' %}">
     <link rel="stylesheet" href="{% app_static 'stats/css/recommend.css' %}">
@@ -14,6 +15,19 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
 
 {% block scitex_app_content %}
 <div class="stats-app" data-stats-app>
+  {% comment %}
+  Canonical app header: leaf title, the LEAF package version, then the shared
+  project picker in the slot the scitex-ui stylesheet pins (order 1, left,
+  never right-aligned) and finally the app's own actions.
+  {% endcomment %}
+  <header class="stats-app-header" data-stats-header data-stats-project="{{ current_project }}">
+    <h1 class="stats-app-header__title">{% translate "Stats" %}</h1>
+    <span class="stats-app-header__version" data-stats-version>v{{ stats_version }}</span>
+    <div class="stx-app-header__slot--project-selector">
+      {% scitex_project_picker scope="project" current=current_project %}
+    </div>
+    <div class="stats-app-header__actions" data-stats-header-actions></div>
+  </header>
 {% translate "1. Data Input" as label_data %}{% translate "2. Test Selection" as label_test %}{% translate "3. Results" as label_results %}
 {% scitex_panes "stats" columns="minmax(0,1.1fr) minmax(0,0.9fr) minmax(0,1.2fr)" active="data" %}
   {% scitex_pane "data" label=label_data order=1 css_class="stats-pane" %}

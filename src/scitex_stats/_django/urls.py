@@ -9,13 +9,23 @@ is set so namespace-relative reverse() works from a host urlconf.
 
 from django.urls import path
 
-from . import _plot_views, views
+from scitex_ui.project_scope import project_listing_view
+
+from . import _plot_views, _projects, views
 
 app_name = "stats"
 
 urlpatterns = [
     path("", views.index, name="index"),
     path("api/health", views.health, name="health"),
+    # The picker's HTTP contract: GET {projects, current}, POST {id} (403 when
+    # the project is not accessible). The provider is the host's when one is
+    # registered, else the standalone local-folder one (settings-driven).
+    path(
+        "api/project-scope",
+        project_listing_view(_projects.provider),
+        name="api_project_scope",
+    ),
     path("api/tests", views.tests, name="tests"),
     path("api/recommend", views.recommend, name="recommend"),
     path("api/recommend-test", views.recommend_test, name="recommend_test"),

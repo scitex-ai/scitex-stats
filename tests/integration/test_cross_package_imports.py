@@ -58,6 +58,7 @@ CROSS_PACKAGE_IMPORTS = [
     'scitex_logging',
     'scitex_ui',
     'scitex_ui.branding',
+    'scitex_ui.project_scope',
 ]
 # ===== END AUTO-GENERATED =====
 

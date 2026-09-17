@@ -71,6 +71,38 @@
   padding-bottom: calc(var(--site-dock-height, 0px) + 24px);
 }
 
+/* Canonical app header: leaf identity + the shared project-picker slot.
+   The slot keeps its own scitex-ui positioning rules (order 1, left). */
+.stats-app-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-muted);
+  background: var(--bg-surface);
+}
+
+.stats-app-header__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.stats-app-header__version {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-app-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
 .stats-dropzone {
   transition: background-color 120ms ease, box-shadow 120ms ease;
 }
@@ -514,6 +546,10 @@
 @media (max-width: 480px) {
   .stats-options {
     grid-template-columns: 1fr;
+  }
+
+  .stats-app-header {
+    flex-wrap: wrap;
   }
 
   .stats-pane__header {
