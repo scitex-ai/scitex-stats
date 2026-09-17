@@ -7,12 +7,17 @@ import pytest
 
 import scitex_stats as ss
 from scitex_stats.reporting._pdf import SECTIONS, pdf_renderer
+from scitex_stats.reporting._pdf._fonts import cjk_font_available
 
 THREE = {"対照群": [5.1, 4.9, 5.6, 5.8, 6.0, 5.4, 5.2, 5.7], "Drug A": [6.3, 6.8, 6.1, 7.0, 6.6, 6.9, 6.4, 7.2],
          "Drug B": [5.9, 6.2, 6.0, 5.8, 6.4, 6.1]}
 STAMP = "2026-01-01T00:00:00Z"
 
 needs_pdf = pytest.mark.skipif(pdf_renderer() is None, reason="WeasyPrint not installed")
+needs_cjk = pytest.mark.skipif(
+    not cjk_font_available(),
+    reason="no CJK font installed (Noto Sans CJK JP / IPAexGothic) - the Japanese rendering assertions need one",
+)
 
 
 def _pdf_text(path) -> str:
@@ -40,6 +45,7 @@ def test_pdf_contains_every_section_heading(pdf_report):
 
 
 @needs_pdf
+@needs_cjk
 def test_pdf_embeds_a_japanese_font_for_japanese_group_names(pdf_report):
     # Arrange
     fitz = pytest.importorskip("fitz")
@@ -51,6 +57,7 @@ def test_pdf_embeds_a_japanese_font_for_japanese_group_names(pdf_report):
 
 
 @needs_pdf
+@needs_cjk
 def test_pdf_text_keeps_japanese_group_names(pdf_report):
     # Arrange
     path = pdf_report["paths"]["pdf"]

@@ -80,7 +80,30 @@ def _meta(prep: Prepared, ctx: Dict[str, Any]) -> List[Dict[str, Any]]:
         (_t("Renderer"), _t(ctx["renderer"])),
         (_t("Primary result SHA-256"), [seg(ctx["primary_sha256"] or "—", "code")]),
     ]
-    return [{"type": "kv", "rows": [list(r) for r in rows]}]
+    blocks: List[Dict[str, Any]] = [{"type": "kv", "rows": [list(r) for r in rows]}]
+    return blocks + _font_warning(prep.names)
+
+
+def _font_warning(names: List[str]) -> List[Dict[str, Any]]:
+    """Warn, in the report itself, when its own text cannot be drawn.
+
+    A Japanese group name on an image with no CJK font renders as missing glyphs
+    and nothing says so - the reader just sees boxes. The check is measured (a
+    font query), not assumed, so it appears exactly where the problem exists.
+    """
+    from ._fonts import cjk_font_available, has_cjk
+
+    text = " ".join(str(name) for name in names)
+    if not has_cjk(text) or cjk_font_available():
+        return []
+    return [
+        _para(
+            _t("Warning: this report contains Japanese text but no CJK font is installed "
+               "(Noto Sans CJK JP, IPAexGothic, ...), so those characters render as missing "
+               "glyphs in the PDF and in the figure."),
+            "caution",
+        )
+    ]
 
 
 def _data(prep: Prepared, primary: str) -> List[Dict[str, Any]]:

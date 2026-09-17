@@ -219,4 +219,17 @@ def test_single_group_is_rejected():
         call()
 
 
+def test_a_report_with_japanese_names_warns_when_no_cjk_font_is_installed():
+    """The warning is measured, not assumed: it is present exactly when the text
+    needs a CJK font and the machine has none."""
+    # Arrange
+    from scitex_stats.reporting._pdf._fonts import cjk_font_available
+
+    model = build_report({"対照群": [5.1, 4.9, 5.6, 5.8], "Drug A": [6.3, 6.8, 6.1, 7.0]}, "between", timestamp=STAMP)
+    # Act
+    text = _text(_section(model, "meta")["blocks"])
+    # Assert
+    assert ("no CJK font is installed" in text) == (not cjk_font_available())
+
+
 # EOF
