@@ -38,6 +38,18 @@ msgstr "サンプルデータを読み込む"
 msgid "or Load Sample Data"
 msgstr "またはサンプルデータを読み込む"
 
+msgid "Load sample dataset"
+msgstr "サンプルデータを読み込む"
+
+msgid "No dataset yet?"
+msgstr "データがまだありませんか？"
+
+msgid "Drop a CSV or TSV file here, or choose a file"
+msgstr "CSVまたはTSVファイルをここにドロップするか、ファイルを選択してください。"
+
+msgid "Loads the sample two-group dataset into the boxes below, replacing anything already entered."
+msgstr "2群のサンプルデータを下の入力欄に読み込みます（入力済みの内容は置き換わります）。"
+
 msgid "Load from CSV"
 msgstr "CSVから読み込む"
 
