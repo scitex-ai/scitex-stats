@@ -5,7 +5,7 @@ All notable changes to `scitex-stats` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.2.26] — 2026-09-17
 
 ### Added
 - Provenance receipt on every `run_test`, `full_report` and MCP `run_test`
@@ -17,6 +17,19 @@ versions follow [Semantic Versioning](https://semver.org/).
   bit-for-bit recompute.
 - `result["input_integrity"]`: NaN exclusions (with indices and reason),
   type coercions; `run_test(nan_policy="omit"|"raise")`.
+- APA 7 output fixed at the source: every result carries an `apa` block
+  (plain / html / latex / rule / table / descriptives), with
+  `scitex_stats.validate_apa()` and `scitex-stats validate-apa` as the
+  checked contract.
+- Data-driven test selection: `check_applicability()`, `recommend_test()`,
+  `run_all_applicable()` — with `scitex-stats tests check-applicability` /
+  `recommend-test` / `execute-all` and their MCP tools — plus explicit
+  assumption checks, thresholds and Q-Q data.
+- Neutral, versioned plot spec per result; the Statistics app gains a Plot
+  view (FigRecipe or plain matplotlib) with `Open in FigRecipe`.
+- Statistics Django app: a three-pane workflow shell (`1. Data Input` /
+  `2. Test Selection` / `3. Results`) served by `scitex-stats gui serve`
+  standalone or mounted by the hub under its own prefix.
 
 ### Changed
 - `full_report` bootstrap CIs are seeded by default: `seed=42`, a fresh
@@ -28,6 +41,32 @@ versions follow [Semantic Versioning](https://semver.org/).
   previously `dropna()`-ed independently, which misaligned pairs).
 - Demo and docstring code uses `numpy.random.default_rng` instead of global
   `np.random.seed` state.
+- The app's dependency floors now name the releases that actually ship the
+  shared shell: `scitex-app>=0.24.0` (ships `scitex_app/app_shell.html`) and
+  `scitex-ui>=0.22.0` (ships the `scitex_static` tag library behind
+  `{% app_static %}` and the canonical project selector). The previous
+  `scitex-ui>=0.19.0` floor could resolve a scitex-ui whose shell cannot
+  render the app template at all, and `scitex-app` was not declared.
+- `scitex-stats tests`: the leaf nouns `applicability` and `run-all` are now
+  the verb-first `check-applicability` and `execute-all`. The old spellings
+  stay available as hidden deprecation aliases that forward to the new
+  commands, so existing scripts keep working.
+
+### Fixed
+- Standalone app: `scitex_stats._django.settings` never installed
+  `scitex_app`, so every page of `scitex-stats gui serve` answered 500 with
+  `TemplateDoesNotExist: scitex_app/app_shell.html` while the test suite
+  (which configures its own `INSTALLED_APPS`) stayed green. Fixed, and
+  pinned by a test that boots the real settings module in a child
+  interpreter.
+- Assumption-check statistics and thresholds now render in APA form
+  (`W = .97, p ≥ .05, α = .05`), routed through the library formatter
+  rather than app-side string building.
+- `×` renders on phones, `p` is italic inside "p-value", and Sample /
+  Recommend preselect the primary test.
+- Development gates: the APA test modules mirror their source packages
+  (PS-202/PS-204), the cross-package import gate is regenerated (PS-140),
+  and the `.po` reader the i18n test needs is a declared `[dev]` dependency.
 
 ## [0.2.24] — 2026-06-03
 
