@@ -26,16 +26,40 @@ shift || true
 # must be put on PATH explicitly; it execs the real Apptainer binary directly.
 # ~-expand the Actions-Variable paths: a quoted "~/…" is NOT tilde-expanded by
 # the shell, so substitute a leading ~ with $HOME ourselves.
-APPTAINER="${SCITEX_CI_APPTAINER:?SCITEX_CI_APPTAINER not set (repo Actions Variable)}"
 SIF="${SCITEX_CI_SIF:?SCITEX_CI_SIF not set (repo Actions Variable)}"
-APPTAINER="${APPTAINER/#\~/$HOME}"
 SIF="${SIF/#\~/$HOME}"
 export PATH="$HOME/.env-3.11/bin:$PATH"
 
-[ -x "$APPTAINER" ] || {
-    echo "::error::apptainer shim not executable at $APPTAINER"
+# Resolve apptainer PORTABLY. The configured shim is preferred, but the org
+# runner pool is heterogeneous: `~/.env-3.11/bin/apptainer` exists on some
+# nodes (scitex-04 cpu-04, repaired 2026-09-17) and is missing on others, so
+# the same tag passed on 3.11 + 3.12 and died on 3.13 with
+# `apptainer shim not executable at /home/ywatanabe/.env-3.11/bin/apptainer`
+# (run 35180305493) — a per-node lottery, not a defect in the change under
+# test. Fall back to PATH, then the usual absolute locations.
+# Fail-loud is preserved: no usable apptainer at all is still a HARD error.
+_resolve_apptainer() {
+    local candidate
+    for candidate in \
+        "${SCITEX_CI_APPTAINER:-}" \
+        "$(command -v apptainer 2>/dev/null || true)" \
+        "$(command -v singularity 2>/dev/null || true)" \
+        /usr/bin/apptainer /usr/local/bin/apptainer /usr/bin/singularity; do
+        [ -n "$candidate" ] || continue
+        candidate="${candidate/#\~/$HOME}"
+        if [ -x "$candidate" ]; then
+            printf '%s' "$candidate"
+            return 0
+        fi
+    done
+    return 1
+}
+
+APPTAINER="$(_resolve_apptainer)" || {
+    echo "::error::no usable apptainer found (checked SCITEX_CI_APPTAINER='${SCITEX_CI_APPTAINER:-}', PATH, /usr/bin, /usr/local/bin) — install it or fix the repo Actions Variable"
     exit 1
 }
+echo "exec-in-sif: apptainer=$APPTAINER"
 [ -f "$SIF" ] || {
     echo "::error::CI SIF missing at $SIF — rebuild it: scitex-container apptainer build ci-cpu"
     exit 1
