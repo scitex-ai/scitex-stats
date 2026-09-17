@@ -177,14 +177,17 @@ def test_pdf_is_content_deterministic_for_the_same_input_and_timestamp(tmp_path)
     objects = [_fonts_and_objects(r["paths"]["pdf"])[1] for r in (first, second)]
     fonts = [_fonts_and_objects(r["paths"]["pdf"])[0] for r in (first, second)]
     # Assert
-    assert (
-        texts[0] == texts[1],
-        metas[0] == metas[1],
-        counts[0] == counts[1],
-        objects[0] == objects[1],
-        len(fonts[0]) == len(fonts[1]),
-        "20260101000000" in created,
-    ) == (True, True, True, True, True, True)
+    # Booleans, not the heavy objects: a dict of them prints in full when it fails,
+    # so CI names WHICH fact broke instead of truncating a tuple of byte strings.
+    facts = {
+        "page_text": texts[0] == texts[1],
+        "metadata": metas[0] == metas[1],
+        "page_count": counts[0] == counts[1],
+        "other_objects": objects[0] == objects[1],
+        "font_count": len(fonts[0]) == len(fonts[1]),
+        "dated_by_the_report": "20260101000000" in created,
+    }
+    assert facts == {key: True for key in facts} == (True, True, True, True, True, True)
 
 
 # EOF
