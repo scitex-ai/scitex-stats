@@ -1557,4 +1557,67 @@ def test_a_hostile_pathlike_or_descriptor_refuses_at_both_endpoints(tmp_path, st
     assert (read_status, write_status, listed, (root / "stats").exists()) == (403, 403, None, False)
 
 
+class _SneakyPath(str):
+    """A str SUBCLASS: ``os.fspath`` hands the subclass straight back, so its
+    overridden methods would run inside every later path operation."""
+
+
+class _SneakyStrStorage:
+    """Returns a str subclass whose VALUE is a perfectly good project root: the
+    point is that only an exact plain ``str`` may be trusted."""
+
+    def project_path(self, project_id, request=None):
+        return _SneakyPath(os.environ["SCITEX_STATS_TEST_HOST_ROOT"])
+
+    def can_write(self, project_id, request=None):
+        return True
+
+
+class _NulPathStorage:
+    """Embedded NUL: os.open raises ValueError, which is not an OSError."""
+
+    def project_path(self, project_id, request=None):
+        return str(pathlib.Path(os.environ["SCITEX_STATS_TEST_HOST_ROOT"])) + "\x00/etc"
+
+    def can_write(self, project_id, request=None):
+        return True
+
+
+class _SurrogatePathStorage:
+    """Unpaired surrogate: os.open raises UnicodeEncodeError, also not an OSError."""
+
+    def project_path(self, project_id, request=None):
+        return str(pathlib.Path(os.environ["SCITEX_STATS_TEST_HOST_ROOT"]).parent) + "/\ud800proj"
+
+    def can_write(self, project_id, request=None):
+        return True
+
+
+SNEAKY_STR_STORAGE = "tests.scitex_stats._django.test__projects._SneakyStrStorage"
+NUL_PATH_STORAGE = "tests.scitex_stats._django.test__projects._NulPathStorage"
+SURROGATE_PATH_STORAGE = "tests.scitex_stats._django.test__projects._SurrogatePathStorage"
+
+
+@pytest.mark.parametrize("storage_path", [SNEAKY_STR_STORAGE, NUL_PATH_STORAGE, SURROGATE_PATH_STORAGE])
+def test_a_malformed_string_path_refuses_at_both_endpoints(tmp_path, storage_path):  # noqa: F811
+    """A str subclass, an embedded NUL and an unpaired surrogate: each used to
+    escape as a 500. Each must be a refusal with nothing written."""
+    # Arrange
+    from django.test import Client, override_settings
+
+    root = _host_project(tmp_path)
+    enforcing = Client(enforce_csrf_checks=True)
+    token = enforcing.get("/?project=host-cohort").content.decode().split('name="csrf-token" content="')[1].split('"')[0]
+    payload = json.dumps({"project": "host-cohort", "kind": "results", "name": "result.json", "payload": {"a": 1}})
+    # Act
+    with override_settings(SCITEX_PROJECT_PROVIDER=HOST_PROVIDER_PATH, SCITEX_PROJECT_STORAGE=storage_path), _host_root(root):
+        read_status = enforcing.get("/api/project-files?project=host-cohort").status_code
+        write_status = enforcing.post(
+            "/api/project-save?project=host-cohort", data=payload, content_type="application/json", HTTP_X_CSRFTOKEN=token
+        ).status_code
+        listed = _projects.list_data_files("host-cohort")
+    # Assert
+    assert (read_status, write_status, listed, (root / "stats").exists()) == (403, 403, None, False)
+
+
 # EOF

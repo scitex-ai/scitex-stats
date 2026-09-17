@@ -285,11 +285,14 @@ def _capability_path(store: Any, project_id: Optional[str], request: Any) -> Opt
         return None
     try:
         answer = method(str(project_id), request)
-        if isinstance(answer, str):
+        # EXACT plain ``str``: a str SUBCLASS is host code too — ``os.fspath`` hands
+        # the subclass straight back, so any overridden method would run inside every
+        # later path operation.
+        if type(answer) is str:
             return answer
         if isinstance(answer, os.PathLike):
             resolved = os.fspath(answer)
-            return resolved if isinstance(resolved, str) else None
+            return resolved if type(resolved) is str else None
     except Exception:  # noqa: BLE001 - a broken capability refuses; it does not 500 the app
         return None
     return None
@@ -357,8 +360,16 @@ def _open_path_no_follow(path: str) -> Optional[int]:
     directory (a symlink) redirected the whole traversal into another project
     while every child check still passed. So the walk starts at ``/`` and no
     component is ever followed — a symlink at any level is a refusal.
+
+    Malformed strings are refusals as well, at the BOUNDARY they are malformed at:
+    an embedded NUL raises ``ValueError`` from ``os.open`` and an unpaired
+    surrogate raises ``UnicodeEncodeError``, neither of which is an ``OSError`` —
+    both used to escape as a 500 instead of a refusal.
     """
-    components = [part for part in os.path.normpath(os.path.abspath(path)).split(os.sep) if part]
+    try:
+        components = [part for part in os.path.normpath(os.path.abspath(path)).split(os.sep) if part]
+    except (OSError, ValueError, UnicodeError):
+        return None
     try:
         current = os.open(os.sep, os.O_RDONLY | os.O_DIRECTORY)
     except OSError:
@@ -366,7 +377,7 @@ def _open_path_no_follow(path: str) -> Optional[int]:
     for component in components:
         try:
             nxt = os.open(component, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=current)
-        except OSError:
+        except (OSError, ValueError, UnicodeError):
             os.close(current)
             return None
         os.close(current)
