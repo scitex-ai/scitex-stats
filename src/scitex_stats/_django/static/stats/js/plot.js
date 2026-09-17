@@ -101,7 +101,7 @@
       .catch(function () { /* stays hidden */ });
   }
 
-  window.stxStatsPlot = { draw: draw };
+  window.stxStatsPlot = { draw: draw, spec: function () { return lastSpec; } };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
   else init();
 })();

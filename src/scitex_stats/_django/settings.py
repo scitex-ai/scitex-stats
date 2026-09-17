@@ -66,6 +66,10 @@ MIDDLEWARE = with_locale_middleware(
     [
         "django.middleware.security.SecurityMiddleware",
         "django.middleware.common.CommonMiddleware",
+        # CSRF on writes: saving an artifact into a project is a state-changing
+        # POST, so the token the page carries must be verified. Without this
+        # middleware the marker in the template is decorative.
+        "django.middleware.csrf.CsrfViewMiddleware",
     ]
 )
 globals().update(i18n_settings())
@@ -74,8 +78,10 @@ ROOT_URLCONF = "scitex_stats._django._standalone_urls"
 
 # Project scope (SDK contract, scitex-ui): the app renders the picker, the HOST
 # supplies the project list. A hub mount overrides both settings with its own
-# provider; standalone falls back to local folders (see _projects.py).
-SCITEX_PROJECT_PROVIDER = "scitex_stats._django._projects:provider"
+# provider; standalone falls back to local folders (see _projects.py). The
+# dotted path must name a CLASS: `host_project_provider()` imports it and calls
+# a class, while a factory FUNCTION is mistaken for an already-built instance.
+SCITEX_PROJECT_PROVIDER = "scitex_stats._django._projects.StandaloneProjectProvider"
 # A URL NAME, not a path: reverse() resolves it against the active urlconf, so
 # the same setting works standalone ("/api/project-scope") and under a hub
 # prefix. It must be the APPLICATION-namespaced name — urls.py declares

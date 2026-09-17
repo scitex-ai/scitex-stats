@@ -101,6 +101,10 @@ def index(request):
     # current one instead of guessing.
     context["stats_version"] = __version__
     context["current_project"] = _projects.current_project_id(request)
+    # Project-default mode renders the active project's AUTHORIZED files. An
+    # unauthorized/absent project yields [] here and the panel stays hidden,
+    # so the page never hints at data the caller cannot read.
+    context["project_files"] = _projects.list_data_files(context["current_project"], request) or []
     html = render_to_string("stats/stats.html", context, request=request)
     return HttpResponse(html)
 
@@ -405,6 +409,73 @@ def _parse_body(request, json):
         return json.loads(request.body.decode("utf-8") or "{}")
     except (ValueError, UnicodeDecodeError):
         return {"error": "invalid JSON body", "status": 400}
+
+
+# ---------------------------------------------------------------------------
+# Project-default mode: the active project's data, and the artifacts written
+# back to it. Every route is fail-closed through _projects (an unauthorized
+# project id has no path at all), so a host that mounts this app behind its
+# own auth still cannot read a project the provider does not list for the
+# caller.
+# ---------------------------------------------------------------------------
+
+
+@require_GET
+def project_files(request):
+    """List the ACTIVE project's authorized CSV/TSV files."""
+    from . import _projects
+
+    active = _projects.current_project_id(request)
+    files = _projects.list_data_files(active, request)
+    if files is None:
+        return JsonResponse({"error": "project not accessible"}, status=403)
+    return JsonResponse({"project": active, "files": files})
+
+
+@require_GET
+def project_import(request):
+    """Read one authorized data file of the ACTIVE project."""
+    from . import _projects
+
+    active = _projects.current_project_id(request)
+    name = request.GET.get("name", "")
+    text = _projects.read_data_file(active, name, request)
+    if text is None:
+        # One refusal for every reason: no active project, unsafe name, wrong
+        # format, symlink, missing, oversized. A caller learns only "not
+        # available".
+        return JsonResponse({"error": "file not available"}, status=403)
+    return JsonResponse({"project": active, "name": name, "text": text})
+
+
+@require_POST  # CSRF enforced: the page carries the token and the client sends it
+def project_save(request):
+    """Write a config / results / plot / provenance artifact into the project."""
+    import json
+
+    from . import _projects
+
+    body = _parse_body(request, json)
+    if isinstance(body, dict) and "error" in body:
+        return JsonResponse(body, status=body.pop("status", 400))
+    active = _projects.current_project_id(request)
+    # SERVER-SIDE BINDING: the artifact lands in the project THIS REQUEST
+    # resolves, never in an id the client names. An absent active project is the
+    # stateless Quick-analysis state, so every persistence attempt is refused —
+    # Quick mode cannot write even if a caller forges the body.
+    if not active or str(body.get("project") or "") != active:
+        return JsonResponse({"error": "no active project"}, status=403)
+    saved = _projects.save_artifact(
+        active,
+        body.get("kind"),
+        body.get("name"),
+        body.get("payload"),
+        payload_base64=body.get("payload_base64"),
+        request=request,
+    )
+    if saved is None:
+        return JsonResponse({"error": "not saved"}, status=403)
+    return JsonResponse(saved, status=201)
 
 
 # EOF
