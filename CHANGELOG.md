@@ -5,6 +5,24 @@ All notable changes to `scitex-stats` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.2.27] — 2026-09-17
+
+### Changed
+- The Statistics app's data and test panes follow the operator UI review:
+  - The file drop zone answers the pointer and the keyboard — hover /
+    focus-within tint, the dragover accent ring, and a native "choose a file"
+    button inside it. The zone itself stays a click target (a click that misses
+    an interactive child opens the picker), so mouse, touch and keyboard all
+    reach the file dialog.
+  - `Load sample dataset` is a titled secondary action directly below the drop
+    zone, with a one-line description of what it loads and a confirmation
+    before it replaces anything already typed; the ambiguous inline "or" label
+    is gone.
+  - Selected test rows are flat: a 4px vertical accent line on the left edge, a
+    subtle full-row tint and semibold text — no rounded card, no shadow.
+  - Phones (390px): single-column options, a wrapping pane header, and >=44px
+    touch targets for every control.
+
 ## [0.2.26] — 2026-09-17
 
 ### Added
