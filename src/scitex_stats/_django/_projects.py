@@ -45,7 +45,7 @@ import re
 import stat
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Protocol, Tuple, runtime_checkable
+from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 
 from scitex_ui.project_scope import (
     PROJECT_QUERY_PARAM,
@@ -178,7 +178,7 @@ class ProjectStorage(Protocol):
     directory that merely shares the project's name.
     """
 
-    def project_path(self, project_id: str, request: Any) -> Optional[str]:
+    def project_path(self, project_id: str, request: Any) -> Optional[Path]:
         """The project's storage root, or ``None`` when this request has none."""
         ...
 
@@ -196,10 +196,10 @@ class StandaloneProjectStorage:
     link the root open exists to refuse.
     """
 
-    def project_path(self, project_id: str, request: Any = None) -> Optional[str]:
+    def project_path(self, project_id: str, request: Any = None) -> Optional[Path]:
         if not is_safe_name(project_id):
             return None
-        return str(projects_root() / str(project_id))
+        return projects_root() / str(project_id)
 
     def can_write(self, project_id: str, request: Any = None) -> bool:
         return True
@@ -220,26 +220,70 @@ class NoHostStorage:
         return False
 
 
+def _is_capability(candidate: Any) -> bool:
+    """True when ``candidate`` is a USABLE capability INSTANCE.
+
+    Two traps this closes. ``isinstance`` against a runtime-checkable Protocol only
+    proves the NAMES exist — an object whose ``can_write`` is the string
+    ``"false"`` passes it and then explodes when called, so the methods must be
+    callable. And a CLASS is not an instance: its methods are callable
+    (unbound), so a class would pass too, and every call would then raise
+    missing-``self``. Classes are instantiated by :func:`_capability`, never
+    returned from here.
+    """
+    if isinstance(candidate, type):
+        return False
+    return all(callable(getattr(candidate, name, None)) for name in ("project_path", "can_write"))
+
+
 def _capability(candidate: Any) -> Any:
     """Turn a registration into a storage capability, or ``None``.
 
     A dotted path may name a CLASS (the documented form) or an instance. A class
-    must be instantiated FIRST: a runtime-checkable Protocol matches a class
-    object too — its methods exist as attributes — so returning it hands callers
-    a capability whose every call is a missing-``self`` ``AttributeError``
-    instead of a refusal.
+    must be instantiated FIRST — ``_is_capability`` would also match a class
+    object, whose every call is then a missing-``self`` ``TypeError``. Exactly ONE
+    factory hop is taken: a factory that returns another class is REJECTED rather
+    than recursively instantiated, because each extra hop is another chance to end
+    up holding something that is not the capability anyone registered.
     """
-    if isinstance(candidate, type):
+    if _is_capability(candidate):
+        return candidate
+    if isinstance(candidate, type) or callable(candidate):
         try:
-            candidate = candidate()
-        except Exception:  # noqa: BLE001 - a broken registration must refuse, not crash
+            built = candidate()
+        except Exception:  # noqa: BLE001 - a broken registration refuses, it never crashes a request
             return None
-    elif callable(candidate) and not isinstance(candidate, ProjectStorage):
-        try:
-            candidate = candidate()
-        except Exception:  # noqa: BLE001
-            return None
-    return candidate if isinstance(candidate, ProjectStorage) else None
+        return built if _is_capability(built) else None
+    return None
+
+
+def _capability_path(store: Any, project_id: Optional[str], request: Any) -> Optional[str]:
+    """The path this capability gives for ``project_id``, or ``None``.
+
+    A capability is host code: if it raises, the app refuses. Anything that is not
+    a path (a bool, a list, ``None``, bytes) is a refusal too — never a coercion
+    that invents a directory out of whatever came back.
+    """
+    try:
+        answer = store.project_path(str(project_id), request)
+    except Exception:  # noqa: BLE001 - a broken capability refuses; it does not 500 the app
+        return None
+    if isinstance(answer, (str, os.PathLike)):
+        return os.fspath(answer)
+    return None
+
+
+def _capability_allows_write(store: Any, project_id: Optional[str], request: Any) -> bool:
+    """True only for an explicit, literal ``True`` from the capability.
+
+    ``bool(answer)`` is not enough: the string ``"false"`` is truthy, and it
+    authorized a write to a read-only project before this check existed.
+    """
+    try:
+        answer = store.can_write(str(project_id), request)
+    except Exception:  # noqa: BLE001 - same rule: a broken capability refuses
+        return False
+    return answer is True
 
 
 def storage(request: Any = None) -> Any:
@@ -273,7 +317,7 @@ def can_write(project_id: Optional[str], request: Any = None) -> bool:
     """True only when the request resolves a project AND may write into it."""
     if not project_id or authorized_project(project_id, request) is None:
         return False
-    return bool(storage(request).can_write(str(project_id), request))
+    return _capability_allows_write(storage(request), project_id, request)
 
 
 def is_safe_name(name: Optional[str]) -> bool:
@@ -317,7 +361,7 @@ def _project_dir_fd(project_id: Optional[str], request: Any = None) -> Optional[
     entry = authorized_project(project_id, request)
     if entry is None:
         return None
-    path = storage(request).project_path(str(project_id), request)
+    path = _capability_path(storage(request), project_id, request)
     if not path:
         return None
     return _open_path_no_follow(str(path))
@@ -359,11 +403,14 @@ def _unlink(name: str, dir_fd: int) -> None:
 
 
 def _svg_is_valid(body: bytes) -> bool:
-    """An SVG must actually parse, have an ``svg`` root, and carry no DTD.
+    """An SVG must parse, be in the SVG namespace, and carry no DTD.
 
-    A name is not a format: ``<svg-not-svg>bad</svg-not-svg>`` is well-formed
-    enough to look like SVG and was accepted before, while a DOCTYPE/ENTITY
-    declaration is the shape that makes an XML parser do more than read.
+    A name is not a format: ``<svg-not-svg>bad</svg-not-svg>`` and
+    ``<x:svg xmlns:x="urn:not-svg"/>`` both look like SVG and were accepted
+    before. The root must be bare ``svg`` (HTML-style, no namespace) or
+    ``{http://www.w3.org/2000/svg}svg`` — any OTHER namespace is a different
+    document type wearing the same local name. A DOCTYPE/ENTITY declaration is the
+    shape that makes an XML parser do more than read.
     """
     try:
         text = body.decode("utf-8")
@@ -377,7 +424,7 @@ def _svg_is_valid(body: bytes) -> bool:
         root = ElementTree.fromstring(text)
     except ElementTree.ParseError:
         return False
-    return root.tag.split("}")[-1] == "svg"
+    return root.tag in ("svg", "{http://www.w3.org/2000/svg}svg")
 
 
 def _content_is_wrong(extension: str, body: bytes) -> bool:

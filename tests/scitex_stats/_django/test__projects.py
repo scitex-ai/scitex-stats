@@ -14,11 +14,11 @@ import os
 import pathlib
 
 import pytest
-
-from .test_views import client  # noqa: E402,F401  (shared Django bootstrap + fixture)
 from scitex_ui.project_scope import ProjectEntry  # noqa: E402
 
 from scitex_stats._django import _projects
+
+from .test_views import client  # noqa: E402,F401  (shared Django bootstrap + fixture)
 
 
 @contextlib.contextmanager
@@ -466,7 +466,7 @@ class _EnvRootStorage:
         if project_id != "host-cohort":
             return None
         root = pathlib.Path(os.environ["SCITEX_STATS_TEST_HOST_ROOT"])
-        return str(root) if root.is_dir() else None
+        return root if root.is_dir() else None
 
     def can_write(self, project_id, request=None):
         return os.environ.get("SCITEX_STATS_TEST_WRITE", "yes") == "yes"
@@ -474,8 +474,7 @@ class _EnvRootStorage:
 
 _host_provider = _EnvRootHostProvider()
 HOST_PROVIDER_PATH = "tests.scitex_stats._django.test__projects._host_provider"
-_host_storage = _EnvRootStorage()
-HOST_STORAGE_PATH = "tests.scitex_stats._django.test__projects._host_storage"
+HOST_STORAGE_PATH = "tests.scitex_stats._django.test__projects._EnvRootStorage"
 
 
 @contextlib.contextmanager
@@ -687,12 +686,9 @@ def test_save_refuses_a_foreign_project_id(tmp_path, client):  # noqa: F811
     assert status == 403
 
 
-def test_save_refuses_with_no_active_project(tmp_path):  # noqa: F811
+def test_save_refuses_with_no_active_project(tmp_path, client):  # noqa: F811
     # Arrange: Quick analysis = the stateless state, i.e. no active project.
     _project_with_data(tmp_path)
-    from django.test import Client
-
-    client = Client()
     payload = json.dumps({"project": "cohort", "kind": "config", "name": "config.json", "payload": {}})
     # Act
     with _projects_root(tmp_path):
@@ -1132,7 +1128,7 @@ class _HubSlugStorage:
         if not owner or not slug:
             return None
         base = pathlib.Path(os.environ["SCITEX_STATS_TEST_HUB_ROOT"])
-        return str(base / owner / slug)
+        return base / owner / slug
 
     def can_write(self, project_id, request=None):
         return os.environ.get("SCITEX_STATS_TEST_WRITE", "yes") == "yes"
@@ -1140,8 +1136,7 @@ class _HubSlugStorage:
 
 _hub_provider = _HubSlugProvider()
 HUB_PROVIDER_PATH = "tests.scitex_stats._django.test__projects._hub_provider"
-_hub_storage = _HubSlugStorage()
-HUB_STORAGE_PATH = "tests.scitex_stats._django.test__projects._hub_storage"
+HUB_STORAGE_PATH = "tests.scitex_stats._django.test__projects._HubSlugStorage"
 
 
 @contextlib.contextmanager
@@ -1237,7 +1232,7 @@ class _HubContractStorage:
 
     def project_path(self, project_id, request):
         project = self._accessible(project_id, request)
-        return None if project is None else project.root
+        return None if project is None else pathlib.Path(project.root)
 
     def can_write(self, project_id, request):
         project = self._accessible(project_id, request)
@@ -1316,13 +1311,14 @@ def test_the_agreed_hub_storage_contract_serves_editors_and_refuses_readers(tmp_
         editor_save = _projects.save_artifact("alice/cohort", "results", "result.json", {"a": 1}, request=editor)
         reader_listing = _projects.list_data_files("alice/cohort", reader)
         reader_save = _projects.save_artifact("alice/cohort", "results", "result.json", {"a": 1}, request=reader)
+        reader_may_write = _projects.can_write("alice/cohort", reader)
     # Assert
     assert (
         [f["name"] for f in editor_listing],
         editor_save["path"],
         [f["name"] for f in reader_listing],
         reader_save,
-        _projects.can_write("alice/cohort", reader),
+        reader_may_write,
     ) == (["measurements.csv"], "stats/results/result.json", ["measurements.csv"], None, False)
 
 
@@ -1342,6 +1338,151 @@ def test_the_hub_contract_fails_closed_for_a_project_the_caller_cannot_read(tmp_
         saved = _projects.save_artifact("alice/cohort", "results", "result.json", {"a": 1}, request=_Request("stranger"))
     # Assert
     assert (listing, saved) == (None, None)
+
+
+# ---------------------------------------------------------------------------
+# Adversarial: malformed capabilities must refuse, never authorize.
+# ---------------------------------------------------------------------------
+
+
+class _StringFalseStorage:
+    """Answers the STRING "false" from can_write — truthy, and it once authorized
+    a write to a read-only project (endpoint 201, artifact persisted)."""
+
+    def project_path(self, project_id, request=None):
+        root = pathlib.Path(os.environ["SCITEX_STATS_TEST_HOST_ROOT"])
+        return root if root.is_dir() else None
+
+    def can_write(self, project_id, request=None):
+        return "false"
+
+
+class _RaisingPathStorage:
+    def project_path(self, project_id, request=None):
+        raise RuntimeError("capability blew up while resolving the path")
+
+    def can_write(self, project_id, request=None):
+        return True
+
+
+class _RaisingWriteStorage:
+    def project_path(self, project_id, request=None):
+        return pathlib.Path(os.environ["SCITEX_STATS_TEST_HOST_ROOT"])
+
+    def can_write(self, project_id, request=None):
+        raise RuntimeError("capability blew up while deciding write access")
+
+
+class _NonCallableStorage:
+    """Attribute NAMES exist, so a Protocol isinstance would accept it, but nothing
+    here can be called."""
+
+    project_path = "not-a-method"
+    can_write = False
+
+
+def _factory_returning_a_class():
+    """A registration one hop away from being a class, not an instance."""
+    return _StringFalseStorage
+
+
+STRING_FALSE_STORAGE = "tests.scitex_stats._django.test__projects._StringFalseStorage"
+RAISING_PATH_STORAGE = "tests.scitex_stats._django.test__projects._RaisingPathStorage"
+RAISING_WRITE_STORAGE = "tests.scitex_stats._django.test__projects._RaisingWriteStorage"
+NON_CALLABLE_STORAGE = "tests.scitex_stats._django.test__projects._NonCallableStorage"
+FACTORY_STORAGE = "tests.scitex_stats._django.test__projects._factory_returning_a_class"
+
+
+def _host_project(tmp_path):
+    root = tmp_path / "host"
+    root.mkdir()
+    (root / "real.csv").write_text("a,b\n5.1,6.3\n")
+    return root
+
+
+def test_a_capability_answering_the_string_false_cannot_authorize_a_write(tmp_path):  # noqa: F811
+    """The reported reproduction: the write came back 201 and result.json landed."""
+    # Arrange
+    from django.test import Client, override_settings
+
+    root = _host_project(tmp_path)
+    enforcing = Client(enforce_csrf_checks=True)
+    token = enforcing.get("/?project=host-cohort").content.decode().split('name="csrf-token" content="')[1].split('"')[0]
+    payload = json.dumps({"project": "host-cohort", "kind": "results", "name": "result.json", "payload": {"a": 1}})
+    # Act
+    with override_settings(
+        SCITEX_PROJECT_PROVIDER=HOST_PROVIDER_PATH, SCITEX_PROJECT_STORAGE=STRING_FALSE_STORAGE
+    ), _host_root(root):
+        status = enforcing.post(
+            "/api/project-save?project=host-cohort", data=payload, content_type="application/json", HTTP_X_CSRFTOKEN=token
+        ).status_code
+        listed = _projects.list_data_files("host-cohort")
+    # Assert
+    assert (status, [f["name"] for f in listed], (root / "stats").exists()) == (403, ["real.csv"], False)
+
+
+def test_a_capability_that_raises_refuses_instead_of_escaping(tmp_path):
+    # Arrange: reading raises while resolving a path; writing raises while deciding.
+    root = _host_project(tmp_path)
+    from django.test import override_settings
+
+    # Act
+    with override_settings(
+        SCITEX_PROJECT_PROVIDER=HOST_PROVIDER_PATH, SCITEX_PROJECT_STORAGE=RAISING_PATH_STORAGE
+    ), _host_root(root):
+        listing = _projects.list_data_files("host-cohort")
+    with override_settings(
+        SCITEX_PROJECT_PROVIDER=HOST_PROVIDER_PATH, SCITEX_PROJECT_STORAGE=RAISING_WRITE_STORAGE
+    ), _host_root(root):
+        wrote = _projects.save_artifact("host-cohort", "results", "result.json", {"a": 1})
+    # Assert
+    assert (listing, wrote) == (None, None)
+
+
+def test_a_registration_whose_methods_are_not_callable_is_not_a_capability(tmp_path):
+    # Arrange
+    root = _host_project(tmp_path)
+    from django.test import override_settings
+
+    # Act
+    with override_settings(
+        SCITEX_PROJECT_PROVIDER=HOST_PROVIDER_PATH, SCITEX_PROJECT_STORAGE=NON_CALLABLE_STORAGE
+    ), _host_root(root):
+        listing = _projects.list_data_files("host-cohort")
+        wrote = _projects.save_artifact("host-cohort", "results", "result.json", {"a": 1})
+    # Assert
+    assert (listing, wrote) == (None, None)
+
+
+def test_a_factory_returning_a_class_is_rejected_rather_than_chased(tmp_path):
+    """One hop is taken, then the result must BE a capability: a factory handing
+    back a class is refused instead of instantiated recursively."""
+    # Arrange
+    root = _host_project(tmp_path)
+    from django.test import override_settings
+
+    # Act
+    with override_settings(
+        SCITEX_PROJECT_PROVIDER=HOST_PROVIDER_PATH, SCITEX_PROJECT_STORAGE=FACTORY_STORAGE
+    ), _host_root(root):
+        listing = _projects.list_data_files("host-cohort")
+    # Assert
+    assert listing is None
+
+
+def test_save_refuses_an_svg_in_a_foreign_namespace(tmp_path):
+    # Arrange: the local name is `svg` in both, only the namespace differs.
+    import base64
+
+    _project_with_data(tmp_path)
+    foreign = base64.b64encode(b'<x:svg xmlns:x="urn:not-svg"/>').decode()
+    correct = base64.b64encode(b'<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>').decode()
+    # Act
+    with _projects_root(tmp_path):
+        wrong = _projects.save_artifact("cohort", "plots", "plot.svg", None, payload_base64=foreign)
+        right = _projects.save_artifact("cohort", "plots", "plot.svg", None, payload_base64=correct)
+    # Assert
+    assert (wrong, right["name"]) == (None, "plot.svg")
 
 
 # EOF
