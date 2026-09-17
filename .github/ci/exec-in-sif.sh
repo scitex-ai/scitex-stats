@@ -41,11 +41,30 @@ export PATH="$HOME/.env-3.11/bin:$PATH"
     exit 1
 }
 
-# apptainer scratch on the shared FS — keeps HOME clean.
-export APPTAINER_TMPDIR="/data/gpfs/projects/punim0264/ywatanabe/ci/apptainer-tmp"
-mkdir -p "$APPTAINER_TMPDIR"
+# apptainer scratch: NODE-LOCAL, derived from the runner's own scratch.
+# The previous hardcoded /data/gpfs/projects/punim0264/... exists only on the
+# Spartan nodes; on any other runner `mkdir -p` dies with "Permission denied"
+# and, because this line runs before anything else, it took the whole build
+# stage down AFTER every test leg had passed (measured 2026-09-17 on
+# actions-runner-org-04: three green test legs, build dead at
+# `mkdir: cannot create directory '/data': Permission denied`).
+# RUNNER_TEMP is the runner's own scratch dir (GitHub sets it on both hosted
+# and self-hosted runners); /tmp is the fallback for a bare shell run.
+export APPTAINER_TMPDIR="${RUNNER_TEMP:-/tmp}/apptainer-tmp-$$"
+mkdir -p "$APPTAINER_TMPDIR" || {
+    echo "::error::cannot create apptainer scratch at $APPTAINER_TMPDIR"
+    exit 1
+}
 
-# --bind punim0264: $HOME/.scitex is a symlink into punim0264; bind it so the
-# symlink resolves inside the container. --pwd "$PWD" keeps the checkout as cwd.
-exec "$APPTAINER" exec --pwd "$PWD" --bind /data/gpfs/projects/punim0264 \
+# --bind punim0264 ONLY where it exists: $HOME/.scitex is a symlink into
+# punim0264 on the Spartan nodes, so the bind is what makes it resolve inside
+# the container. On a node without that tree there is no symlink to resolve and
+# binding a non-existent path is at best noise, at worst a hard failure.
+BIND_ARGS=()
+if [ -d /data/gpfs/projects/punim0264 ]; then
+    BIND_ARGS=(--bind /data/gpfs/projects/punim0264)
+fi
+
+# --pwd "$PWD" keeps the checkout as cwd.
+exec "$APPTAINER" exec --pwd "$PWD" "${BIND_ARGS[@]+"${BIND_ARGS[@]}"}" \
     "$SIF" bash ".github/ci/$INNER" "$@"
