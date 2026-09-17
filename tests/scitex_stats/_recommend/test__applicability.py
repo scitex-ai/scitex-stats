@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from scitex_stats._recommend import CATALOG, DEFAULT_THRESHOLDS, check_applicability
+from scitex_stats._recommend import CATALOG, DEFAULT_THRESHOLDS, check_applicability, recommend_test
 
 
 def _rows(data, **kw):
@@ -137,3 +137,12 @@ def test_threshold_override_changes_the_decision(normal_unequal_var):
     rows = _rows(normal_unequal_var, design="independent", thresholds={"variance_alpha": 1e-300})
     # Assert
     assert rows["ttest_ind"]["applicable"]
+
+
+def test_applicability_reasons_use_apa_alpha(sample_ui):
+    # Arrange
+    rows = recommend_test(sample_ui, design="independent")["applicability"]
+    # Act
+    reasons = [x for r in rows for x in r["reasons"] if "Shapiro–Wilk p" in x]
+    # Assert
+    assert reasons and all("p ≥ .05" in x or "p < .05" in x for x in reasons)

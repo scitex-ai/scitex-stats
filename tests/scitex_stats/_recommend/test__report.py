@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from scitex_stats._recommend import recommend_test
+from scitex_stats._utils._apa import validate_apa
 
 
 def _section(data, **kw):
@@ -88,3 +89,47 @@ def test_paired_qq_uses_differences(paired_normal):
     qq = _section(paired_normal, design="paired")["qq"]
     # Assert
     assert [q["sample"] for q in qq] == ["differences"]
+
+
+def _rows(data, **kw):
+    return _section(data, **kw)["rows"]
+
+
+def test_shapiro_w_has_no_leading_zero_and_two_decimals(sample_ui):
+    # Arrange
+    # Act
+    apa = [r["apa"] for r in _rows(sample_ui) if r["check"] == "Shapiro–Wilk"][0]
+    # Assert
+    assert apa.startswith("W = .97,")
+
+
+def test_assumption_rows_pass_validate_apa(sample_ui, three_normal_unequal, nonnormal_small):
+    # Arrange
+    rows = _rows(sample_ui) + _rows(three_normal_unequal) + _rows(nonnormal_small)
+    # Diagnostic variance checks carry no effect size; their magnitude is the variance-ratio row.
+    waived = {"APA-MISSING-EFFECT"}
+    # Act
+    bad = [
+        (r["apa"], [v for v in validate_apa(r["apa"])["violations"] if v["code"] not in waived])
+        for r in rows
+        if r["apa"] and r["symbol"]
+    ]
+    # Assert
+    assert not [b for b in bad if b[1]], bad
+
+
+def test_thresholds_use_apa_alpha(sample_ui):
+    # Arrange
+    # Act
+    texts = [r["threshold"]["text"] for r in _rows(sample_ui) if r["threshold"]["text"].startswith("p ")]
+    # Assert
+    assert texts and all(t.startswith("p ≥ .05:") for t in texts)
+
+
+def test_threshold_texts_pass_validate_apa(sample_ui):
+    # Arrange
+    texts = [r["threshold"]["text"].split(":")[0] for r in _rows(sample_ui) if r["threshold"]["text"].startswith("p ")]
+    # Act
+    violations = [v for t in texts for v in validate_apa(t)["violations"]]
+    # Assert
+    assert violations == []

@@ -167,3 +167,11 @@ def test_run_all_is_deterministic(three_normal_unequal):
     second = json.dumps(_without_clock(run_all_applicable(three_normal_unequal, design="independent")), sort_keys=True, default=str)
     # Assert
     assert first == second
+
+
+def test_agreement_uses_apa_alpha(sample_ui):
+    # Arrange
+    # Act
+    summary = run_all_applicable(sample_ui, design="independent")["agreement"]["summary"]
+    # Assert
+    assert "α = .05" in summary

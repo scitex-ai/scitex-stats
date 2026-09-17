@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # File: src/scitex_stats/_cli/tests_group.py
-"""`scitex-stats tests` — list / execute / describe / recommend / applicability / recommend-test / run-all."""
+"""`scitex-stats tests` — list / execute / describe / recommend / check-applicability / recommend-test / execute-all."""
 
 from __future__ import annotations
 
 import click
+
+from scitex_dev.ecosystem import deprecated_alias
 
 from .recommend import (
     run_applicability as _run_applicability,
@@ -30,7 +32,7 @@ def tests_group():
       scitex-stats tests describe data.csv -c group_a
       scitex-stats tests recommend --n-groups 2 --sample-sizes 30,28
       scitex-stats tests recommend-test data.csv --design independent
-      scitex-stats tests run-all data.csv --design independent
+      scitex-stats tests execute-all data.csv --design independent
     """
 
 
@@ -196,7 +198,7 @@ _SCALE = click.option(
 _GROUPS = click.option("--groups", default=None, help="Comma-separated CSV columns to use as groups.")
 
 
-@tests_group.command("applicability")
+@tests_group.command("check-applicability")
 @click.argument("data")
 @_GROUPS
 @_DESIGN
@@ -207,8 +209,8 @@ def tests_applicability(data, groups, design, scale, as_json):
 
     \b
     Example:
-        $ scitex-stats tests applicability data.csv --design independent
-        $ scitex-stats tests applicability table.json --scale categorical --no-json
+        $ scitex-stats tests check-applicability data.csv --design independent
+        $ scitex-stats tests check-applicability table.json --scale categorical --no-json
     """
     return _run_applicability(data=data, groups=groups, design=design, scale=scale, as_json=as_json)
 
@@ -234,7 +236,7 @@ def tests_recommend_test(data, groups, design, scale, assume_equal_variance, as_
     )
 
 
-@tests_group.command("run-all")
+@tests_group.command("execute-all")
 @click.argument("data")
 @_GROUPS
 @_DESIGN
@@ -252,13 +254,24 @@ def tests_run_all(data, groups, design, scale, primary, alternative, as_json):
 
     \b
     Example:
-        $ scitex-stats tests run-all data.csv --design independent --no-json
-        $ scitex-stats tests run-all data.csv --design paired --primary wilcoxon
+        $ scitex-stats tests execute-all data.csv --design independent --no-json
+        $ scitex-stats tests execute-all data.csv --design paired --primary wilcoxon
     """
     return _run_run_all(
         data=data, groups=groups, design=design, scale=scale,
         primary=primary, alternative=alternative, as_json=as_json,
     )
+
+
+# §1 leaf-noun doctrine (scitex-dev CLI conventions): a leaf named as a bare
+# noun reads as a transitive action with its object missing. Both commands
+# below shipped as nouns — `applicability` / `run-all` — and the audit fails
+# the build on them. They keep their behaviour under verb-first compound
+# names; the old spellings stay as hidden Phase-W warn-forward aliases so no
+# existing invocation breaks (the audit skips hidden commands, so the alias
+# carries no new finding).
+deprecated_alias(tests_group, "applicability", target="check-applicability", remove_in="0.3.0")
+deprecated_alias(tests_group, "run-all", target="execute-all", remove_in="0.3.0")
 
 
 # EOF

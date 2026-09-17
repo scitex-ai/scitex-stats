@@ -45,6 +45,7 @@ CROSS_PACKAGE_IMPORTS = [
     'scitex_app._django',
     'scitex_app.embed',
     'scitex_app.i18n',
+    'scitex_app.plugins',
     'scitex_clew._hash',
     'scitex_config',
     'scitex_dev',

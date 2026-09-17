@@ -19,4 +19,16 @@ def test_tests_group_has_recommend_commands():
     # Act
     names = set(group_under_check.commands)
     # Assert
-    assert {"list", "execute", "describe", "recommend", "applicability", "recommend-test", "run-all"} <= names
+    assert {"list", "execute", "describe", "recommend", "check-applicability", "recommend-test", "execute-all"} <= names
+
+
+def test_renamed_noun_leaves_stay_hidden_aliases():
+    # Arrange
+    renamed = {"applicability": "check-applicability", "run-all": "execute-all"}
+    # Act
+    aliases = {
+        name: (group_under_check.commands[name].hidden, group_under_check.commands[name]._deprecated_alias["target"])
+        for name in renamed
+    }
+    # Assert
+    assert aliases == {name: (True, target) for name, target in renamed.items()}

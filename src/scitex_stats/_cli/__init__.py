@@ -217,7 +217,8 @@ def mcp_start(transport, dry_run, yes):
 
 
 # ----------------------------------------------------------------------------
-# tests group (list / execute / describe / recommend / recommend-test / run-all)
+# tests group (list / execute / describe / recommend / check-applicability /
+# recommend-test / execute-all)
 # ----------------------------------------------------------------------------
 
 main.add_command(_tests_group, name="tests")

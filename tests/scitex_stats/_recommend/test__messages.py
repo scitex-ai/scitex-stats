@@ -69,3 +69,19 @@ def test_every_emitted_message_has_a_japanese_translation(
     missing = emitted - _msgids()
     # Assert
     assert not missing, sorted(missing)
+
+
+def test_fmt_alpha_keeps_needed_third_decimal():
+    # Arrange
+    # Act
+    text = messages.fmt_alpha(0.005)
+    # Assert
+    assert text == ".005"
+
+
+def test_fmt_stat_keeps_leading_zero_for_unbounded_f():
+    # Arrange
+    # Act
+    text = messages.fmt_stat(0.004, "F")
+    # Assert
+    assert text == "0.00"
