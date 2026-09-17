@@ -1200,4 +1200,148 @@ def test_a_hub_slug_project_is_refused_by_the_endpoint_when_the_storage_says_no(
     assert status == 403
 
 
+# ---------------------------------------------------------------------------
+# The Hub's agreed storage contract: a NO-ARG class registered by dotted path,
+# methods taking (project_id, request), the decision coming from request.user,
+# and None for a project this caller may not read.
+# ---------------------------------------------------------------------------
+
+
+class _HubContractProject:
+    """Stand-in for the hub's Project: an owner plus who may edit."""
+
+    def __init__(self, root, readers, editors):
+        self.root = root
+        self.readers = set(readers)
+        self.editors = set(editors)
+
+    def can_edit(self, username):
+        return username in self.editors
+
+
+class _HubContractStorage:
+    """The shape the hub will ship (`HubProjectStorage`), reduced to a fixture.
+
+    No constructor arguments because settings register the CLASS, and the
+    username decisions read `request.user` — which only works if Stats threads
+    the real request into the capability.
+    """
+
+    def _accessible(self, project_id, request):
+        projects = json.loads(os.environ.get("SCITEX_STATS_TEST_HUB_PROJECTS", "{}"))
+        entry = projects.get(project_id)
+        username = getattr(getattr(request, "user", None), "username", None)
+        if entry is None or username not in set(entry["readers"]):
+            return None
+        return _HubContractProject(entry["root"], entry["readers"], entry["editors"])
+
+    def project_path(self, project_id, request):
+        project = self._accessible(project_id, request)
+        return None if project is None else project.root
+
+    def can_write(self, project_id, request):
+        project = self._accessible(project_id, request)
+        return bool(project is not None and project.can_edit(getattr(request.user, "username", None)))
+
+
+class _HubContractProvider:
+    """Picker-only provider, exactly as the hub will keep it: it lists projects
+    and says nothing about paths or writes."""
+
+    def list_projects(self, request=None):
+        username = getattr(getattr(request, "user", None), "username", None)
+        projects = json.loads(os.environ.get("SCITEX_STATS_TEST_HUB_PROJECTS", "{}"))
+        return [
+            ProjectEntry(id=project_id, name=project_id.split("/")[-1], detail="alice")
+            for project_id, entry in projects.items()
+            if username in set(entry["readers"])
+        ]
+
+    def last_visited(self, request=None):
+        return None
+
+    def remember(self, request, project_id):
+        return None
+
+
+_hub_contract_provider = _HubContractProvider()
+_hub_contract_storage = _HubContractStorage()
+HUB_CONTRACT_PROVIDER_PATH = "tests.scitex_stats._django.test__projects._hub_contract_provider"
+HUB_CONTRACT_STORAGE_PATH = "tests.scitex_stats._django.test__projects._hub_contract_storage"
+
+
+class _Request:
+    """Minimal request: the capability only needs `.user`, the app only `.GET`."""
+
+    def __init__(self, username, params=None):
+        self.user = type("User", (), {"username": username})()
+        self.GET = params or {}
+
+
+@contextlib.contextmanager
+def _hub_projects(mapping):
+    previous = os.environ.get("SCITEX_STATS_TEST_HUB_PROJECTS")
+    os.environ["SCITEX_STATS_TEST_HUB_PROJECTS"] = json.dumps(mapping)
+    try:
+        yield
+    finally:
+        if previous is None:
+            os.environ.pop("SCITEX_STATS_TEST_HUB_PROJECTS", None)
+        else:
+            os.environ["SCITEX_STATS_TEST_HUB_PROJECTS"] = previous
+
+
+def test_the_agreed_hub_storage_contract_serves_editors_and_refuses_readers(tmp_path):
+    """The exact contract the hub will ship: no-arg class, (project_id, request)
+    methods, request.user decides, and a collaborator without edit rights may read
+    the project but never write to it.
+
+    Request-threading is proven by construction: the capability resolves from
+    `request.user.username`, so if the request were not passed through, nobody
+    would be in `readers` and even the editor's listing would be refused.
+    """
+    # Arrange
+    root = tmp_path / "hub" / "alice" / "cohort"
+    root.mkdir(parents=True)
+    (root / "measurements.csv").write_text("a,b\n5.1,6.3\n")
+    projects = {"alice/cohort": {"root": str(root), "readers": ["editor", "reader"], "editors": ["editor"]}}
+    editor, reader = _Request("editor"), _Request("reader")
+    from django.test import override_settings
+
+    # Act
+    with override_settings(
+        SCITEX_PROJECT_PROVIDER=HUB_CONTRACT_PROVIDER_PATH, SCITEX_PROJECT_STORAGE=HUB_CONTRACT_STORAGE_PATH
+    ), _hub_projects(projects):
+        editor_listing = _projects.list_data_files("alice/cohort", editor)
+        editor_save = _projects.save_artifact("alice/cohort", "results", "result.json", {"a": 1}, request=editor)
+        reader_listing = _projects.list_data_files("alice/cohort", reader)
+        reader_save = _projects.save_artifact("alice/cohort", "results", "result.json", {"a": 1}, request=reader)
+    # Assert
+    assert (
+        [f["name"] for f in editor_listing],
+        editor_save["path"],
+        [f["name"] for f in reader_listing],
+        reader_save,
+        _projects.can_write("alice/cohort", reader),
+    ) == (["measurements.csv"], "stats/results/result.json", ["measurements.csv"], None, False)
+
+
+def test_the_hub_contract_fails_closed_for_a_project_the_caller_cannot_read(tmp_path):
+    # Arrange: the capability resolves None for this caller (unlisted project),
+    # while the picker lists nothing either.
+    root = tmp_path / "hub" / "alice" / "cohort"
+    root.mkdir(parents=True)
+    projects = {"alice/cohort": {"root": str(root), "readers": ["someone-else"], "editors": []}}
+    from django.test import override_settings
+
+    # Act
+    with override_settings(
+        SCITEX_PROJECT_PROVIDER=HUB_CONTRACT_PROVIDER_PATH, SCITEX_PROJECT_STORAGE=HUB_CONTRACT_STORAGE_PATH
+    ), _hub_projects(projects):
+        listing = _projects.list_data_files("alice/cohort", _Request("stranger"))
+        saved = _projects.save_artifact("alice/cohort", "results", "result.json", {"a": 1}, request=_Request("stranger"))
+    # Assert
+    assert (listing, saved) == (None, None)
+
+
 # EOF
