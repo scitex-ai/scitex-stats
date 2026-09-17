@@ -13,6 +13,8 @@ from scitex_ui.project_scope import project_listing_view
 
 from . import _plot_views, _projects, views
 
+from . import _report_views, views
+
 app_name = "stats"
 
 urlpatterns = [
@@ -43,6 +45,10 @@ urlpatterns = [
     path("api/correct", views.correct, name="correct"),
     path("api/plot", _plot_views.plot, name="plot"),
     path("api/integrations", _plot_views.integrations, name="integrations"),
+
+    path("api/report/capabilities", _report_views.report_capabilities, name="report_capabilities"),
+    path("api/report/pdf", _report_views.report_pdf, name="report_pdf"),
+    path("api/report/save", _report_views.report_save, name="report_save"),
 ]
 
 # EOF

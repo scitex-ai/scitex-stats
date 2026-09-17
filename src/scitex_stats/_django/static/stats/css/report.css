@@ -1,0 +1,29 @@
+/* Bundled report block in Results (report.js) */
+.stats-report {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-default, rgba(127, 127, 127, 0.3));
+  border-radius: 8px;
+}
+
+.stats-report__title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.stats-report__status:empty {
+  display: none;
+}
+
+.stats-report__status a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.stats-report .stats-btn[aria-busy="true"] {
+  cursor: progress;
+  opacity: 0.7;
+}

@@ -11,7 +11,9 @@ statistic must carry all of (1) n, (2) 95% CI, (3) method/test name,
 """
 
 from ._full_report import SIX_STAT_FIELDS, IncompleteReportError, full_report
+from ._pdf import SECTIONS as REPORT_SECTIONS
+from ._pdf import build_report, report
 
-__all__ = ["full_report", "SIX_STAT_FIELDS", "IncompleteReportError"]
+__all__ = ["full_report", "SIX_STAT_FIELDS", "IncompleteReportError", "report", "build_report", "REPORT_SECTIONS"]
 
 # EOF

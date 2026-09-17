@@ -26,6 +26,19 @@ versions follow [Semantic Versioning](https://semver.org/).
 ## [0.2.26] — 2026-09-17
 
 ### Added
+- `scitex_stats.run_posthoc` / `select_posthoc`: post-hoc after a 3+ group
+  omnibus test, chosen deterministically (ANOVA: Tukey HSD or Games–Howell by
+  Brown–Forsythe; Welch's ANOVA: Games–Howell; Kruskal–Wallis: Dunn–Holm;
+  Friedman: Nemenyi or Wilcoxon–Holm; RM ANOVA: paired t–Holm). Exact
+  studentized-range p values, adjusted p (APA), pairwise effect sizes with CIs;
+  a non-significant omnibus skips comparisons unless `when="always"`, which flags it.
+- `scitex_stats.report(data, design=..., output="report.pdf")`, `scitex-stats
+  report data.csv --out report.pdf` and the `generate_report` MCP tool: one PDF
+  (plus HTML and Markdown) with metadata, data summary and exclusions,
+  assumption checks, applicability and primary test, APA result, sensitivity
+  analyses, post-hoc table, figure with brackets, methods paragraph and
+  references. WeasyPrint renders offline; new `[report]` extra.
+- Stats app: "Download report (PDF)" and "Save to Files" in Results (EN/JA).
 - Provenance receipt on every `run_test`, `full_report` and MCP `run_test`
   result (`result["provenance"]`, schema `scitex-stats/provenance@1`): test
   and parameters, per-input SHA-256 with n, seed, library versions, UTC

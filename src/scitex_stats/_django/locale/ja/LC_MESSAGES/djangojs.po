@@ -618,3 +618,30 @@ msgstr "先にプロットを描画してください。"
 
 msgid "Save failed."
 msgstr "保存に失敗しました。"
+
+msgid "A report needs at least two groups of numbers."
+msgstr "レポートには数値の群が2つ以上必要です。"
+
+msgid "Building report…"
+msgstr "レポートを作成しています…"
+
+msgid "Could not build the report."
+msgstr "レポートを作成できませんでした。"
+
+msgid "Report downloaded."
+msgstr "レポートをダウンロードしました。"
+
+msgid "Saving report to Files…"
+msgstr "レポートをファイルに保存しています…"
+
+msgid "Could not save the report."
+msgstr "レポートを保存できませんでした。"
+
+msgid "Saved to Files:"
+msgstr "ファイルに保存しました:"
+
+msgid "Open Files"
+msgstr "ファイルを開く"
+
+msgid "PDF reports are not available on this server."
+msgstr "このサーバーではPDFレポートを作成できません。"

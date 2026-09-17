@@ -46,7 +46,9 @@ from .skills_group import skills_group as _skills_group
 from .gui import gui as _gui
 from .validate_apa import validate_apa_cmd as _validate_apa_cmd
 from .verify import verify as _verify_cmd
+from .report import report as _report_cmd
 from .stats import run_format_pvalue as _run_format_pvalue
+from scitex_dev.ecosystem import deprecated_alias
 from .tests_group import tests_group as _tests_group
 
 
@@ -314,6 +316,10 @@ main.add_command(_validate_apa_cmd, name="validate-apa")
 # lazily inside the subcommands, so a base install (no [server]) still works.
 main.add_command(_gui, name="gui")
 main.add_command(_verify_cmd, name="verify")
+main.add_command(_report_cmd, name="generate-report")
+# The leaf-noun audit rule (§1) requires a verb; the bare `report` stays as an
+# alias so existing scripts and this repo's own docs keep working.
+deprecated_alias(main, "report", target="generate-report", remove_in="0.3.0")
 
 
 # §1a install-shell-completion/print-shell-completion + optional scitex-dev
