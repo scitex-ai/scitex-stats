@@ -56,9 +56,36 @@ def projects_root() -> Path:
     return Path(configured).expanduser() if configured else DEFAULT_ROOT
 
 
-def provider(request: Any = None) -> LocalProjectProvider:
-    """Build the standalone provider (a factory: the SDK setting takes a callable)."""
-    return LocalProjectProvider(projects_root())
+class StandaloneProjectProvider(LocalProjectProvider):
+    """The local-folder provider, reading the projects root when CONSTRUCTED.
+
+    A CLASS, not a factory function, because ``host_project_provider()``
+    resolves ``SCITEX_PROJECT_PROVIDER`` by importing the dotted path and
+    treats anything that is not a class as an already-built instance — handing
+    it a function silently produced an object that is not a provider at all
+    (caught by the standalone-shell test, which renders through the real
+    settings module).
+    """
+
+    def __init__(self) -> None:
+        super().__init__(projects_root())
+
+
+def provider(request: Any = None) -> Any:
+    """The provider this request must ask: the HOST's, else the local one.
+
+    The hub OWNS project scope: it mounts this app and registers its provider
+    through ``SCITEX_PROJECT_PROVIDER`` (optionally with an HTTP endpoint behind
+    ``SCITEX_PROJECT_PROVIDER_URL``). Asking the local folder root in a hub mount
+    would bypass the host's authority entirely — the file listing, import and
+    save routes would read a directory the host never authorized. So every route
+    asks the SAME provider the picker gets its options from, and standalone (no
+    host provider registered) falls back to the local root.
+    """
+    from scitex_ui.project_scope import host_project_provider
+
+    host = host_project_provider()
+    return host if host is not None else StandaloneProjectProvider()
 
 
 def current_project_id(request: Any) -> Optional[str]:
@@ -89,14 +116,25 @@ def authorized_project(project_id: Optional[str]) -> Optional[Any]:
 
 
 def project_dir(project_id: Optional[str]) -> Optional[Path]:
-    """The authorized directory of ``project_id``, or ``None``."""
+    """The authorized directory of ``project_id``, or ``None``.
+
+    The containment check is applied to the LOCAL provider's own root, because
+    that is the root it promises to stay inside. A host provider is the
+    authority for its own entries (the hub may hand out a path on a NAS, not
+    under any local root), so its detail is taken as given — while an entry with
+    NO filesystem detail is refused rather than guessed at.
+    """
     entry = authorized_project(project_id)
     if entry is None:
         return None
-    root = projects_root().resolve()
-    candidate = Path(str(entry.detail or (root / str(entry.id)))).resolve()
-    if candidate != root and root not in candidate.parents:
+    detail = str(getattr(entry, "detail", "") or "").strip()
+    if not detail:
         return None
+    candidate = Path(detail).resolve()
+    if isinstance(provider(), LocalProjectProvider):
+        root = projects_root().resolve()
+        if candidate != root and root not in candidate.parents:
+            return None
     return candidate if candidate.is_dir() else None
 
 

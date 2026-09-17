@@ -14,6 +14,7 @@ import os
 import pathlib
 
 from .test_views import client  # noqa: E402,F401  (shared Django bootstrap + fixture)
+from scitex_ui.project_scope import ProjectEntry  # noqa: E402
 
 from scitex_stats._django import _projects
 
@@ -418,6 +419,84 @@ def test_plot_save_prefers_the_rendered_figure_then_the_spec():
     save_plot = js.split("async function savePlot()", 1)[1].split("\n  }", 1)[0]
     # Assert
     assert "saveRenderedPlot()" in save_plot and "plot-spec.json" in save_plot
+
+
+# ---------------------------------------------------------------------------
+# Host-provider precedence: in a hub mount the HOST owns project scope, so the
+# file routes must ask the host's provider — not the local standalone root.
+# ---------------------------------------------------------------------------
+
+
+class _EnvRootHostProvider:
+    """Host-shaped provider whose single project root comes from an env var.
+
+    Defined here (and registered by dotted path below) because
+    ``host_project_provider()`` resolves ``SCITEX_PROJECT_PROVIDER`` with
+    ``import_string`` at request time — this module is importable as
+    ``tests.scitex_stats._django.test__projects``.
+    """
+
+    def list_projects(self, request=None):
+        root = pathlib.Path(os.environ["SCITEX_STATS_TEST_HOST_ROOT"])
+        if not root.is_dir():
+            return []
+        return [ProjectEntry(id="host-cohort", name="host-cohort", detail=str(root))]
+
+    def last_visited(self, request=None):
+        return None
+
+    def remember(self, request, project_id):
+        return None
+
+
+_host_provider = _EnvRootHostProvider()
+HOST_PROVIDER_PATH = "tests.scitex_stats._django.test__projects._host_provider"
+
+
+@contextlib.contextmanager
+def _host_root(path):
+    previous = os.environ.get("SCITEX_STATS_TEST_HOST_ROOT")
+    os.environ["SCITEX_STATS_TEST_HOST_ROOT"] = str(path)
+    try:
+        yield
+    finally:
+        if previous is None:
+            os.environ.pop("SCITEX_STATS_TEST_HOST_ROOT", None)
+        else:
+            os.environ["SCITEX_STATS_TEST_HOST_ROOT"] = previous
+
+
+def test_host_provider_decides_the_listing_when_registered(tmp_path):
+    # Arrange: a LOCAL project of the same name exists, and must be ignored.
+    local_root = tmp_path / "local"
+    local_project = local_root / "host-cohort"
+    local_project.mkdir(parents=True)
+    (local_project / "local-file.csv").write_text("a\n1\n")
+    host_root = tmp_path / "host"
+    host_root.mkdir()
+    (host_root / "host-file.csv").write_text("a\n1\n")
+    # Act
+    from django.test import override_settings
+
+    with override_settings(SCITEX_PROJECT_PROVIDER=HOST_PROVIDER_PATH), _projects_root(local_root), _host_root(host_root):
+        listed = _projects.list_data_files("host-cohort")
+    # Assert
+    assert [f["name"] for f in listed] == ["host-file.csv"]
+
+
+def test_local_provider_is_the_standalone_fallback(tmp_path):
+    # Arrange
+    root = tmp_path / "local-only"
+    project = root / "cohort"
+    project.mkdir(parents=True)
+    (project / "only-here.csv").write_text("a\n1\n")
+    # Act
+    from django.test import override_settings
+
+    with override_settings(SCITEX_PROJECT_PROVIDER=""), _projects_root(root):
+        listed = _projects.list_data_files("cohort")
+    # Assert
+    assert [f["name"] for f in listed] == ["only-here.csv"]
 
 
 # EOF
