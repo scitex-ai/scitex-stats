@@ -178,7 +178,7 @@ def test_pdf_is_content_deterministic_for_the_same_input_and_timestamp(tmp_path)
         "content_streams": streams[0] == streams[1],
         "dated_by_the_report": "20260101000000" in created,
     }
-    assert facts == {key: True for key in facts} == (True, True, True, True, True, True)
+    assert facts == {key: True for key in facts}
 
 
 # EOF
