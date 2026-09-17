@@ -1,4 +1,4 @@
-"""CLI: tests applicability / recommend-test / run-all."""
+"""CLI: tests check-applicability / recommend-test / execute-all."""
 
 from __future__ import annotations
 
@@ -25,7 +25,39 @@ def test_recommend_test_json_names_welch(tmp_path):
     assert json.loads(result.output)["primary"]["test_id"] == "ttest_welch"
 
 
-def test_applicability_text_marks_tests(tmp_path):
+def test_check_applicability_text_marks_tests(tmp_path):
+    # Arrange
+    # Act
+    result = _invoke(tmp_path, "check-applicability", "--design", "independent", "--no-json")
+    # Assert
+    assert "✓ Welch's t-test" in result.output
+
+
+def test_execute_all_text_shows_warning(tmp_path):
+    # Arrange
+    # Act
+    result = _invoke(tmp_path, "execute-all", "--design", "independent", "--no-json")
+    # Assert
+    assert "p-hacking" in result.output
+
+
+def test_execute_all_text_labels_primary(tmp_path):
+    # Arrange
+    # Act
+    result = _invoke(tmp_path, "execute-all", "--design", "independent", "--no-json")
+    # Assert
+    assert "[primary    ] Welch's t-test" in result.output
+
+
+def test_execute_all_non_applicable_primary_reports_error(tmp_path):
+    # Arrange
+    # Act
+    result = _invoke(tmp_path, "execute-all", "--design", "independent", "--primary", "chi2")
+    # Assert
+    assert "not applicable" in result.output
+
+
+def test_deprecated_applicability_spelling_still_answers(tmp_path):
     # Arrange
     # Act
     result = _invoke(tmp_path, "applicability", "--design", "independent", "--no-json")
@@ -33,25 +65,9 @@ def test_applicability_text_marks_tests(tmp_path):
     assert "✓ Welch's t-test" in result.output
 
 
-def test_run_all_text_shows_warning(tmp_path):
+def test_deprecated_run_all_spelling_still_answers(tmp_path):
     # Arrange
     # Act
     result = _invoke(tmp_path, "run-all", "--design", "independent", "--no-json")
     # Assert
     assert "p-hacking" in result.output
-
-
-def test_run_all_text_labels_primary(tmp_path):
-    # Arrange
-    # Act
-    result = _invoke(tmp_path, "run-all", "--design", "independent", "--no-json")
-    # Assert
-    assert "[primary    ] Welch's t-test" in result.output
-
-
-def test_run_all_non_applicable_primary_reports_error(tmp_path):
-    # Arrange
-    # Act
-    result = _invoke(tmp_path, "run-all", "--design", "independent", "--primary", "chi2")
-    # Assert
-    assert "not applicable" in result.output

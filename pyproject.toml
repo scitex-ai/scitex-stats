@@ -96,8 +96,19 @@ bundle = [
 # app boots out of the box.
 server = [
     "django>=4.2",
-    "scitex-app>=0.11.0",
-    "scitex-ui>=0.19.0",
+    # >=0.24.0: stats.html extends `scitex_app/app_shell.html`, the shared
+    # workspace shell the SDK began shipping in 0.24.0. Below that the
+    # template resolves to nothing (TemplateDoesNotExist: scitex_app/
+    # app_shell.html) and every page of the app 500s.
+    "scitex-app>=0.24.0",
+    # >=0.22.0: the app shell template loads scitex-ui's template-tag
+    # libraries `scitex_static` (first shipped in 0.21.2 — it provides
+    # `{% app_static %}`) and `scitex_project_picker`, and adopts the
+    # canonical project selector asset `js/app/project-selector.js`
+    # (0.22.0). A lower floor lets a resolver pick a scitex-ui whose
+    # shell cannot render our template at all: every page returns 500
+    # ("'scitex_static' is not a registered tag library").
+    "scitex-ui>=0.22.0",
 ]
 dev = [
     "pytest>=7.0.0",
@@ -111,13 +122,24 @@ dev = [
     "nbconvert>=7.0",     # executes example .ipynb in tests (PS-505)
     "ipykernel>=6.0",     # kernel for nbconvert --execute
     "openpyxl>=3.1",      # pandas to_excel used by _demo_*.py
+    # test__messages.py reads the shipped .po with babel.messages (it pins
+    # every emitted msgid to a JA translation). CI happened to get babel
+    # transitively through `.[all]`; a plain `-e .[dev]` did not, so the
+    # test failed with ModuleNotFoundError instead of asserting. Declare it.
+    "babel>=2.0",
     # Optional cross-package integrations whose tests live in the suite,
     # so a fresh `pip install -e .[dev]` runs the full suite (PS-210).
     "scitex-io>=0.2.16",  # [bundle] extra: stats↔bundle I/O round-trip tests
     "figrecipe>=0.28.0",  # [all] extra: stats↔figrecipe annotation tests
-    # [server] extra: Statistics app (Django) boot + mount tests.
+    # [server] extra: Statistics app (Django) boot + mount tests. scitex-app
+    # and scitex-ui are optional upstream (django-app only), but the app
+    # tests import them unguarded, so a fresh `-e .[dev]` must provide them
+    # at the same floors as [server] (PS-210).
     "django>=4.2",
-    "scitex-ui>=0.19.0",
+    "scitex-app>=0.24.0",
+    # `scitex_static` / `scitex_project_picker` libraries + the canonical
+    # project-selector asset.
+    "scitex-ui>=0.22.0",
     # Note: fastmcp / mcp / scitex-dev / scitex-logging / pingouin come in via [project.dependencies].
 ]
 docs = [

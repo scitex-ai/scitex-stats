@@ -50,6 +50,16 @@ import scitex_ui  # noqa: F401
 
 INSTALLED_APPS.append("scitex_ui")
 
+# scitex-app ships `scitex_app/app_shell.html`, the base template stats.html
+# EXTENDS, and its templatetags provide the workbench directives inside it.
+# APP_DIRS only searches installed apps, so leaving scitex_app out of
+# INSTALLED_APPS made every standalone page 500 with
+# `TemplateDoesNotExist: scitex_app/app_shell.html` — invisible to the app
+# tests, which configure their own INSTALLED_APPS (that list has it).
+import scitex_app  # noqa: F401,E402
+
+INSTALLED_APPS.append("scitex_app")
+
 from scitex_app.i18n import i18n_settings, with_locale_middleware  # noqa: E402
 
 MIDDLEWARE = with_locale_middleware(
