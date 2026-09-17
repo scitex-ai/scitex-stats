@@ -174,6 +174,14 @@
     if (groups.length < 2) addGroup();
   }
 
+  // True when the user has typed or loaded something the sample would replace.
+  function hasUserData() {
+    return Array.prototype.some.call(
+      $("statsGroups").querySelectorAll(".stats-group__input"),
+      function (area) { return area.value.trim() !== ""; }
+    );
+  }
+
   function loadCsv(file) {
     var reader = new FileReader();
     reader.onload = function () {
@@ -476,12 +484,22 @@
     renderTests(null);
     $("statsAddGroup").addEventListener("click", function () { addGroup(); });
     $("statsClear").addEventListener("click", function () { setGroups([[], []]); });
-    $("statsSample").addEventListener("click", function () { setGroups(SAMPLE); });
+    $("statsSample").addEventListener("click", function () {
+      if (hasUserData() && !window.confirm(_("Replace the data in the boxes with the sample dataset?"))) return;
+      setGroups(SAMPLE);
+    });
+    $("statsChooseFile").addEventListener("click", function () { $("statsCsv").click(); });
     $("statsCsv").addEventListener("change", function () {
       if (this.files && this.files[0]) loadCsv(this.files[0]);
       this.value = "";
     });
     var dropZone = $("statsDataDrop");
+    // The whole zone stays a click target; interactive children keep their own
+    // behaviour (the choose button, the group boxes), so forward only the rest.
+    dropZone.addEventListener("click", function (event) {
+      if (event.target.closest("button, input, textarea, select, label, a")) return;
+      $("statsCsv").click();
+    });
     ["dragenter", "dragover"].forEach(function (eventName) {
       dropZone.addEventListener(eventName, function (event) {
         event.preventDefault();
