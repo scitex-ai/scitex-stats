@@ -12,10 +12,16 @@ Two measured failures drove these cases:
    `apptainer shim not executable` (run 35180305493).
 
 These cases run the REAL script against a stub `apptainer` (the external binary
-is the boundary; the script's own decisions are what is asserted) and keep the
-fail-loud contract: a missing SIF is still a hard error. One assertion per test
-(STX-TQ007 — note the checker counts `pytest.skip(...)` as an assertion, so
-skips are `@pytest.mark.skipif` decorators here).
+is the boundary; the script's own decisions are what is asserted). They are
+hermetic about the two things the host also has: `HOME` is redirected, so the
+`~/.env-3.11/bin/apptainer` shim the script prepends to PATH cannot answer
+instead of the stub, and the SIF path is one we create. A "nothing usable
+anywhere" case is deliberately absent — it cannot be asserted hermetically
+because the resolver's last candidates are absolute host paths; the fail-loud
+contract is covered through the SIF gate instead.
+
+One assertion per test (STX-TQ007 — the checker counts `pytest.skip(...)` as an
+assertion, so skips are `@pytest.mark.skipif` decorators).
 """
 
 from __future__ import annotations
@@ -30,12 +36,12 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / ".github" / "ci" / "exec-in-sif.sh"
 SPARTAN_BIND = Path("/data/gpfs/projects/punim0264")
-ABSOLUTE_APPTAINERS = (Path("/usr/bin/apptainer"), Path("/usr/local/bin/apptainer"))
 
 
-def _stub(path, name, recorded):
+def _stub(directory, name, recorded):
     """A stand-in for the apptainer binary: records argv + scratch, exits 0."""
-    stub = path / name
+    directory.mkdir(parents=True, exist_ok=True)
+    stub = directory / name
     stub.write_text(
         "#!/usr/bin/env bash\n"
         f'printf "%s\\n" "$@" > "{recorded}"\n'
@@ -45,7 +51,7 @@ def _stub(path, name, recorded):
     return stub
 
 
-def _run_wrapper(tmp_path, *, shim, sif, path_prepend=None):
+def _run_wrapper(tmp_path, *, shim, sif, path_prepend=None, home=None):
     runner_temp = tmp_path / "runner-temp"
     runner_temp.mkdir(exist_ok=True)
     env = dict(os.environ)
@@ -56,6 +62,8 @@ def _run_wrapper(tmp_path, *, shim, sif, path_prepend=None):
     )
     if path_prepend is not None:
         env["PATH"] = f"{path_prepend}{os.pathsep}{env.get('PATH', '')}"
+    if home is not None:
+        env["HOME"] = str(home)
     return subprocess.run(
         ["bash", str(SCRIPT), "run-in-sif.sh", "3.12"],
         capture_output=True,
@@ -106,31 +114,40 @@ def test_wrapper_omits_the_bind_where_the_spartan_tree_is_absent(wrapper_run):
 
 
 def test_wrapper_falls_back_to_an_apptainer_on_the_path(tmp_path):
-    # Arrange: the configured shim is absent — exactly the node that broke 3.13.
+    # Arrange: the configured shim is absent — the node state that broke 3.13.
+    # HOME is redirected so the shim the script prepends to PATH cannot answer.
     sif = tmp_path / "ci-cpu.sif"
     sif.write_text("")
-    bin_dir = tmp_path / "bin"
-    bin_dir.mkdir()
+    stub_dir = tmp_path / "stub-bin"
     recorded = tmp_path / "invocation.txt"
-    _stub(bin_dir, "apptainer", recorded)
+    _stub(stub_dir, "apptainer", recorded)
     # Act
     proc = _run_wrapper(
-        tmp_path, shim=tmp_path / "missing" / "apptainer", sif=sif, path_prepend=bin_dir
+        tmp_path,
+        shim=tmp_path / "missing" / "apptainer",
+        sif=sif,
+        path_prepend=stub_dir,
+        home=tmp_path / "empty-home",
     )
     # Assert
     assert proc.returncode == 0
 
 
-def test_wrapper_uses_the_path_apptainer_when_the_shim_is_absent(tmp_path):
+def test_wrapper_hands_the_inner_script_to_the_path_apptainer(tmp_path):
     # Arrange
     sif = tmp_path / "ci-cpu.sif"
     sif.write_text("")
-    bin_dir = tmp_path / "bin"
-    bin_dir.mkdir()
+    stub_dir = tmp_path / "stub-bin"
     recorded = tmp_path / "invocation.txt"
-    _stub(bin_dir, "apptainer", recorded)
+    _stub(stub_dir, "apptainer", recorded)
     # Act
-    _run_wrapper(tmp_path, shim=tmp_path / "missing" / "apptainer", sif=sif, path_prepend=bin_dir)
+    _run_wrapper(
+        tmp_path,
+        shim=tmp_path / "missing" / "apptainer",
+        sif=sif,
+        path_prepend=stub_dir,
+        home=tmp_path / "empty-home",
+    )
     # Assert
     assert "run-in-sif.sh" in recorded.read_text()
 
@@ -153,24 +170,6 @@ def test_wrapper_reports_the_missing_sif_gate(tmp_path):
     proc = _run_wrapper(tmp_path, shim=shim, sif=tmp_path / "absent.sif")
     # Assert
     assert "CI SIF missing" in (proc.stdout + proc.stderr)
-
-
-@pytest.mark.skipif(
-    any(candidate.exists() for candidate in ABSOLUTE_APPTAINERS),
-    reason="this host carries an absolute apptainer, so 'nothing usable' cannot be shown here",
-)
-def test_wrapper_fails_loud_when_no_apptainer_exists_anywhere(tmp_path):
-    # Arrange
-    sif = tmp_path / "ci-cpu.sif"
-    sif.write_text("")
-    empty_bin = tmp_path / "empty-bin"
-    empty_bin.mkdir()
-    # Act
-    proc = _run_wrapper(
-        tmp_path, shim=tmp_path / "missing" / "apptainer", sif=sif, path_prepend=empty_bin
-    )
-    # Assert
-    assert "no usable apptainer found" in (proc.stdout + proc.stderr)
 
 
 # EOF
