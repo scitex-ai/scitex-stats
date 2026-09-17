@@ -49,13 +49,19 @@ def test_excluded_cells_are_listed_with_reasons(three_model):
     assert "empty cell" in text and "non-numeric value 'n/a'" in text
 
 
-def test_three_group_anova_runs_tukey_posthoc(three_model):
+def test_auto_posthoc_follows_the_recommender_welch_then_games_howell(three_model):
+    """The report does not pick a post-hoc itself: the recommender's primary test decides.
+
+    The recommender defaults to Welch's ANOVA and never switches test on the strength
+    of an assumption check, so the matching correction is Games-Howell (which does not
+    assume equal variances), not Tukey.
+    """
     # Arrange
     summary = three_model["summary"]
     # Act
     ph = summary["posthoc"]
     # Assert
-    assert (summary["primary_test"], ph["method"], ph["ran"]) == ("anova", "tukey", True)
+    assert (summary["primary_test"], ph["method"], ph["ran"]) == ("welch_anova", "games_howell", True)
 
 
 def test_posthoc_table_shows_adjusted_p_and_correction(three_model):
@@ -64,7 +70,7 @@ def test_posthoc_table_shows_adjusted_p_and_correction(three_model):
     # Act
     text = _text(ph["blocks"])
     # Assert
-    assert "p (adjusted)" in text and "Correction: Tukey" in text
+    assert "p (adjusted)" in text and "Multiplicity correction: Games\u2013Howell" in text
 
 
 def test_sensitivity_section_is_labelled_and_warns_about_p_hacking(three_model):
@@ -85,13 +91,13 @@ def test_methods_paragraph_names_test_alpha_and_seed(three_model):
     assert "one-way analysis of variance" in text and "α = .05" in text and "seed 42" in text
 
 
-def test_references_include_apa_manual_and_tukey(three_model):
+def test_references_include_apa_manual_and_the_chosen_procedure(three_model):
     # Arrange
     refs = _section(three_model, "references")
     # Act
     text = _text(refs["blocks"])
     # Assert
-    assert "American Psychological Association. (2020)" in text and "Tukey, J. W. (1949)" in text
+    assert "American Psychological Association. (2020)" in text and "Games, P. A., & Howell, J. F. (1976)" in text
 
 
 def test_statistical_symbols_are_italic_in_html(three_model):
