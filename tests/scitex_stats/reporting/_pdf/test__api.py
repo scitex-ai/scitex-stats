@@ -127,28 +127,18 @@ def test_csv_path_input_is_accepted(tmp_path):
     assert result["summary"]["n"] == [6, 6, 5]
 
 
-FONT_FILE_TYPES = ("/FontFile", "/FontFile2", "/FontFile3")
+def _page_content_stream(document) -> bytes:
+    """A page's decoded content stream: the drawing commands, no embedded fonts.
 
-
-def _fonts_and_objects(path):
-    """(embedded font programs, everything else), keyed by xref.
-
-    The font programs are separated out because that is the one part of a
-    WeasyPrint PDF that is not reproducible byte for byte - measured, not assumed:
-    two renders of the same report differed at byte 25226 of 50938/50936, inside an
-    object carrying `/Length1 ... /Filter /FlateDecode` (an embedded subset), with
-    identical metadata and zero differing pages.
+    The embedded font PROGRAM cannot be compared this way: in a compressed PDF it
+    lives inside an object stream, so it is not separable by xref type, and it is
+    the part WeasyPrint does not reproduce byte for byte (measured: two renders of
+    the same report differed at byte 25226 of 50938/50936, inside an object carrying
+    `/Length1 18080/Filter /FlateDecode`, while metadata was identical and zero
+    pages differed). The CONTENT STREAMS are separable and are what the reader
+    actually draws, so those are what this compares.
     """
-    fitz = pytest.importorskip("fitz")
-    fonts, others = {}, {}
-    with fitz.open(path) as doc:
-        for xref in range(1, doc.xref_length()):
-            kind = doc.xref_get_key(xref, "Type")[1]
-            raw = doc.xref_stream_raw(xref)
-            if raw is None:
-                continue
-            (fonts if kind in FONT_FILE_TYPES else others)[xref] = (kind, raw)
-    return fonts, others
+    return b"".join(document.xref_stream(xref) or b"" for page in document for xref in page.get_contents())
 
 
 @needs_pdf
@@ -156,13 +146,16 @@ def test_pdf_is_content_deterministic_for_the_same_input_and_timestamp(tmp_path)
     """Same input and timestamp -> the same report CONTENT.
 
     Asserted: identical page text, identical metadata, identical page count, and
-    identical bytes for every object that is not an embedded font program. The
-    creation date comes from the report timestamp (`dcterms.created`), so the
-    artifact is dated by the analysis rather than by the render moment.
+    identical decoded content streams (the drawing commands a reader actually
+    renders). The creation date comes from the report timestamp
+    (`dcterms.created`), so the artifact is dated by the analysis rather than by the
+    moment it was rendered.
 
-    Deliberately NOT asserted: byte-identical files. The embedded font subset is
-    the one part WeasyPrint does not reproduce byte for byte (see the helper), and
-    claiming otherwise would be a claim the bytes do not support.
+    Deliberately NOT asserted: byte-identical files. The embedded font program is
+    the one part WeasyPrint does not reproduce byte for byte (CI named it: an object
+    carrying `/Length1 ... /Filter /FlateDecode` differed, and in a compressed PDF
+    that program sits inside an object stream, so it cannot be separated out by xref
+    type). Claiming byte-exactness would be a claim the artifacts contradict.
     """
     # Arrange
     fitz = pytest.importorskip("fitz")
@@ -173,18 +166,16 @@ def test_pdf_is_content_deterministic_for_the_same_input_and_timestamp(tmp_path)
         texts = ["".join(page.get_text() for page in doc) for doc in (a, b)]
         metas = [dict(doc.metadata) for doc in (a, b)]
         counts = [doc.page_count for doc in (a, b)]
+        streams = [_page_content_stream(doc) for doc in (a, b)]
         created = str(a.metadata.get("creationDate", ""))
-    objects = [_fonts_and_objects(r["paths"]["pdf"])[1] for r in (first, second)]
-    fonts = [_fonts_and_objects(r["paths"]["pdf"])[0] for r in (first, second)]
     # Assert
-    # Booleans, not the heavy objects: a dict of them prints in full when it fails,
+    # Booleans, not the heavy payloads: a dict of them prints in full when it fails,
     # so CI names WHICH fact broke instead of truncating a tuple of byte strings.
     facts = {
         "page_text": texts[0] == texts[1],
         "metadata": metas[0] == metas[1],
         "page_count": counts[0] == counts[1],
-        "other_objects": objects[0] == objects[1],
-        "font_count": len(fonts[0]) == len(fonts[1]),
+        "content_streams": streams[0] == streams[1],
         "dated_by_the_report": "20260101000000" in created,
     }
     assert facts == {key: True for key in facts} == (True, True, True, True, True, True)
