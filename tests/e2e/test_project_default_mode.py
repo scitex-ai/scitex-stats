@@ -81,8 +81,36 @@ def _start_server(root: pathlib.Path) -> tuple[subprocess.Popen, str]:
     return proc, f"http://127.0.0.1:{port}"
 
 
+def _save_and_wait(page, button, expected):
+    """Click a save control and wait for ITS OWN artifact to be reported.
+
+    One retry, because a dropped click is a browser-test hazard rather than a
+    product defect; a deterministic failure still fails on the second attempt,
+    and then the message carries the status line so the cause is legible.
+    """
+    for attempt in (1, 2):
+        page.locator(button).click()
+        try:
+            page.wait_for_function(
+                "(want) => document.getElementById('statsSaveStatus').textContent.includes(want)",
+                arg=expected,
+                timeout=10_000,
+            )
+            return
+        except Exception:
+            if attempt == 2:
+                status = page.locator("#statsSaveStatus").inner_text()
+                raise AssertionError(f"{button} never reported {expected!r}; status line was {status!r}")
+
+
 def _drive_browser(base: str) -> dict:
-    """Walk the journey once and return what the page showed."""
+    """Walk the journey once and return what the page showed.
+
+    Every step waits for the CONDITION it depends on, not for a fixed sleep: a
+    fixed-duration journey was flaky under load (5 of 6 runs of the same code
+    path passed, one fixture timed out mid-click), and a flaky e2e teaches
+    nothing.
+    """
     from playwright.sync_api import sync_playwright
 
     observed = {}
@@ -90,17 +118,53 @@ def _drive_browser(base: str) -> dict:
         browser = pw.chromium.launch()
         page = browser.new_context(viewport={"width": 1440, "height": 900}).new_page()
         page.goto(f"{base}/?project=cohort", wait_until="load")
-        page.wait_for_timeout(700)
+        # the app's own readiness marker: interaction is wired, so a click cannot
+        # land in the gap between DOM-ready and the listeners being attached
+        page.wait_for_selector('[data-stats-app][data-stats-ready="1"]', timeout=30_000)
+
+        # the active project's authorized file must be listed before we touch it
+        page.wait_for_selector(".stats-project__import", timeout=30_000)
         observed["listed"] = page.locator(".stats-project__import").all_inner_texts()
         observed["pickers"] = page.locator("[data-stx-project-picker]").count()
+
         page.locator(".stats-project__import").first.click()
-        page.wait_for_timeout(600)
+        page.wait_for_function(
+            "() => Array.from(document.querySelectorAll('.stats-group__input'))"
+            ".some(area => area.value.trim().length > 0)",
+            timeout=30_000,
+        )
         page.locator("#statsCalculate").click()
-        page.wait_for_timeout(2500)
-        for button in ("#statsSaveResults", "#statsSaveProvenance", "#statsSaveConfig", "#statsSavePlot"):
-            page.locator(button).click()
-            page.wait_for_timeout(700)
+        page.wait_for_selector("#statsResult:not([hidden])", timeout=60_000)
+
+        for button, expected in (
+            ("#statsSaveResults", "stats/results/"),
+            ("#statsSaveProvenance", "stats/provenance/"),
+            ("#statsSaveConfig", "stats/config/"),
+            ("#statsSavePlot", "stats/plots/"),
+        ):
+            _save_and_wait(page, button, expected)
         observed["status"] = page.locator("#statsSaveStatus").inner_text()
+
+        # Quick analysis is the STATELESS alternative: the same page without a
+        # project. Its state and its refusals are part of the acceptance, so the
+        # journey ends by measuring them.
+        page.goto(f"{base}/?quick=1", wait_until="load")
+        page.wait_for_selector('[data-stats-app][data-stats-ready="1"]', timeout=30_000)
+        observed["quick_panel_visible"] = page.locator("#statsProjectFiles").is_visible()
+        observed["quick_manual_visible"] = page.locator("#statsManualData").is_visible()
+        observed["quick_save_status"] = page.evaluate(
+            """async () => {
+            const token = document.querySelector('meta[name=csrf-token]').content;
+            // the MODE lives in the URL, so the stateless probe must state it:
+            // a bare POST would resolve the last-visited project instead.
+            const response = await fetch('/api/project-save?quick=1', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json', 'X-CSRFToken': token},
+              body: JSON.stringify({project: 'cohort', kind: 'config', name: 'config.json', payload: {}}),
+            });
+            return response.status;
+          }"""
+        )
         browser.close()
     return observed
 
@@ -184,6 +248,24 @@ def test_project_default_mode_writes_the_rendered_plot_into_the_project(project_
     magic = plot.read_bytes()[:8] if plot.is_file() else b""
     # Assert
     assert magic == PNG_MAGIC
+
+
+def test_quick_analysis_hides_the_project_panel_and_shows_manual_input(project_journey):
+    # Arrange
+    state = (project_journey["quick_panel_visible"], project_journey["quick_manual_visible"])
+    # Act
+    measured = tuple(bool(value) for value in state)
+    # Assert
+    assert measured == (False, True)
+
+
+def test_quick_analysis_refuses_persistence_server_side(project_journey):
+    # Arrange
+    reported = project_journey["quick_save_status"]
+    # Act
+    code = int(reported)
+    # Assert
+    assert code == 403
 
 
 # EOF

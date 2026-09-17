@@ -42,7 +42,12 @@ if not settings.configured:
             "scitex_stats._django.apps.StatsCalculatorConfig",
             "scitex_ui",
         ],
-        MIDDLEWARE=["django.middleware.common.CommonMiddleware"],
+        MIDDLEWARE=[
+            "django.middleware.common.CommonMiddleware",
+            # project_save is a state-changing POST, so the token flow is
+            # enforced here too (the app settings install this middleware).
+            "django.middleware.csrf.CsrfViewMiddleware",
+        ],
         ROOT_URLCONF="scitex_stats._django.urls",
         TEMPLATES=[
             {

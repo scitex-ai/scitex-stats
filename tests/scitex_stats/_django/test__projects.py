@@ -13,6 +13,8 @@ import json
 import os
 import pathlib
 
+import pytest
+
 from .test_views import client  # noqa: E402,F401  (shared Django bootstrap + fixture)
 from scitex_ui.project_scope import ProjectEntry  # noqa: E402
 
@@ -282,7 +284,7 @@ def test_project_save_endpoint_writes_the_artifact(tmp_path, client):  # noqa: F
     payload = json.dumps({"project": "cohort", "kind": "provenance", "name": "provenance.json", "payload": {"seed": 42}})
     # Act
     with _projects_root(tmp_path):
-        response = client.post("/api/project-save", data=payload, content_type="application/json")
+        response = client.post("/api/project-save?project=cohort", data=payload, content_type="application/json")
     # Assert
     assert response.status_code == 201 and (tmp_path / "cohort" / "stats" / "provenance" / "provenance.json").is_file()
 
@@ -293,7 +295,7 @@ def test_project_save_endpoint_refuses_an_unknown_kind(tmp_path, client):  # noq
     payload = json.dumps({"project": "cohort", "kind": "evil", "name": "x.json", "payload": {}})
     # Act
     with _projects_root(tmp_path):
-        status = client.post("/api/project-save", data=payload, content_type="application/json").status_code
+        status = client.post("/api/project-save?project=cohort", data=payload, content_type="application/json").status_code
     # Assert
     assert status == 403
 
@@ -362,14 +364,14 @@ def test_save_artifact_refuses_invalid_base64(tmp_path):
 
 
 def test_save_artifact_refuses_an_oversized_binary(tmp_path):
-    # Arrange: base64 of one byte over the write cap.
+    # Arrange: base64 of one byte over the CONFIG kind's documented cap.
     import base64 as b64
 
     _project_with_data(tmp_path)
-    oversized = b64.b64encode(b"x" * (_projects.MAX_ARTIFACT_BYTES + 1)).decode()
+    oversized = b64.b64encode(b"x" * (_projects.KIND_POLICY["config"][".json"] + 1)).decode()
     # Act
     with _projects_root(tmp_path):
-        saved = _projects.save_artifact("cohort", "plots", "plot.png", None, payload_base64=oversized)
+        saved = _projects.save_artifact("cohort", "config", "config.json", None, payload_base64=oversized)
     # Assert
     assert saved is None
 
@@ -390,7 +392,7 @@ def test_project_save_endpoint_stores_a_rendered_plot(tmp_path, client):  # noqa
     )
     # Act
     with _projects_root(tmp_path):
-        response = client.post("/api/project-save", data=payload, content_type="application/json")
+        response = client.post("/api/project-save?project=cohort", data=payload, content_type="application/json")
     # Assert
     assert response.status_code == 201 and (tmp_path / "cohort" / "stats" / "plots" / "plot.png").read_bytes() == png
 
@@ -497,6 +499,277 @@ def test_local_provider_is_the_standalone_fallback(tmp_path):
         listed = _projects.list_data_files("cohort")
     # Assert
     assert [f["name"] for f in listed] == ["only-here.csv"]
+
+
+# ---------------------------------------------------------------------------
+# Review blockers: request-aware authorization, descriptor-relative IO with
+# no-follow, CSRF, server-side binding, strict policy, atomic versioned writes.
+# ---------------------------------------------------------------------------
+
+
+class _CallerScopedHostProvider:
+    """A host provider that authorizes PER CALLER, the way a hub would.
+
+    It lists `host-cohort` only when the request carries `as=alice`, so the
+    request has to actually reach the provider for the answer to differ.
+    """
+
+    def __init__(self):
+        self.asked_with = []
+
+    def list_projects(self, request=None):
+        self.asked_with.append(request)
+        getter = getattr(request, "GET", None)
+        if getter is None or getter.get("as") != "alice":
+            return []
+        root = pathlib.Path(os.environ["SCITEX_STATS_TEST_HOST_ROOT"])
+        if not root.is_dir():
+            return []
+        return [ProjectEntry(id="host-cohort", name="host-cohort", detail=str(root))]
+
+    def last_visited(self, request=None):
+        return None
+
+    def remember(self, request, project_id):
+        return None
+
+
+_caller_scoped_provider = _CallerScopedHostProvider()
+CALLER_SCOPED_PATH = "tests.scitex_stats._django.test__projects._caller_scoped_provider"
+
+
+def test_host_provider_is_asked_with_the_request(tmp_path, client):  # noqa: F811
+    # Arrange: resolve the instance the SDK will import, not this module's local
+    # name — pytest may import this file under a different dotted path.
+    from django.test import override_settings
+    from django.utils.module_loading import import_string
+
+    provider_instance = import_string(CALLER_SCOPED_PATH)
+    provider_instance.asked_with = []
+    host_root = tmp_path / "host"
+    host_root.mkdir()
+    (host_root / "host-file.csv").write_text("a\n1\n")
+    # Act
+    with override_settings(SCITEX_PROJECT_PROVIDER=CALLER_SCOPED_PATH), _host_root(host_root):
+        client.get("/api/project-files?project=host-cohort&as=alice")
+    # Assert
+    assert any(getattr(r, "GET", None) is not None for r in provider_instance.asked_with)
+
+
+def test_host_provider_refuses_a_caller_it_does_not_authorize(tmp_path, client):  # noqa: F811
+    # Arrange
+    host_root = tmp_path / "host"
+    host_root.mkdir()
+    (host_root / "host-file.csv").write_text("a\n1\n")
+    # Act
+    from django.test import override_settings
+
+    with override_settings(SCITEX_PROJECT_PROVIDER=CALLER_SCOPED_PATH), _host_root(host_root):
+        status = client.get("/api/project-files?project=host-cohort&as=bob").status_code
+    # Assert
+    assert status == 403
+
+
+def test_read_refuses_a_symlink_inside_the_project(tmp_path):
+    # Arrange: the link points at a REAL data file in the same project, so only
+    # the no-follow open can refuse it.
+    project = _project_with_data(tmp_path)
+    (project / "alias.csv").symlink_to(project / "measurements.csv")
+    # Act
+    with _projects_root(tmp_path):
+        text = _projects.read_data_file("cohort", "alias.csv")
+    # Assert
+    assert text is None
+
+
+def test_listing_skips_symlinked_and_non_regular_entries(tmp_path):
+    # Arrange
+    project = _project_with_data(tmp_path)
+    (project / "alias.csv").symlink_to(project / "measurements.csv")
+    (project / "subdir.csv").mkdir()
+    # Act
+    with _projects_root(tmp_path):
+        names = [f["name"] for f in _projects.list_data_files("cohort")]
+    # Assert
+    assert names == ["measurements.csv"]
+
+
+def test_save_refuses_a_wrong_extension_for_the_kind(tmp_path):
+    # Arrange
+    _project_with_data(tmp_path)
+    # Act
+    with _projects_root(tmp_path):
+        saved = _projects.save_artifact("cohort", "results", "result.png", b"x")
+    # Assert
+    assert saved is None
+
+
+@pytest.mark.parametrize("name", [".hidden.json", "a/b.json", "a\\b.json", "x" * 65 + ".json", "..json"])
+def test_save_refuses_an_out_of_policy_name(tmp_path, name):
+    # Arrange
+    _project_with_data(tmp_path)
+    # Act
+    with _projects_root(tmp_path):
+        saved = _projects.save_artifact("cohort", "results", name, {"a": 1})
+    # Assert
+    assert saved is None
+
+
+def test_save_versions_instead_of_overwriting(tmp_path):
+    # Arrange
+    _project_with_data(tmp_path)
+    # Act
+    with _projects_root(tmp_path):
+        first = _projects.save_artifact("cohort", "results", "result.json", {"run": 1})
+        second = _projects.save_artifact("cohort", "results", "result.json", {"run": 2})
+    # Assert
+    assert (first["name"], second["name"]) == ("result.json", "result.v2.json")
+
+
+def test_save_does_not_follow_a_symlink_at_the_artifact_name(tmp_path):
+    # Arrange: a symlink where the artifact would go, pointing OUTSIDE the project
+    _project_with_data(tmp_path)
+    outside = tmp_path / "outside.json"
+    outside.write_text("untouched")
+    artifact_dir = tmp_path / "cohort" / "stats" / "results"
+    artifact_dir.mkdir(parents=True)
+    (artifact_dir / "result.json").symlink_to(outside)
+    # Act
+    with _projects_root(tmp_path):
+        saved = _projects.save_artifact("cohort", "results", "result.json", {"run": 1})
+    # Assert
+    assert saved["name"] == "result.v2.json" and outside.read_text() == "untouched"
+
+
+def test_save_leaves_no_temporary_file_behind(tmp_path):
+    # Arrange
+    _project_with_data(tmp_path)
+    # Act
+    with _projects_root(tmp_path):
+        _projects.save_artifact("cohort", "config", "config.json", {"a": 1})
+    # Assert
+    leftovers = [p.name for p in (tmp_path / "cohort" / "stats" / "config").iterdir() if p.name.startswith(".")]
+    assert leftovers == []
+
+
+def test_save_refuses_a_foreign_project_id(tmp_path, client):  # noqa: F811
+    # Arrange: the request's ACTIVE project is cohort; the body names another.
+    _project_with_data(tmp_path)
+    (tmp_path / "other").mkdir()
+    payload = json.dumps({"project": "other", "kind": "config", "name": "config.json", "payload": {}})
+    # Act
+    with _projects_root(tmp_path):
+        status = client.post("/api/project-save?project=cohort", data=payload, content_type="application/json").status_code
+    # Assert
+    assert status == 403
+
+
+def test_save_refuses_with_no_active_project(tmp_path):  # noqa: F811
+    # Arrange: Quick analysis = the stateless state, i.e. no active project.
+    _project_with_data(tmp_path)
+    from django.test import Client
+
+    client = Client()
+    payload = json.dumps({"project": "cohort", "kind": "config", "name": "config.json", "payload": {}})
+    # Act
+    with _projects_root(tmp_path):
+        response = client.post("/api/project-save", data=payload, content_type="application/json")
+    # Assert
+    assert response.status_code == 403 and not (tmp_path / "cohort" / "stats").exists()
+
+
+def test_save_requires_the_csrf_token(tmp_path):  # noqa: F811
+    # Arrange
+    _project_with_data(tmp_path)
+    from django.test import Client
+
+    enforcing = Client(enforce_csrf_checks=True)
+    payload = json.dumps({"project": "cohort", "kind": "config", "name": "config.json", "payload": {}})
+    # Act
+    with _projects_root(tmp_path):
+        status = enforcing.post("/api/project-save?project=cohort", data=payload, content_type="application/json").status_code
+    # Assert
+    assert status == 403
+
+
+def test_save_accepts_the_csrf_token_the_page_carries(tmp_path):  # noqa: F811
+    # Arrange
+    _project_with_data(tmp_path)
+    from django.test import Client
+
+    enforcing = Client(enforce_csrf_checks=True)
+    token = enforcing.get("/?project=cohort").content.decode().split('name="csrf-token" content="')[1].split('"')[0]
+    payload = json.dumps({"project": "cohort", "kind": "config", "name": "config.json", "payload": {"a": 1}})
+    # Act
+    with _projects_root(tmp_path):
+        status = enforcing.post(
+            "/api/project-save?project=cohort",
+            data=payload,
+            content_type="application/json",
+            HTTP_X_CSRFTOKEN=token,
+        ).status_code
+    # Assert
+    assert status == 201
+
+
+def test_project_mode_hides_the_manual_data_controls():
+    # Arrange: project mode imports from the PROJECT; the manual file picker and
+    # sample loader belong to Quick analysis, so the mode must hide them.
+    js = (
+        pathlib.Path(__file__).resolve().parents[3]
+        / "src/scitex_stats/_django/static/stats/js/app.js"
+    ).read_text(encoding="utf-8")
+    # Act
+    apply_mode = js.split("function applyMode()", 1)[1].split("function setSaveStatus", 1)[0]
+    # Assert
+    assert "statsManualData" in apply_mode
+
+
+def test_quick_mode_writes_nothing_server_side(tmp_path, client):  # noqa: F811
+    # Arrange: the same body that succeeds WITH an active project.
+    _project_with_data(tmp_path)
+    payload = json.dumps({"project": "cohort", "kind": "results", "name": "result.json", "payload": {"run": 1}})
+    # Act
+    with _projects_root(tmp_path):
+        quick_status = client.post("/api/project-save", data=payload, content_type="application/json").status_code
+        project_status = client.post("/api/project-save?project=cohort", data=payload, content_type="application/json").status_code
+    # Assert
+    assert (quick_status, project_status) == (403, 201)
+
+
+def test_quick_query_param_forces_stateless_mode(tmp_path, client):  # noqa: F811
+    # Arrange: a project WAS visited (the provider stores it), and the page asks
+    # for Quick analysis explicitly.
+    root = tmp_path / "projects"
+    project = root / "cohort"
+    project.mkdir(parents=True)
+    (project / "measurements.csv").write_text("a\n1\n")
+    (root / ".scitex").mkdir()
+    (root / ".scitex" / "last_project.json").write_text('{"project": "cohort"}')
+    # Act
+    with _projects_root(root):
+        status = client.post(
+            "/api/project-save?quick=1",
+            data=json.dumps({"project": "cohort", "kind": "config", "name": "config.json", "payload": {}}),
+            content_type="application/json",
+        ).status_code
+    # Assert
+    assert status == 403
+
+
+def test_quick_mode_hides_the_project_panel_server_side(tmp_path, client):  # noqa: F811
+    # Arrange: same stored project as above.
+    root = tmp_path / "projects"
+    project = root / "cohort"
+    project.mkdir(parents=True)
+    (project / "measurements.csv").write_text("a\n1\n")
+    (root / ".scitex").mkdir()
+    (root / ".scitex" / "last_project.json").write_text('{"project": "cohort"}')
+    # Act
+    with _projects_root(root):
+        html = client.get("/?quick=1").content.decode()
+    # Assert
+    assert "data-stats-project-panel hidden" in html and 'data-stats-project="None"' in html
 
 
 # EOF

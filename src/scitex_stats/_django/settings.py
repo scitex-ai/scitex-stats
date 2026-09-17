@@ -66,6 +66,10 @@ MIDDLEWARE = with_locale_middleware(
     [
         "django.middleware.security.SecurityMiddleware",
         "django.middleware.common.CommonMiddleware",
+        # CSRF on writes: saving an artifact into a project is a state-changing
+        # POST, so the token the page carries must be verified. Without this
+        # middleware the marker in the template is decorative.
+        "django.middleware.csrf.CsrfViewMiddleware",
     ]
 )
 globals().update(i18n_settings())

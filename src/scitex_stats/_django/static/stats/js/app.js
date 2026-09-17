@@ -107,10 +107,22 @@
       .filter(function (n) { return Number.isFinite(n); });
   }
 
+  function csrfToken() {
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute("content") : "";
+  }
+
   async function api(path, payload) {
     var options = payload === undefined
       ? { method: "GET" }
-      : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) };
+      : {
+          method: "POST",
+          // The app is CSRF-protected on writes: the page carries the token and
+          // every POST sends it back, so a cross-site page cannot save into a
+          // project on the user's behalf.
+          headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken() },
+          body: JSON.stringify(payload),
+        };
     var res = await fetch(STX_MOUNT + path, options);
     var body = {};
     try { body = await res.json(); } catch (e) { /* non-JSON */ }
@@ -205,11 +217,12 @@
   }
 
   // ---- Project-default mode --------------------------------------------
-  // Default is the active project: its authorized CSV/TSV files are listed
-  // server-side and imported through the provider-backed endpoints. Quick
-  // analysis is the explicit stateless alternative, and the choice sticks
-  // across reloads. Without a project the app is stateless by definition,
-  // which is why the toggle disappears instead of offering an empty project.
+  // The MODE IS THE URL, so the server can enforce it: project mode is
+  // `?project=<id>` (server-resolved, and the only state in which persistence
+  // is allowed), Quick analysis is the same page WITHOUT a project — the
+  // stateless mode, where every write is refused server-side as well as hidden
+  // here. Nothing about the mode depends on client-only state the server cannot
+  // see.
   function projectId() {
     var root = document.querySelector("[data-stats-project]");
     var id = root ? root.getAttribute("data-stats-project") : "";
@@ -217,9 +230,6 @@
   }
 
   function currentMode() {
-    var stored = null;
-    try { stored = window.localStorage.getItem("stats:mode"); } catch (e) { stored = null; }
-    if (stored === "quick" || stored === "project") return stored;
     return projectId() ? "project" : "quick";
   }
 
@@ -227,19 +237,17 @@
     var mode = currentMode();
     var hasProject = !!projectId();
     var app = document.querySelector("[data-stats-app]");
-    if (app) app.setAttribute("data-stats-mode", hasProject ? mode : "quick");
+    if (app) app.setAttribute("data-stats-mode", mode);
     var panel = $("statsProjectFiles");
-    if (panel) panel.hidden = !(hasProject && mode === "project");
+    if (panel) panel.hidden = !hasProject;
+    var manual = $("statsManualData");
+    if (manual) manual.hidden = hasProject;
     var saves = $("statsSaveRow");
-    if (saves) saves.hidden = !(hasProject && mode === "project");
+    if (saves) saves.hidden = !hasProject;
     var plotSave = $("statsSavePlot");
-    if (plotSave) plotSave.hidden = !(hasProject && mode === "project");
+    if (plotSave) plotSave.hidden = !hasProject;
     var toggle = $("statsModeToggle");
-    if (toggle) {
-      toggle.hidden = !hasProject;
-      toggle.textContent = mode === "project" ? _("Quick analysis") : _("Use project data");
-    }
-    setSaveStatus("");
+    if (toggle) toggle.hidden = !hasProject;
   }
 
   function setSaveStatus(message) {
@@ -277,7 +285,10 @@
     if (!projectId()) { setSaveStatus(_("No project is active.")); return; }
     var body = { project: projectId(), kind: kind, name: name, payload: payload };
     if (payloadBase64) body.payload_base64 = payloadBase64;
-    var res = await api("/api/project-save", body);
+    // State the project in the URL as well as the body: the server binds the
+    // write to the project the REQUEST resolves, so the request must be the
+    // project's own URL rather than relying on ambient stored state.
+    var res = await api("/api/project-save?project=" + encodeURIComponent(projectId()), body);
     setSaveStatus(res.ok ? fmt(_("Saved %s to the project"), [res.body.path || name]) : _("Save failed."));
   }
 
@@ -605,7 +616,12 @@
       if (hasUserData() && !window.confirm(_("Replace the data in the boxes with the sample dataset?"))) return;
       setGroups(SAMPLE);
     });
-    $("statsChooseFile").addEventListener("click", function () { $("statsCsv").click(); });
+    $("statsChooseFile").addEventListener("click", function () {
+      // Project mode imports from the PROJECT; the manual picker is Quick
+      // analysis' input, so it refuses here instead of offering a second path.
+      if (projectId()) { showError(_("In project mode data comes from the project. Use Quick analysis to choose a file.")); return; }
+      $("statsCsv").click();
+    });
     $("statsCsv").addEventListener("change", function () {
       if (this.files && this.files[0]) loadCsv(this.files[0]);
       this.value = "";
@@ -614,6 +630,7 @@
     // The whole zone stays a click target; interactive children keep their own
     // behaviour (the choose button, the group boxes), so forward only the rest.
     dropZone.addEventListener("click", function (event) {
+      if (projectId()) return;  // project mode has no manual picker
       if (event.target.closest("button, input, textarea, select, label, a")) return;
       $("statsCsv").click();
     });
@@ -631,6 +648,7 @@
     dropZone.addEventListener("drop", function (event) {
       event.preventDefault();
       dropZone.classList.remove("stats-dropzone--active");
+      if (projectId()) { showError(_("In project mode data comes from the project. Use Quick analysis to drop a file.")); return; }
       var file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
       if (!file) return;
       if (!/\.(csv|tsv|txt)$/i.test(file.name)) {
@@ -647,9 +665,15 @@
     var modeToggle = $("statsModeToggle");
     if (modeToggle) {
       modeToggle.addEventListener("click", function () {
-        var next = currentMode() === "project" ? "quick" : "project";
-        try { window.localStorage.setItem("stats:mode", next); } catch (e) { /* private browsing */ }
-        applyMode();
+        // Leaving project mode is a NAVIGATION, not a UI flag: the page reloads
+        // without `?project=`, which is the stateless state the server refuses
+        // to persist into.
+        var url = new URL(window.location.href);
+        url.searchParams.delete("project");
+        // Explicit stateless mode: without this the SDK would resume the LAST
+        // VISITED project and the page would keep accepting writes.
+        url.searchParams.set("quick", "1");
+        window.location.href = url.toString();
       });
     }
     var filePanel = $("statsProjectFiles");
@@ -663,6 +687,12 @@
     $("statsSaveProvenance").addEventListener("click", saveProvenance);
     $("statsSaveConfig").addEventListener("click", saveConfig);
     $("statsSavePlot").addEventListener("click", savePlot);
+    // Readiness marker: every listener above is attached, so an automation
+    // client may interact. Without it a browser test has to guess with a sleep,
+    // and a click that lands in the gap between DOM-ready and this line is
+    // silently dropped (measured: the e2e layer flaked exactly that way).
+    var appRoot = document.querySelector("[data-stats-app]");
+    if (appRoot) appRoot.setAttribute("data-stats-ready", "1");
     try {
       var t = await api("/api/tests");
       if (t.ok && Array.isArray(t.body.tests)) {

@@ -58,12 +58,14 @@ base page (site header + dock), standalone falls back to scitex-ui's shell.
           {% endfor %}
         </ul>
       </section>
-      <p class="stats-hint">{% translate "One group per box. Paste numbers separated by spaces, commas or new lines." %}</p>
-      <button type="button" class="stats-btn stats-dropzone__button" id="statsChooseFile">{% translate "Drop a CSV or TSV file here, or choose a file" %}</button>
-      <section class="stats-source" aria-labelledby="statsSourceTitle">
-        <h3 class="stats-source__title" id="statsSourceTitle">{% translate "No dataset yet?" %}</h3>
-        <button type="button" class="stats-btn stats-btn--secondary stats-source__sample" id="statsSample">{% translate "Load sample dataset" %}</button>
-        <p class="stats-hint" id="statsSampleHint">{% translate "Loads the sample two-group dataset into the boxes below, replacing anything already entered." %}</p>
+      <section class="stats-manual" id="statsManualData" data-stats-manual>
+        <p class="stats-hint">{% translate "One group per box. Paste numbers separated by spaces, commas or new lines." %}</p>
+        <button type="button" class="stats-btn stats-dropzone__button" id="statsChooseFile">{% translate "Drop a CSV or TSV file here, or choose a file" %}</button>
+        <section class="stats-source" aria-labelledby="statsSourceTitle">
+          <h3 class="stats-source__title" id="statsSourceTitle">{% translate "No dataset yet?" %}</h3>
+          <button type="button" class="stats-btn stats-btn--secondary stats-source__sample" id="statsSample">{% translate "Load sample dataset" %}</button>
+          <p class="stats-hint" id="statsSampleHint">{% translate "Loads the sample two-group dataset into the boxes below, replacing anything already entered." %}</p>
+        </section>
       </section>
       <div class="stats-options">
         <label class="stats-field"><span>{% translate "Design" %}</span>
