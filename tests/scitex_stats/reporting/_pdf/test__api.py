@@ -142,9 +142,20 @@ def test_pdf_bytes_are_identical_for_the_same_input_and_timestamp(tmp_path):
     first = ss.report(THREE, design="between", output=tmp_path / "a.pdf", formats=["pdf"], timestamp=STAMP)
     second = ss.report(THREE, design="between", output=tmp_path / "b.pdf", formats=["pdf"], timestamp=STAMP)
     # Act
-    digests = {hashlib.sha256(pathlib.Path(r["paths"]["pdf"]).read_bytes()).hexdigest() for r in (first, second)}
+    a, b = (pathlib.Path(r["paths"]["pdf"]).read_bytes() for r in (first, second))
+    digests = {hashlib.sha256(blob).hexdigest() for blob in (a, b)}
     with fitz.open(first["paths"]["pdf"]) as doc:
         created = str(doc.metadata.get("creationDate", ""))
+    if len(digests) != 1:
+        # Report WHERE they differ: "not deterministic" is a verdict, not evidence.
+        offset = next((i for i, (x, y) in enumerate(zip(a, b)) if x != y), min(len(a), len(b)))
+        with fitz.open(first["paths"]["pdf"]) as d1, fitz.open(second["paths"]["pdf"]) as d2:
+            meta = {k: (d1.metadata.get(k), d2.metadata.get(k)) for k in set(d1.metadata) | set(d2.metadata) if d1.metadata.get(k) != d2.metadata.get(k)}
+            pages = [(page.get_text()[:40], other.get_text()[:40]) for page, other in zip(d1, d2) if page.get_text() != other.get_text()]
+        raise AssertionError(
+            f"PDFs differ at byte {offset} of {len(a)}/{len(b)}; metadata {meta}; "
+            f"differing pages {len(pages)}; context {a[max(0, offset - 60):offset + 60]!r}"
+        )
     # Assert
     assert (len(digests), "20260101000000" in created) == (1, True)
 
