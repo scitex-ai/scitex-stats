@@ -146,6 +146,7 @@ dev = [
     # project-selector asset.
     "scitex-ui>=0.22.0",
     # Note: fastmcp / mcp / scitex-dev / scitex-logging / pingouin come in via [project.dependencies].
+    "weasyprint>=60",
 ]
 docs = [
     "sphinx>=7.0",

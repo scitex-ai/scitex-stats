@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 # File: src/scitex_stats/_cli/report.py
 
-"""``scitex-stats report`` — one bundled PDF (plus HTML and Markdown) for a dataset."""
+"""``scitex-stats generate-report`` — one bundled PDF (plus HTML/Markdown) for a dataset."""
 
 from __future__ import annotations
 
 import json
 import sys
+from pathlib import Path
 
 import click
 
 
-@click.command("report")
+@click.command("generate-report")
 @click.argument("data", type=click.Path(exists=True, dir_okay=False))
 @click.option("--out", "-o", "out", default="report.pdf", show_default=True, help="PDF path; HTML/Markdown go next to it.")
 @click.option("--design", type=click.Choice(["between", "within", "paired"]), default="between", show_default=True,
@@ -26,8 +27,9 @@ import click
 @click.option("--title", default="Statistical report", show_default=True)
 @click.option("--y-label", default="Value", show_default=True)
 @click.option("--dry-run", is_flag=True, help="Analyse and print the summary; write nothing.")
+@click.option("--yes", "-y", "overwrite", is_flag=True, help="Overwrite an existing output file instead of refusing.")
 @click.option("--json", "as_json", is_flag=True, help="Print the summary and written paths as JSON.")
-def report(data, out, design, group_col, value_col, subject_col, alpha, posthoc, formats, title, y_label, dry_run, as_json):
+def report(data, out, design, group_col, value_col, subject_col, alpha, posthoc, formats, title, y_label, dry_run, overwrite, as_json):
     """Write a bundled statistical report for DATA (CSV/TSV, one column per group).
 
     Sections: report information, data summary, assumption checks, test
@@ -36,12 +38,20 @@ def report(data, out, design, group_col, value_col, subject_col, alpha, posthoc,
 
     \b
     Example:
-        $ scitex-stats report data.csv --out report.pdf
-        $ scitex-stats report long.csv --group-col condition --value-col score --design within
-        $ scitex-stats report data.csv --dry-run --json
+        $ scitex-stats generate-report data.csv --out report.pdf
+        $ scitex-stats generate-report long.csv --group-col condition --value-col score --design within
+        $ scitex-stats generate-report data.csv --dry-run --json
     """
     from scitex_stats.reporting._pdf import RendererUnavailable, build_report
     from scitex_stats.reporting._pdf import report as _report
+
+    if not dry_run and not overwrite:
+        existing = Path(out)
+        if existing.exists():
+            # `generate` is a mutating verb: say what would be lost instead of
+            # replacing a report someone already wrote.
+            click.echo(f"Error: {out} exists; pass --yes to overwrite it.", err=True)
+            sys.exit(1)
 
     spec = {"type": design}
     for key, value in (("group_col", group_col), ("value_col", value_col), ("subject_col", subject_col)):

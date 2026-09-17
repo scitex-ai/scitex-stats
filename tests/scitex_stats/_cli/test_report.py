@@ -24,18 +24,18 @@ def csv_path(tmp_path):
 
 def test_report_dry_run_prints_summary_json(csv_path):
     # Arrange
-    args = ["report", str(csv_path), "--dry-run", "--json"]
+    args = ["generate-report", str(csv_path), "--dry-run", "--json"]
     # Act
     result = CliRunner().invoke(main, args)
     # Assert
-    assert json.loads(result.output)["summary"]["posthoc"]["method"] == "tukey"
+    assert json.loads(result.output)["summary"]["posthoc"]["method"] == "games_howell"
 
 
 def test_report_writes_requested_formats(csv_path, tmp_path):
     # Arrange
     out = tmp_path / "out" / "report.pdf"
     # Act
-    result = CliRunner().invoke(main, ["report", str(csv_path), "--out", str(out), "--format", "html,md", "--json"])
+    result = CliRunner().invoke(main, ["generate-report", str(csv_path), "--out", str(out), "--format", "html,md", "--json"])
     # Assert
     assert sorted(json.loads(result.output)["paths"]) == ["figure", "html", "md"]
 
@@ -46,7 +46,7 @@ def test_report_long_format_uses_group_and_value_columns(tmp_path):
     rows = ["group,score"] + [f"a,{v}" for v in (1.1, 1.3, 1.2, 1.4, 1.0)] + [f"b,{v}" for v in (2.1, 2.4, 2.2, 2.0, 2.3)]
     path.write_text("\n".join(rows) + "\n", encoding="utf-8")
     # Act
-    result = CliRunner().invoke(main, ["report", str(path), "--group-col", "group", "--value-col", "score", "--dry-run", "--json"])
+    result = CliRunner().invoke(main, ["generate-report", str(path), "--group-col", "group", "--value-col", "score", "--dry-run", "--json"])
     # Assert
     assert json.loads(result.output)["summary"]["groups"] == ["a", "b"]
 
@@ -67,6 +67,38 @@ def test_mcp_generate_report_requires_one_data_source():
     out = asyncio.run(generate_report_handler(**kwargs))
     # Assert
     assert out["success"] is False
+
+
+def test_json_output_is_pure_when_no_pdf_renderer_is_installed(csv_path):
+    """The renderer's import banner must never reach stdout: it corrupted --json."""
+    # Arrange
+    args = ["generate-report", str(csv_path), "--dry-run", "--json"]
+    # Act
+    result = CliRunner().invoke(main, args)
+    # Assert
+    assert (result.output.startswith("{"), json.loads(result.output)["summary"]["design"]) == (True, "between")
+
+
+def test_the_bare_report_alias_still_runs(csv_path):
+    # Arrange: `report` is the pre-rename name, a hidden alias that warns on stderr.
+    args = ["report", str(csv_path), "--dry-run", "--json"]
+    # Act
+    result = CliRunner().invoke(main, args)
+    body = result.output[result.output.index("{"):]
+    # Assert
+    assert (result.exit_code, "generate-report" in result.output, json.loads(body)["summary"]["primary_test"]) == (0, True, "welch_anova")
+
+
+def test_generate_report_refuses_to_overwrite_without_yes(csv_path, tmp_path):
+    # Arrange: a report already sits at the target path.
+    out = tmp_path / "existing.pdf"
+    out.write_bytes(b"earlier report")
+    args = ["generate-report", str(csv_path), "--out", str(out), "--format", "md"]
+    # Act
+    refused = CliRunner().invoke(main, args)
+    allowed = CliRunner().invoke(main, args + ["--yes"])
+    # Assert
+    assert (refused.exit_code, out.read_bytes() == b"earlier report", allowed.exit_code) == (1, True, 0)
 
 
 # EOF

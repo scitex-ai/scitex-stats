@@ -12,13 +12,30 @@ class RendererUnavailable(RuntimeError):
     """No PDF renderer is installed; HTML and Markdown can still be written."""
 
 
-def pdf_renderer() -> Optional[str]:
-    try:
-        import weasyprint
+def _load_weasyprint():
+    """Import WeasyPrint, swallowing the banner it prints when Pango is missing.
 
-        return f"WeasyPrint {weasyprint.__version__}"
-    except Exception:  # noqa: BLE001 - missing system libraries raise OSError, not ImportError
-        return None
+    WeasyPrint writes a multi-line "could not import some external libraries"
+    block to stdout at import time. On a host without the system libraries that
+    block lands in machine-readable output — it corrupted
+    ``scitex-stats report --json`` and every MCP ``generate_report`` reply — so it
+    is captured and dropped here. The caller learns the renderer is missing from
+    ``pdf_renderer() is None`` / ``RendererUnavailable``, not from a stray banner.
+    """
+    import contextlib
+    import io
+
+    with contextlib.redirect_stdout(io.StringIO()):
+        try:
+            import weasyprint
+        except Exception:  # noqa: BLE001 - missing system libraries raise OSError, not ImportError
+            return None
+    return weasyprint
+
+
+def pdf_renderer() -> Optional[str]:
+    module = _load_weasyprint()
+    return f"WeasyPrint {module.__version__}" if module is not None else None
 
 
 def _offline_fetcher():
