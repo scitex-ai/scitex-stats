@@ -108,7 +108,13 @@ def render_html(model: Dict[str, Any]) -> str:
     # `dcterms.created`/`dcterms.modified` are what WeasyPrint turns into the PDF's
     # /CreationDate and /ModDate. They are set from the report's own timestamp, so
     # the artifact is dated by the ANALYSIS, not by the moment it was rendered -
-    # which is also what makes two runs over the same input byte-identical.
+    # which is what makes the report CONTENT-deterministic: two runs over the same
+    # input and timestamp draw identical pages, with identical metadata and page
+    # count. It is deliberately not a byte-identity claim: WeasyPrint's embedded
+    # font program is the one part it does not reproduce byte for byte (measured:
+    # two renders differed inside an object carrying `/Length1 ... /FlateDecode`,
+    # while metadata was identical and zero pages differed). The contract is
+    # asserted in tests/scitex_stats/reporting/_pdf/test__api.py.
     stamp = html.escape(str(model.get("generated_at") or ""))
     parts = [
         "<!DOCTYPE html>",
