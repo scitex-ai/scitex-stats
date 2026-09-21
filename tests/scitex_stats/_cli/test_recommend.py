@@ -22,7 +22,7 @@ def test_recommend_test_json_names_welch(tmp_path):
     # Act
     result = _invoke(tmp_path, "recommend-test", "--design", "independent")
     # Assert
-    assert json.loads(result.output)["primary"]["test_id"] == "ttest_welch"
+    assert json.loads(result.stdout)["primary"]["test_id"] == "ttest_welch"
 
 
 def test_check_applicability_text_marks_tests(tmp_path):
