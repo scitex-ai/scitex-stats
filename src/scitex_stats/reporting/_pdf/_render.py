@@ -1,6 +1,18 @@
 #!/usr/bin/env python3
 # File: src/scitex_stats/reporting/_pdf/_render.py
-"""HTML -> PDF with WeasyPrint, network disabled (only data: URIs resolve)."""
+"""HTML -> PDF with WeasyPrint, network disabled (only data: URIs resolve).
+
+Determinism contract (see :func:`scitex_stats.report`): the rendered artifact is
+CONTENT-deterministic, not byte-deterministic. With the same input and the same
+report timestamp, two renders draw identical pages with identical metadata and
+page count, and the PDF is dated from the report's timestamp rather than from the
+moment of rendering. The embedded font program is the one part WeasyPrint does not
+reproduce byte for byte, so nothing here may claim byte-identity: measured, two
+renders of the same report differed inside an object carrying ``/Length1 ...
+/FlateDecode``, while metadata was identical and zero pages differed. Asserted by
+``tests/scitex_stats/reporting/_pdf/test__api.py::
+test_pdf_is_content_deterministic_for_the_same_input_and_timestamp``.
+"""
 
 from __future__ import annotations
 

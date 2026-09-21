@@ -5,6 +5,21 @@ All notable changes to `scitex-stats` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- The report's determinism contract is now stated accurately where it ships. The
+  comment in `reporting/_pdf/_html.py` claimed two runs over the same input were
+  **byte-identical**; the artifacts contradict that (measured: two renders with the
+  same timestamp differed inside an object carrying `/Length1 ... /FlateDecode`, an
+  embedded font program, while metadata was identical and zero pages differed). The
+  shipped contract is now **content determinism** — identical page text, metadata,
+  page count and decoded content streams, with the creation date taken from the
+  report timestamp — documented in `reporting/_pdf/_render.py`,
+  `reporting/_pdf/_html.py` and the `scitex_stats.report` docstring, and asserted by
+  `tests/scitex_stats/reporting/_pdf/test__api.py::test_pdf_is_content_deterministic_for_the_same_input_and_timestamp`.
+  No behaviour changed.
+
 ## [0.2.27] — 2026-09-17
 
 ### Changed

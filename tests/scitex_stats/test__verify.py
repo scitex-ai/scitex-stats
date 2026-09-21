@@ -175,7 +175,7 @@ def test_cli_verify_exits_zero_when_verified(tmp_path, ttest_result):
     # Act
     out = CliRunner().invoke(verify_cmd, [str(path)])
     # Assert
-    assert (out.exit_code, json.loads(out.output)["verified"]) == (0, True)
+    assert (out.exit_code, json.loads(out.stdout)["verified"]) == (0, True)
 
 
 def test_cli_verify_exits_one_when_tampered(tmp_path, ttest_result):

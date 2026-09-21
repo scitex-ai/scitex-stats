@@ -85,6 +85,20 @@ def report(
         ``paths`` (written files), and ``pdf_bytes`` / ``html`` / ``markdown``
         for the formats rendered.
 
+    Notes
+    -----
+    **Determinism contract — content, not bytes.** Same input and same timestamp
+    produce the same report *content*: identical page text, identical metadata,
+    identical page count, identical decoded content streams, and a creation date
+    taken from the report timestamp (``dcterms.created``) rather than from the
+    moment of rendering. Two renders are deliberately NOT claimed to be
+    byte-identical: the embedded font program is the one part WeasyPrint does not
+    reproduce byte for byte (measured: an object carrying ``/Length1 ...
+    /FlateDecode`` differed between two renders of the same report, while metadata
+    was identical and zero pages differed). The contract is asserted by
+    ``tests/scitex_stats/reporting/_pdf/test__api.py::
+    test_pdf_is_content_deterministic_for_the_same_input_and_timestamp``.
+
     Examples
     --------
     >>> import scitex_stats as ss

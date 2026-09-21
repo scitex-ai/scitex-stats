@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Tests for `scitex-stats report` (`_cli/report.py`) and the `generate_report` MCP handler."""
+"""Tests for `scitex-stats report` (`_cli/report.py`) and the `generate_report` MCP handler.
+
+Machine-readable assertions read ``result.stdout``, never ``result.output``:
+click's ``output`` is stdout PLUS stderr, so a dependency warning on stderr
+(figrecipe's font fallback, emitted once per process) leaked into the JSON parse
+and made these cases pass or fail depending on which tests shared the worker.
+stdout-only is also the contract being asserted — ``--json`` means stdout carries
+the payload and nothing else.
+"""
 
 from __future__ import annotations
 
@@ -28,7 +36,7 @@ def test_report_dry_run_prints_summary_json(csv_path):
     # Act
     result = CliRunner().invoke(main, args)
     # Assert
-    assert json.loads(result.output)["summary"]["posthoc"]["method"] == "games_howell"
+    assert json.loads(result.stdout)["summary"]["posthoc"]["method"] == "games_howell"
 
 
 def test_report_writes_requested_formats(csv_path, tmp_path):
@@ -37,7 +45,7 @@ def test_report_writes_requested_formats(csv_path, tmp_path):
     # Act
     result = CliRunner().invoke(main, ["generate-report", str(csv_path), "--out", str(out), "--format", "html,md", "--json"])
     # Assert
-    assert sorted(json.loads(result.output)["paths"]) == ["figure", "html", "md"]
+    assert sorted(json.loads(result.stdout)["paths"]) == ["figure", "html", "md"]
 
 
 def test_report_long_format_uses_group_and_value_columns(tmp_path):
@@ -48,7 +56,7 @@ def test_report_long_format_uses_group_and_value_columns(tmp_path):
     # Act
     result = CliRunner().invoke(main, ["generate-report", str(path), "--group-col", "group", "--value-col", "score", "--dry-run", "--json"])
     # Assert
-    assert json.loads(result.output)["summary"]["groups"] == ["a", "b"]
+    assert json.loads(result.stdout)["summary"]["groups"] == ["a", "b"]
 
 
 def test_mcp_generate_report_returns_paths(tmp_path):
@@ -76,7 +84,7 @@ def test_json_output_is_pure_when_no_pdf_renderer_is_installed(csv_path):
     # Act
     result = CliRunner().invoke(main, args)
     # Assert
-    assert (result.output.startswith("{"), json.loads(result.output)["summary"]["design"]) == (True, "between")
+    assert (result.stdout.startswith("{"), json.loads(result.stdout)["summary"]["design"]) == (True, "between")
 
 
 def test_the_bare_report_alias_still_runs(csv_path):
@@ -84,9 +92,9 @@ def test_the_bare_report_alias_still_runs(csv_path):
     args = ["report", str(csv_path), "--dry-run", "--json"]
     # Act
     result = CliRunner().invoke(main, args)
-    body = result.output[result.output.index("{"):]
+    payload = json.loads(result.stdout)
     # Assert
-    assert (result.exit_code, "generate-report" in result.output, json.loads(body)["summary"]["primary_test"]) == (0, True, "welch_anova")
+    assert (result.exit_code, "generate-report" in result.output, payload["summary"]["primary_test"]) == (0, True, "welch_anova")
 
 
 def test_generate_report_refuses_to_overwrite_without_yes(csv_path, tmp_path):
