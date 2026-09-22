@@ -8,6 +8,8 @@ from __future__ import annotations
 import shutil
 import sys
 
+import click
+
 from .. import __version__
 
 
@@ -69,7 +71,7 @@ def cmd_start(
 ) -> int:
     """Start the MCP server."""
     if dry_run:
-        print(f"DRY RUN — would start scitex-stats MCP server (transport={transport})")
+        click.echo(f"DRY RUN — would start scitex-stats MCP server (transport={transport})")
         return 0
     if not yes and not sys.stdin.isatty():
         # Non-interactive context without --yes — proceed (no prompt to wait on)
@@ -193,8 +195,8 @@ def cmd_list_tools(
     if module_filter:
         module_filter = module_filter.lower()
         if module_filter not in modules:
-            print(f"ERROR: Unknown module '{module_filter}'")
-            print(f"Available modules: {', '.join(sorted(modules.keys()))}")
+            click.echo(f"ERROR: Unknown module '{module_filter}'")
+            click.echo(f"Available modules: {', '.join(sorted(modules.keys()))}")
             return 1
         modules = {module_filter: modules[module_filter]}
 
@@ -211,59 +213,59 @@ def cmd_list_tools(
                 "count": len(tool_list),
                 "tools": tool_list,
             }
-        print(json.dumps(output, indent=2))
+        click.echo(json.dumps(output, indent=2))
         return 0
 
-    print(_style("SciTeX Stats MCP: scitex-stats", "cyan", bold=True))
-    print(f"Tools: {total} ({len(modules)} modules)\n")
+    click.echo(_style("SciTeX Stats MCP: scitex-stats", "cyan", bold=True))
+    click.echo(f"Tools: {total} ({len(modules)} modules)\n")
 
     for module in sorted(modules.keys()):
         mod_tools = sorted(modules[module])
-        print(_style(f"{module}: {len(mod_tools)} tools", "green", bold=True))
+        click.echo(_style(f"{module}: {len(mod_tools)} tools", "green", bold=True))
         for tool_name in mod_tools:
             tool_obj = tools_by_name.get(tool_name)
 
             if verbose == 0:
-                print(f"  {tool_name}")
+                click.echo(f"  {tool_name}")
             elif verbose == 1:
                 sig = (
                     _format_tool_signature(tool_obj, compact=compact)
                     if tool_obj
                     else f"  {tool_name}"
                 )
-                print(sig)
+                click.echo(sig)
             elif verbose == 2:
                 sig = (
                     _format_tool_signature(tool_obj, compact=compact)
                     if tool_obj
                     else f"  {tool_name}"
                 )
-                print(sig)
+                click.echo(sig)
                 if tool_obj and tool_obj.description:
                     desc = tool_obj.description.split("\n")[0].strip()
-                    print(f"    {desc}")
-                print()
+                    click.echo(f"    {desc}")
+                click.echo()
             else:
                 sig = (
                     _format_tool_signature(tool_obj, compact=compact)
                     if tool_obj
                     else f"  {tool_name}"
                 )
-                print(sig)
+                click.echo(sig)
                 if tool_obj and tool_obj.description:
                     for line in tool_obj.description.strip().split("\n"):
-                        print(f"    {line}")
-                print()
-        print()
+                        click.echo(f"    {line}")
+                click.echo()
+        click.echo()
 
     return 0
 
 
 def cmd_doctor() -> int:
     """Check MCP server health and configuration."""
-    print(f"scitex-stats {__version__}\n")
-    print("Health Check")
-    print("=" * 40)
+    click.echo(f"scitex-stats {__version__}\n")
+    click.echo("Health Check")
+    click.echo("=" * 40)
 
     checks = []
 
@@ -291,13 +293,13 @@ def cmd_doctor() -> int:
         status = "+" if ok else "x"
         if not ok:
             all_ok = False
-        print(f"  {status} {name}: {info}")
+        click.echo(f"  {status} {name}: {info}")
 
-    print()
+    click.echo()
     if all_ok:
-        print("All checks passed!")
+        click.echo("All checks passed!")
     else:
-        print("Some checks failed. Run 'pip install scitex-stats[mcp]' to fix.")
+        click.echo("Some checks failed. Run 'pip install --upgrade scitex-stats' to fix.")
 
     return 0 if all_ok else 1
 
@@ -322,21 +324,21 @@ def cmd_config(*, as_json: bool = False) -> int:
                 "python_module": CLAUDE_DESKTOP_CONFIG_PYTHON,
             },
         }
-        print(_json.dumps(payload, indent=2))
+        click.echo(_json.dumps(payload, indent=2))
         return 0
 
-    print(f"scitex-stats {__version__}\n")
-    print("Add this to your Claude Desktop config file:\n")
-    print("  macOS: ~/Library/Application Support/Claude/claude_desktop_config.json")
-    print("  Linux: ~/.config/Claude/claude_desktop_config.json\n")
+    click.echo(f"scitex-stats {__version__}\n")
+    click.echo("Add this to your Claude Desktop config file:\n")
+    click.echo("  macOS: ~/Library/Application Support/Claude/claude_desktop_config.json")
+    click.echo("  Linux: ~/.config/Claude/claude_desktop_config.json\n")
 
     if scitex_path:
-        print(f"Your installation path: {scitex_path}\n")
+        click.echo(f"Your installation path: {scitex_path}\n")
 
-    print("Option 1: CLI command (replace path with your installation)")
-    print(CLAUDE_DESKTOP_CONFIG_CLI)
-    print("\nOption 2: Python module (replace path with your installation)")
-    print(CLAUDE_DESKTOP_CONFIG_PYTHON)
+    click.echo("Option 1: CLI command (replace path with your installation)")
+    click.echo(CLAUDE_DESKTOP_CONFIG_CLI)
+    click.echo("\nOption 2: Python module (replace path with your installation)")
+    click.echo(CLAUDE_DESKTOP_CONFIG_PYTHON)
     return 0
 
 

@@ -24,6 +24,8 @@ group unchanged.
 
 from __future__ import annotations
 
+import sys
+
 
 def maybe_print_version_and_exit(argv: list) -> None:
     """Print scitex-stats's own version and exit iff ``argv`` is bare."""
@@ -36,7 +38,9 @@ def maybe_print_version_and_exit(argv: list) -> None:
         v = version("scitex-stats")
     except PackageNotFoundError:
         v = "0.0.0+local"
-    print(f"scitex-stats, version {v}")
+    # `--version` output is machine-readable data transport (scripts parse
+    # it), so it goes to stdout via sys.stdout.write, which PS-220 spares.
+    sys.stdout.write(f"scitex-stats, version {v}\n")
     raise SystemExit(0)
 
 
