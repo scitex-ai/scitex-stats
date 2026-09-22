@@ -13,11 +13,11 @@ Optional Dependencies
 
 .. code-block:: bash
 
-   # With plotting support
-   pip install scitex-stats[plot]
+   # Base install (MCP server + plotting included)
+   pip install scitex-stats
 
-   # With MCP server for AI agents
-   pip install scitex-stats[mcp]
+   # With the Statistics GUI app
+   pip install scitex-stats[server]
 
    # Everything
    pip install scitex-stats[all]

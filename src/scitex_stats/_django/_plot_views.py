@@ -15,10 +15,19 @@ import json
 import threading
 from typing import Any, Dict, List, Optional
 
-from django.http import JsonResponse
-from django.urls import NoReverseMatch, reverse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_GET, require_POST
+# PS-233: `django` is a `[server]`-only distribution. This module is a Django
+# view set — it has no meaning without the framework — so the guard FAILS
+# LOUDLY with the extra to install instead of silently degrading.
+try:
+    from django.http import JsonResponse
+    from django.urls import NoReverseMatch, reverse
+    from django.views.decorators.csrf import csrf_exempt
+    from django.views.decorators.http import require_GET, require_POST
+except ImportError as exc:
+    raise ImportError(
+        "scitex_stats._django._plot_views needs Django, which is not installed. "
+        "Install the optional stack: pip install 'scitex-stats[server]'"
+    ) from exc
 
 # pyplot (FigRecipe backend) is process-global state; one render at a time.
 _RENDER_LOCK = threading.Lock()

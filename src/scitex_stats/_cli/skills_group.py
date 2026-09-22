@@ -108,12 +108,26 @@ def skills_get(name: str, as_json: bool) -> None:
     click.echo(match.read_text(encoding="utf-8"))
 
 
+def _default_skills_base() -> Path:
+    """Default base dir for ``skills install`` (PS-145 plugin-port).
+
+    Caller-owned ``SCITEX_STATS_SKILLS_DIR`` wins when set; otherwise the
+    shared ecosystem skills tree. The consumer populates the variable from
+    their own startup — this package never hardcodes another package's
+    user-state tree as its only destination.
+    """
+    override = _os.environ.get("SCITEX_STATS_SKILLS_DIR", "").strip()
+    if override:
+        return Path(override).expanduser()
+    return Path.home() / ".scitex" / "dev" / "skills"
+
+
 @skills_group.command(name="install")
 @click.option(
     "--dest",
     type=click.Path(),
     default=None,
-    help="Destination dir (default: ~/.scitex/dev/skills/scitex-stats/).",
+    help="Destination dir (default: $SCITEX_STATS_SKILLS_DIR or the shared skills tree).",
 )
 @click.option(
     "--no-link",
@@ -139,8 +153,8 @@ def skills_install(
 
     \b
     Default: symlink the entire `_skills/scitex-stats/` dir to
-    ~/.scitex/dev/skills/scitex-stats/ so add/rename/delete in
-    source propagates immediately.
+    `$SCITEX_STATS_SKILLS_DIR/scitex-stats/` when set, else the shared
+    skills tree, so add/rename/delete in source propagates immediately.
 
     Use --claude-symlink to also expose at ~/.claude/skills/scitex/ for
     Claude Code's skill loader.
@@ -157,9 +171,7 @@ def skills_install(
         click.echo(f"no skills directory at {src}", err=True)
         raise SystemExit(1)
 
-    base = (
-        Path(dest).expanduser() if dest else Path.home() / ".scitex" / "dev" / "skills"
-    )
+    base = Path(dest).expanduser() if dest else _default_skills_base()
     target = base / PKG
 
     if dry_run:

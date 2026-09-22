@@ -17,6 +17,8 @@ import json
 import sys
 from typing import Any
 
+import click
+
 
 def _read_data(path: str) -> "Any":
     """Read CSV / NumPy / JSON file or stdin JSON into numpy/pandas object.
@@ -69,14 +71,14 @@ def _select_column(df, name: "str | None"):
 def _emit(payload: "dict | list", as_json: bool = True, indent: int = 2):
     """Print payload to stdout. JSON if as_json else readable."""
     if as_json:
-        print(json.dumps(payload, indent=indent, default=str))
+        click.echo(json.dumps(payload, indent=indent, default=str))
     else:
         if isinstance(payload, list):
             for item in payload:
-                print(item)
+                click.echo(item)
         else:
             for k, v in payload.items():
-                print(f"  {k:25s} {v}")
+                click.echo(f"  {k:25s} {v}")
 
 
 def run_tests_list(*, as_json: bool = True) -> int:
@@ -85,10 +87,10 @@ def run_tests_list(*, as_json: bool = True) -> int:
 
     tests = ss.available_tests()
     if as_json:
-        print(json.dumps(tests, indent=2))
+        click.echo(json.dumps(tests, indent=2))
     else:
         for t in tests:
-            print(t)
+            click.echo(t)
     return 0
 
 
@@ -154,9 +156,9 @@ def run_tests_execute(
     try:
         result = ss.run_test(test_name, **kwargs)
     except Exception as e:
-        print(
+        click.echo(
             json.dumps({"error": str(e), "test": test_name}, indent=2),
-            file=sys.stderr,
+            err=True,
         )
         return 1
 
@@ -242,10 +244,10 @@ def run_tests_recommend(
     )
     tests = ss.recommend_tests(ctx, top_k=top_k)
     if as_json:
-        print(json.dumps(tests, indent=2))
+        click.echo(json.dumps(tests, indent=2))
     else:
         for t in tests:
-            print(t)
+            click.echo(t)
     return 0
 
 
@@ -254,7 +256,7 @@ def run_format_pvalue(*, p: float, style: "str | None" = None) -> int:
     import scitex_stats as ss
 
     stars = ss.p_to_stars(p, style=style)
-    print(stars)
+    click.echo(stars)
     return 0
 
 

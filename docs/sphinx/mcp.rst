@@ -10,7 +10,7 @@ Installation
 
 .. code-block:: bash
 
-   pip install scitex-stats[mcp]
+   pip install scitex-stats
 
 Starting the Server
 -------------------
