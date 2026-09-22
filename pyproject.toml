@@ -188,6 +188,7 @@ addopts = "-v --tb=short --cov=scitex_stats --cov-report=term-missing"
 # Slow layers are gated by an env var so the default suite stays fast and
 # hermetic: `RUN_E2E=1` for tests/e2e (real browser + real server).
 markers = [
+    "smoke: fast CLI happy-path tests (<60s, runs on every PR)",
     "e2e: slow end-to-end journey tests; gate with RUN_E2E=1",
 ]
 

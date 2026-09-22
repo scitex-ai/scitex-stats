@@ -40,8 +40,8 @@ import scitex_stats as sst   # standalone form (same module)
 ## Optional extras
 
 ```bash
-pip install 'scitex-stats[mcp]'    # MCP server support (mcp + fastmcp)
-pip install 'scitex-stats[dev]'    # test/lint tooling
+pip install 'scitex-stats[server]'  # Statistics GUI app (django + scitex-app + scitex-ui)
+pip install 'scitex-stats[dev]'     # test/lint tooling
 ```
 
 ## Verifying the install

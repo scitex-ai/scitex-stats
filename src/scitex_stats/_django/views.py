@@ -13,13 +13,29 @@ from __future__ import annotations
 import math
 from typing import Any, Dict, List
 
-from django.apps import apps as _django_apps
-from django.core.exceptions import ImproperlyConfigured
-from django.http import HttpResponse, JsonResponse
-from django.template.loader import render_to_string
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_GET, require_http_methods, require_POST
-from scitex_app._django import mount_prefix
+# PS-233: `django` and `scitex-app` are `[server]`-only distributions. This
+# module is a Django view set — it has no meaning without them — so the
+# guards FAIL LOUDLY with the extra to install instead of silently degrading.
+try:
+    from django.apps import apps as _django_apps
+    from django.core.exceptions import ImproperlyConfigured
+    from django.http import HttpResponse, JsonResponse
+    from django.template.loader import render_to_string
+    from django.views.decorators.csrf import csrf_exempt
+    from django.views.decorators.http import require_GET, require_http_methods, require_POST
+except ImportError as exc:
+    raise ImportError(
+        "scitex_stats._django.views needs Django, which is not installed. "
+        "Install the optional stack: pip install 'scitex-stats[server]'"
+    ) from exc
+
+try:
+    from scitex_app._django import mount_prefix
+except ImportError as exc:
+    raise ImportError(
+        "scitex_stats._django.views needs scitex-app, which is not installed. "
+        "Install the optional stack: pip install 'scitex-stats[server]'"
+    ) from exc
 
 # The dotted INSTALLED_APPS entry a host must carry for these views to work
 # (one string, so the refusal and the docs name the same thing — see apps.py
@@ -87,7 +103,15 @@ def _safe(payload: Any) -> Any:
 
 def index(request):
     """Serve the Statistics page (Data | Test | Results panes)."""
-    from scitex_ui.branding import shell_context
+    # PS-233: `scitex-ui` is `[server]`-only; guarded (unreachable when it is
+    # absent — the module import already raised — but the guard is the contract).
+    try:
+        from scitex_ui.branding import shell_context
+    except ImportError as exc:
+        raise ImportError(
+            "scitex_stats._django.views.index needs scitex-ui, which is not installed. "
+            "Install the optional stack: pip install 'scitex-stats[server]'"
+        ) from exc
 
     from scitex_stats import __version__
 
