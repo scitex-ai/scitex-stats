@@ -23,7 +23,8 @@ import pytest
 def _scitex_stats_exe():
     """Path to the `scitex-stats` console script co-installed with the
     interpreter running this suite (the build under test), falling back to
-    whatever is on PATH. Avoids picking up a stale global/user install."""
+    whatever is on PATH. Avoids picking up a stale global/user install
+    (e.g. a broken ~/.local/bin script on a shared self-hosted runner)."""
     import os
 
     local = os.path.join(os.path.dirname(sys.executable), "scitex-stats")
