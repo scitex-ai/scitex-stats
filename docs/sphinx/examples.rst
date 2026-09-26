@@ -11,11 +11,11 @@ canonical reference for its workflow.
 
    * - Notebook
      - Workflow
-   * - `01_basic_ttest.ipynb <https://github.com/ywatanabe1989/scitex-stats/blob/develop/examples/01_basic_ttest.ipynb>`__
+   * - `01_basic_ttest.ipynb <https://github.com/scitex-ai/scitex-stats/blob/develop/examples/01_basic_ttest.ipynb>`__
      - ``run_test("ttest_ind", …)`` → unified result dict → APA string
-   * - `02_test_recommendation.ipynb <https://github.com/ywatanabe1989/scitex-stats/blob/develop/examples/02_test_recommendation.ipynb>`__
+   * - `02_test_recommendation.ipynb <https://github.com/scitex-ai/scitex-stats/blob/develop/examples/02_test_recommendation.ipynb>`__
      - ``StatContext`` → ``recommend_tests`` → top recommendation through ``run_test``
-   * - `03_multiple_comparison.ipynb <https://github.com/ywatanabe1989/scitex-stats/blob/develop/examples/03_multiple_comparison.ipynb>`__
+   * - `03_multiple_comparison.ipynb <https://github.com/scitex-ai/scitex-stats/blob/develop/examples/03_multiple_comparison.ipynb>`__
      - Family of comparisons → ``correct.correct_fdr`` (Benjamini-Hochberg)
 
 To re-execute every notebook in place (refreshing outputs):

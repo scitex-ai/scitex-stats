@@ -1,12 +1,10 @@
 name: CLA Assistant
 
-# Org-level reusable-workflow caller (scitex-ai/.github; fleet CI
-# unification wave 2). Triggers/permissions preserved verbatim from the
-# prior local file — both the CLAssistant PR path and the owner-bypass
-# direct-push path now live org-side (a shared workflow cannot drift
-# per-repo). Reusable-workflow defaults (owner_login=ywatanabe1989,
-# owner_allowlist="bot*,ywatanabe1989", default_branch=main) match this
-# repo's prior hardcoded values, so no inputs are overridden.
+# PILOT: org-level reusable-workflow caller (scitex-ai/.github, 2026-07-10).
+# Triggers/permissions preserved verbatim from the prior local file.
+# Reusable workflow defaults (owner_login=ywatanabe1989,
+# owner_allowlist="bot*,ywatanabe1989", default_branch=main) already match
+# this repo's prior hardcoded values, so no `with:` overrides are needed.
 
 on:
   issue_comment:

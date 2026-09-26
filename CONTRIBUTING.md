@@ -16,7 +16,7 @@ See [CLA.md](CLA.md) for full details.
 
 ## Reporting Issues
 
-- Search [existing issues](https://github.com/ywatanabe1989/scitex-stats/issues)
+- Search [existing issues](https://github.com/scitex-ai/scitex-stats/issues)
   before opening a new one.
 - Include a minimal reproducible example when reporting bugs.
 - Specify your Python version, OS, and `scitex` version.
@@ -24,7 +24,7 @@ See [CLA.md](CLA.md) for full details.
 ## Development Setup
 
 ```bash
-git clone git@github.com:ywatanabe1989/scitex-stats.git
+git clone git@github.com:scitex-ai/scitex-stats.git
 cd scitex-stats
 pip install -e ".[dev]"
 ```

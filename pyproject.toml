@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "scitex-stats"
-version = "0.2.24"
+version = "0.2.28"
 description = "Publication-ready statistical testing framework with 25 tests, effect sizes, power analysis, and MCP server"
 readme = "README.md"
 license = "AGPL-3.0-only"
@@ -72,9 +72,19 @@ dependencies = [
 # `".[all,dev]"` (pytest-matrix, quality-audit), and README/CONTRIBUTING
 # document `.[dev]` for contributors.
 all = [
-    "scitex-stats[bundle,dev,docs]",
+    "scitex-stats[bundle,dev,docs,report,server]",
     "figrecipe>=0.28.0",
     "torch>=2.0",
+]
+# PDF output of scitex_stats.report (HTML and Markdown need nothing extra).
+# WeasyPrint also needs Pango from the OS package manager.
+report = [
+    "weasyprint>=60",
+]
+# Plot results as editable FigRecipe recipes (scitex_stats.plot, backend="auto").
+# Looked up at call time only; without it plots render with plain matplotlib.
+figrecipe = [
+    "figrecipe>=0.28.0",
 ]
 # Stats ↔ SciTeX bundle I/O: test_result_to_stats / save_stats / load_stats
 # in scitex_stats._bundle_io require scitex-io's bundle subpackage. scitex-io
@@ -82,6 +92,28 @@ all = [
 # extra (no hard/circular dep).
 bundle = [
     "scitex-io>=0.2.16",
+]
+# Statistics app (standalone + hub integration): scitex_stats._django exposes
+# the calculator as a SciTeX workspace app via the scitex-app SDK
+# (scitex_app.embed.run_standalone / ScitexAppConfig) and scitex-ui's shell.
+# `scitex-stats gui` (open/serve/status/stop) and the hub mount both need this.
+# scitex-app is already a hard dep; scitex-ui + django are added here so the
+# app boots out of the box.
+server = [
+    "django>=4.2",
+    # >=0.24.0: stats.html extends `scitex_app/app_shell.html`, the shared
+    # workspace shell the SDK began shipping in 0.24.0. Below that the
+    # template resolves to nothing (TemplateDoesNotExist: scitex_app/
+    # app_shell.html) and every page of the app 500s.
+    "scitex-app>=0.24.0",
+    # >=0.22.0: the app shell template loads scitex-ui's template-tag
+    # libraries `scitex_static` (first shipped in 0.21.2 — it provides
+    # `{% app_static %}`) and `scitex_project_picker`, and adopts the
+    # canonical project selector asset `js/app/project-selector.js`
+    # (0.22.0). A lower floor lets a resolver pick a scitex-ui whose
+    # shell cannot render our template at all: every page returns 500
+    # ("'scitex_static' is not a registered tag library").
+    "scitex-ui>=0.22.0",
 ]
 dev = [
     "pytest>=7.0.0",
@@ -95,11 +127,26 @@ dev = [
     "nbconvert>=7.0",     # executes example .ipynb in tests (PS-505)
     "ipykernel>=6.0",     # kernel for nbconvert --execute
     "openpyxl>=3.1",      # pandas to_excel used by _demo_*.py
+    # test__messages.py reads the shipped .po with babel.messages (it pins
+    # every emitted msgid to a JA translation). CI happened to get babel
+    # transitively through `.[all]`; a plain `-e .[dev]` did not, so the
+    # test failed with ModuleNotFoundError instead of asserting. Declare it.
+    "babel>=2.0",
     # Optional cross-package integrations whose tests live in the suite,
     # so a fresh `pip install -e .[dev]` runs the full suite (PS-210).
     "scitex-io>=0.2.16",  # [bundle] extra: stats↔bundle I/O round-trip tests
     "figrecipe>=0.28.0",  # [all] extra: stats↔figrecipe annotation tests
+    # [server] extra: Statistics app (Django) boot + mount tests. scitex-app
+    # and scitex-ui are optional upstream (django-app only), but the app
+    # tests import them unguarded, so a fresh `-e .[dev]` must provide them
+    # at the same floors as [server] (PS-210).
+    "django>=4.2",
+    "scitex-app>=0.24.0",
+    # `scitex_static` / `scitex_project_picker` libraries + the canonical
+    # project-selector asset.
+    "scitex-ui>=0.22.0",
     # Note: fastmcp / mcp / scitex-dev / scitex-logging / pingouin come in via [project.dependencies].
+    "weasyprint>=60",
 ]
 docs = [
     "sphinx>=7.0",
@@ -122,11 +169,14 @@ scitex-stats = "scitex_stats"
 [project.entry-points."scitex_dev.linter.plugins"]
 stats = "scitex_stats._linter_plugin:get_plugin"
 
+[project.entry-points."scitex.apps"]
+stats = "scitex_stats._django.apps:StatsCalculatorConfig"
+
 [project.urls]
-Homepage = "https://github.com/ywatanabe1989/scitex-stats"
+Homepage = "https://github.com/scitex-ai/scitex-stats"
 Documentation = "https://scitex-stats.readthedocs.io"
-Repository = "https://github.com/ywatanabe1989/scitex-stats.git"
-Issues = "https://github.com/ywatanabe1989/scitex-stats/issues"
+Repository = "https://github.com/scitex-ai/scitex-stats.git"
+Issues = "https://github.com/scitex-ai/scitex-stats/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/scitex_stats"]
@@ -135,6 +185,11 @@ packages = ["src/scitex_stats"]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short --cov=scitex_stats --cov-report=term-missing"
+# Slow layers are gated by an env var so the default suite stays fast and
+# hermetic: `RUN_E2E=1` for tests/e2e (real browser + real server).
+markers = [
+    "e2e: slow end-to-end journey tests; gate with RUN_E2E=1",
+]
 
 [tool.coverage.run]
 # parallel + multiprocessing concurrency so child Python interpreters

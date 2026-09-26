@@ -1,0 +1,648 @@
+
+<!DOCTYPE html>
+<html lang="en" data-theme-default="dark">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <!-- Title convention: "SciTeX <Tool>" (SciTeX Writer, SciTeX Scholar, ...).
+             scitex_ui.branding.shell_context() builds app_label in that form. -->
+        <title>stats_calculator</title>
+        <!-- Tab branding. Shared with GUIs that do NOT extend this shell, so the
+             favicon markup lives in one partial rather than only here. -->
+        <link rel="icon" href="/static/scitex_ui/img/scitex-favicon.svg" />
+
+        <!-- Where am I mounted? Read by ts/_base/mount.ts's mountPrefix(), which
+             throws rather than guessing a root mount. Emitted only when the view
+             merged scitex_ui.mount.mount_context(request, view_path=...) — an
+             app that has not adopted the contract gets no marker and the reader
+             says so, instead of silently assuming "/". Shared with GUIs that do
+             NOT extend this shell, like the branding partial above. -->
+        
+
+        <!-- Must stay above the stylesheets: resolves the stored theme before the
+             first paint. Inline by design — an external script would cost a
+             render-blocking request on every page. -->
+        
+<!-- hook-bypass: inline-script -->
+<script>
+ (function () {
+     var root = document.documentElement;
+     var fallback = root.getAttribute("data-theme-default") === "light" ? "light" : "dark";
+     var theme;
+     try {
+         theme = localStorage.getItem("stx-theme") || localStorage.getItem("scitex-theme-preference");
+     } catch (e) {
+         /* private mode / storage disabled — fall through to the default */
+     }
+     if (theme !== "light" && theme !== "dark") theme = fallback;
+
+     root.setAttribute("data-theme", theme);
+     /* Legacy class contract. On <html> it applies pre-paint and still matches
+        descendant selectors like `.dark-theme .foo`; mirror it onto <body> once
+        that exists so rules written as `body.dark-theme` keep matching. */
+     root.classList.add(theme === "dark" ? "dark-theme" : "light-theme");
+     document.addEventListener("DOMContentLoaded", function () {
+         document.body.classList.add(theme === "dark" ? "dark-theme" : "light-theme");
+     });
+
+     window.__stxTheme = theme;
+ })();
+</script>
+
+        <link rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+        <!-- scitex-ui workspace shell CSS (canonical source).
+             theme.css carries the font tokens the base body typography needs. -->
+        <link rel="stylesheet" href="/static/scitex_ui/css/shell/theme.css" />
+        <link rel="stylesheet"
+              href="/static/scitex_ui/css/shell/app-shell.css" />
+        <link rel="stylesheet"
+              href="/static/scitex_ui/css/shell/stx-shell-sidebar.css" />
+        <link rel="stylesheet"
+              href="/static/scitex_ui/css/shell/workspace-three-col.css" />
+        <link rel="stylesheet"
+              href="/static/scitex_ui/css/shell/workspace.css" />
+        <link rel="stylesheet"
+              href="/static/scitex_ui/css/shell/panel-resizer.css" />
+        <link rel="stylesheet"
+              href="/static/scitex_ui/css/shell/resizer.css" />
+        <link rel="stylesheet"
+              href="/static/scitex_ui/css/shell/standalone-resizer-pos.css" />
+        <link rel="stylesheet"
+              href="/static/scitex_ui/css/shell/11-shortcuts-modal.css" />
+        <link rel="stylesheet"
+              href="/static/scitex_ui/css/shell/workspace-files-tree/index.css" />
+        <link rel="stylesheet"
+              href="/static/scitex_ui/css/shell/repo-monitor.css" />
+        <link rel="stylesheet"
+              href="/static/scitex_ui/css/shell/workspace-viewer.css" />
+        <link rel="stylesheet"
+              href="/static/scitex_ui/css/shell/workspace-viewer-preview.css" />
+        <link rel="stylesheet"
+              href="/static/scitex_ui/css/shell/media-viewer.css" />
+        <link rel="stylesheet"
+              href="/static/scitex_ui/css/shell/mobile.css" />
+        
+    <meta name="stx-mount" content="">
+    <link rel="stylesheet" href="/static/stats/css/stats.css">
+
+    </head>
+    <!-- No hardcoded theme class here: the theme boot partial applies the RESOLVED
+         theme (data-theme + .dark-theme/.light-theme) to <html> pre-paint and
+         mirrors the class onto <body> for consumer CSS that selects
+         body.dark-theme. -->
+    <body class="workspace-page footer-collapsed no-transition">
+        
+        <!--
+          Standalone shell: vanilla TS layout matching scitex-cloud's global_base.html.
+          Structure: Console/Chat | Files | Viewer | App Content
+          The vanilla TS WorkspacePanelResizer initializes from data attributes.
+          App content (React or other) mounts into #app-content inside ws-module-pane.
+        -->
+        <div id="workspace-three-col" class="workspace-three-col">
+            <!-- ── Console/Chat Pane ──────────────────── -->
+            <!-- panes.ai == "unused" hides this. DECLARED by the app, never
+                 inferred from emptiness: a pane populated after mount is empty
+                 here too, so guessing would hide a working surface. -->
+            <div class="ws-ai-pane"
+                 id="ws-ai-pane">
+                <div id="stx-shell-ai-panel"
+                     class="stx-shell-sidebar stx-shell-ai-panel"
+                     aria-hidden="false">
+                    <div id="stx-shell-ai-resizer"
+                         class="panel-resizer stx-shell-resizer-right"
+                         data-panel-resizer
+                         data-target="#stx-shell-ai-panel"
+                         data-direction="left"
+                         data-min-width="48"
+                         data-default-width="300"
+                         data-storage-key="ws-ai-panel-width"
+                         data-collapse-key="stx-shell-ai-panel-collapsed"
+                         data-toggle-btn="stx-shell-ai-toggle"></div>
+                    <div class="stx-shell-sidebar__header stx-shell-ai-panel-header"
+                         id="stx-shell-ai-panel-header">
+                        <button class="panel-toggle-btn"
+                                id="stx-shell-ai-toggle"
+                                title="Toggle Console (Alt+A)">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <span class="stx-shell-sidebar__title"
+                              id="stx-shell-ai-collapsed-title"
+                              title="Console">
+                            <i class="fas fa-terminal"></i> Console
+                        </span>
+                        <!-- Chat is the DEFAULT mode (operator decision, 2026-08-05).
+                             The switching JS only handles clicks — nothing sets an
+                             initial mode at load — so these static `active` classes
+                             ARE the default. Keep this button's `active` in sync with
+                             #stx-shell-ai-chat-view below; they are two halves of one
+                             state and a mismatch shows a highlighted tab over the
+                             other tab's content. -->
+                        <div class="stx-shell-ai-mode-toggle">
+                            <button class="stx-shell-ai-mode-btn"
+                                    data-mode="console"
+                                    title="Terminal">
+                                <i class="fas fa-terminal"></i> Console
+                            </button>
+                            <button class="stx-shell-ai-mode-btn active" data-mode="chat" title="AI Chat">
+                                <i class="fas fa-robot"></i> Chat
+                            </button>
+                        </div>
+                        <button class="stx-shell-ai-input-btn stx-shell-shortcuts-btn"
+                                id="stx-shell-shortcuts-btn"
+                                title="Keyboard Shortcuts">
+                            <i class="fas fa-keyboard"></i>
+                        </button>
+                    </div>
+                    <div class="stx-shell-sidebar__content stx-shell-ai-body">
+                        <!-- Chat view (matches scitex-cloud workspace_ai_pane.html).
+                             `active` here is the other half of the default-mode
+                             state; its partner is the data-mode="chat" button above. -->
+                        <div id="stx-shell-ai-chat-view" class="stx-shell-ai-view active">
+                            <div class="stx-shell-ai-sessions-bar">
+                                <button class="stx-shell-ai-new-chat" title="New chat">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <div id="stx-shell-ai-sessions-list" class="stx-shell-ai-sessions-list"></div>
+                                <div class="stx-shell-ai-panel-actions">
+                                    <button class="stx-shell-ai-action-btn"
+                                            id="stx-shell-ai-copy-chat"
+                                            title="Copy chat">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                    <button class="stx-shell-ai-action-btn"
+                                            id="stx-shell-ai-print-chat"
+                                            title="Print chat">
+                                        <i class="fas fa-print"></i>
+                                    </button>
+                                    <button class="stx-shell-ai-action-btn"
+                                            id="stx-shell-ai-clear-chat"
+                                            title="Clear chat">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="stx-shell-ai-messages" class="stx-shell-ai-messages">
+                                <div class="stx-shell-ai-empty">
+                                    <i class="fas fa-robot"></i>
+                                    <span>Ask anything about SciTeX.</span>
+                                    <span>I can take actions: stats, plots, literature, and your current work.</span>
+                                </div>
+                            </div>
+                            <div class="stx-shell-ai-input-area">
+                                <span id="stx-shell-ai-model-badge" class="stx-shell-ai-model-badge"></span>
+                                <div id="stx-shell-ai-image-preview" class="stx-shell-ai-image-preview"></div>
+                                <div class="stx-shell-ai-input-wrap">
+                                    <textarea id="stx-shell-ai-input"
+                                              class="stx-shell-ai-input"
+                                              rows="1"
+                                              placeholder="Ask anything"
+                                              autocomplete="off"></textarea>
+                                    <button id="stx-shell-ai-camera"
+                                            class="stx-shell-ai-input-btn"
+                                            title="Attach image">
+                                        <i class="fas fa-camera"></i>
+                                    </button>
+                                    <button id="stx-shell-ai-sketch"
+                                            class="stx-shell-ai-input-btn"
+                                            title="Draw sketch">
+                                        <i class="fas fa-pen"></i>
+                                    </button>
+                                    <input id="stx-shell-ai-file-input"
+                                           type="file"
+                                           accept="image/*"
+                                           multiple
+                                           hidden>
+                                    <button id="stx-shell-ai-mic" class="stx-shell-ai-mic" title="Voice input">
+                                        <i class="fas fa-microphone"></i>
+                                    </button>
+                                    <button id="stx-shell-ai-chat-gear"
+                                            class="stx-shell-ai-input-btn stx-shell-ai-gear-btn"
+                                            title="Chat settings">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                </div>
+                                <div class="stx-shell-ai-vol">
+                                    <span class="stx-shell-ai-vol-bar" hidden></span>
+                                    <span class="stx-shell-ai-vol-bar" hidden></span>
+                                    <span class="stx-shell-ai-vol-bar" hidden></span>
+                                    <span class="stx-shell-ai-vol-bar" hidden></span>
+                                    <span class="stx-shell-ai-vol-bar" hidden></span>
+                                </div>
+                                <button id="stx-shell-ai-send" class="stx-shell-ai-send" hidden></button>
+                                <!-- Chat config popover (inside input-area for positioning) -->
+                                <div id="stx-shell-ai-chat-config"
+                                     class="stx-shell-ai-config-popover stx-hidden">
+                                    
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Console/Terminal view -->
+                        <div id="stx-shell-ai-console-view"
+                             class="stx-shell-ai-view"
+                             data-view="console">
+                            <div class="stx-shell-ai-console-tabs-bar">
+                                <button class="stx-shell-ai-console-new-tab" title="New terminal">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <div id="stx-shell-ai-console-tabs-list"
+                                     class="stx-shell-ai-console-tabs-list">
+                                    <div class="stx-shell-ai-console-tab-item active">
+                                        <span class="stx-shell-ai-console-tab-title">T1</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="stx-shell-ai-console-terminal"
+                                 class="stx-shell-ai-console-terminal"></div>
+                            <div class="stx-shell-ai-console-toolbar stx-shell-toolbar-relative">
+                                <span id="stx-shell-ai-console-status" class="stx-shell-ai-console-status"></span>
+                                <div class="stx-shell-ai-console-toolbar-btns">
+                                    <button class="stx-shell-ai-input-btn" title="Webcam">
+                                        <i class="fas fa-camera"></i>
+                                    </button>
+                                    <button class="stx-shell-ai-input-btn" title="Sketch">
+                                        <i class="fas fa-pen"></i>
+                                    </button>
+                                    <button class="stx-shell-ai-input-btn" title="Voice">
+                                        <i class="fas fa-microphone"></i>
+                                    </button>
+                                    <button class="stx-shell-ai-input-btn stx-shell-ai-gear-btn" title="Settings">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                </div>
+                                <!-- Console config popover (inside toolbar for positioning) -->
+                                <div id="stx-shell-ai-console-config"
+                                     class="stx-shell-ai-config-popover stx-hidden">
+                                    <div class="ai-settings-section" id="ai-auto-accept-config">
+                                        <label class="scitex-ai-settings-label"
+                                               title="When enabled, automatically accepts Claude Code permission prompts at the configured interval.">
+                                            <i class="fas fa-robot"></i> Claude Code Auto-Accept Mode
+                                        </label>
+                                        <div class="ai-settings-row">
+                                            <label class="scitex-ai-settings-label"
+                                                   title="How often to check for and accept permission prompts">
+                                                Interval
+                                            </label>
+                                            <select id="ai-auto-accept-interval"
+                                                    class="ai-settings-select"
+                                                    title="How often to check for and accept permission prompts">
+                                                <option value="1000">1s (fast)</option>
+                                                <option value="1500" selected>1.5s</option>
+                                                <option value="2000">2s</option>
+                                                <option value="3000">3s (slow)</option>
+                                            </select>
+                                        </div>
+                                        <div class="ai-settings-row">
+                                            <label class="scitex-ai-settings-label"
+                                                   title="Controls which commands are auto-accepted">Safety</label>
+                                            <select id="ai-auto-accept-safety"
+                                                    class="ai-settings-select"
+                                                    title="Controls which commands are auto-accepted">
+                                                <option value="conservative" title="Only accept safe, read-only commands">Conservative (read-only)</option>
+                                                <option value="normal"
+                                                        selected
+                                                        title="Accept most commands except destructive ones">
+                                                    Normal (most commands)
+                                                </option>
+                                                <option value="aggressive" title="Accept all commands — use with caution">Aggressive (all commands)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="ai-settings-section" id="ai-auto-response-config">
+                                        <label class="scitex-ai-settings-label"
+                                               title="Commands sent automatically for each Claude state">
+                                            <i class="fas fa-reply"></i> Auto-Response Commands
+                                        </label>
+                                        <div class="ai-settings-row">
+                                            <label class="scitex-ai-settings-label"
+                                                   title="Command sent when Claude is thinking or idle">Waiting</label>
+                                            <input id="ai-auto-response-waiting"
+                                                   class="ai-settings-input"
+                                                   type="text"
+                                                   placeholder="/speak-signature"
+                                                   title="Command sent when Claude is thinking or idle" />
+                                        </div>
+                                        <div class="ai-settings-row">
+                                            <label class="scitex-ai-settings-label"
+                                                   title="Response for Y/N permission prompts">Y/N</label>
+                                            <select id="ai-auto-response-yn"
+                                                    class="ai-settings-select"
+                                                    title="Response for Y/N permission prompts">
+                                                <option value="1">1 (Allow)</option>
+                                                <option value="2">2 (Deny)</option>
+                                            </select>
+                                        </div>
+                                        <div class="ai-settings-row">
+                                            <label class="scitex-ai-settings-label"
+                                                   title="Response for Y/Y/N permission prompts">Y/Y/N</label>
+                                            <select id="ai-auto-response-yyn"
+                                                    class="ai-settings-select"
+                                                    title="Response for Y/Y/N permission prompts">
+                                                <option value="1">1 (Allow once)</option>
+                                                <option value="2" selected>2 (Allow always)</option>
+                                                <option value="3">3 (Deny)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="ai-settings-section" id="ai-agent-sources">
+                                        <label class="scitex-ai-settings-label">
+                                            <i class="fas fa-sitemap"></i> App Skills
+                                        </label>
+                                        <div id="ai-agent-sources-content" class="ai-agent-sources">
+                                            <div class="ai-source-loading">Loading...</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Jobs section (collapsible, inside console view) -->
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- ── File Tree Pane ─────────────────────── -->
+            <!-- panes.files == "unused" hides this. scitex-writer declares
+                 "client-populated" here: their tree has no server-rendered
+                 children and is filled from data-working-dir after mount. -->
+            <div class="ws-worktree-pane"
+                 id="ws-worktree-pane">
+                <div class="stx-shell-sidebar" id="ws-worktree-sidebar">
+                    <div id="ws-worktree-resizer"
+                         class="panel-resizer stx-shell-resizer-right"
+                         data-panel-resizer
+                         data-target="#ws-worktree-sidebar"
+                         data-direction="left"
+                         data-min-width="48"
+                         data-default-width="240"
+                         data-storage-key="ws-worktree-width"
+                         data-collapse-key="ws-worktree-collapsed"
+                         data-toggle-btn="ws-worktree-toggle"></div>
+                    <div class="stx-shell-sidebar__header">
+                        <button class="panel-toggle-btn"
+                                id="ws-worktree-toggle"
+                                title="Toggle file tree">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <span class="stx-shell-sidebar__title" title="Files"><i class="fas fa-folder"></i> Files</span>
+                        <span class="stx-shell-sidebar__title-full">
+                            <i class="fas fa-folder-open"></i>
+                            Files
+                        </span>
+                        <div class="stx-shell-sidebar__header-actions ws-worktree-actions">
+                            
+                                <button class="stx-shell-ai-action-btn"
+                                        title="Keyboard Shortcuts"
+                                        onclick="window.showShortcutsModal && window.showShortcutsModal()">
+                                    <i class="fas fa-keyboard"></i>
+                                </button>
+                            
+                        </div>
+                    </div>
+                    <div class="stx-shell-sidebar__content ws-worktree-split">
+                        <div class="ws-worktree-tree-area">
+                            
+                            <div id="ws-worktree-tree"
+                                 data-workspace-tree
+                                 ></div>
+                        </div>
+                        <!-- Vertical resizer: tree / repo monitor split -->
+                        <div class="v-resizer"
+                             id="repo-monitor-resizer"
+                             data-v-resizer
+                             data-in-app
+                             data-top=".ws-worktree-tree-area"
+                             data-bottom=".ws-repo-monitor-area"
+                             data-most-bottom
+                             data-threshold="48"
+                             data-storage-key="ws-repo-monitor-split"></div>
+                        <!-- Repository Monitor -->
+                        <div class="ws-repo-monitor-area collapsed"
+                             id="ws-repo-monitor"
+                             >
+                            <div class="repo-monitor-header" id="repo-monitor-header">
+                                <i class="fas fa-clock-rotate-left"></i>
+                                <span>Recent</span>
+                                <span class="repo-monitor-status" id="repo-monitor-status"></span>
+                                <span class="repo-monitor-toolbar">
+                                    <button id="repo-monitor-config-toggle"
+                                            class="rm-toolbar-btn"
+                                            title="Filter settings">
+                                        <i class="fas fa-gear"></i>
+                                    </button>
+                                    <button id="repo-monitor-pause-toggle"
+                                            class="rm-toolbar-btn"
+                                            title="Pause/resume monitor">
+                                        <i class="fas fa-pause"></i>
+                                    </button>
+                                    <button id="repo-monitor-clear" class="rm-toolbar-btn" title="Clear feed">
+                                        <i class="fas fa-trash-can"></i>
+                                    </button>
+                                </span>
+                            </div>
+                            <div class="repo-monitor-content" id="repo-monitor-feed"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- ── Viewer Pane ────────────────────────── -->
+            <!-- panes.viewer == "unused" hides this. -->
+            <div class="ws-viewer-pane"
+                 id="ws-viewer-pane">
+                <div class="stx-shell-sidebar collapsed"
+                     id="ws-viewer-sidebar"
+                     data-ai-hint="General Editor Pane: shared file viewer across all modules (Writer, Scholar, Console, etc.). Supports text (.py .js .ts .html .css .json .md .yaml .sh .tex .bib .txt), images (.png .jpg .gif .webp .svg), PDF (.pdf), tables (.csv .tsv), diagrams (.mmd .mermaid), audio (.mp3 .wav .ogg .flac), video (.mp4 .webm .avi .mov). Open files via ui_action(steps=[{action:'open-file', path:'relative/path'}]). The currently open file path is tracked in data-ai-viewer-active on this element."
+                     data-ai-viewer-active="">
+                    <div id="ws-viewer-resizer"
+                         class="panel-resizer"
+                         data-panel-resizer
+                         data-target="#ws-viewer-sidebar"
+                         data-direction="left"
+                         data-min-width="48"
+                         data-default-width="480"
+                         data-storage-key="ws-viewer-width"
+                         data-collapse-key="ws-viewer-collapsed"
+                         data-toggle-btn="ws-viewer-toggle"></div>
+                    <div class="stx-shell-sidebar__header">
+                        <button class="panel-toggle-btn" id="ws-viewer-toggle" title="Toggle viewer">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <span id="ws-viewer-title-short"
+                              class="stx-shell-sidebar__title"
+                              title="Viewer"><i class="fas fa-eye"></i> Viewer</span>
+                        <span id="ws-viewer-mode-toggle"
+                              class="stx-shell-sidebar__title-full ws-viewer-mode-toggle-title"
+                              title="Switch to Editor"><i class="fas fa-eye"></i> Viewer</span>
+                        <div class="stx-shell-sidebar__header-actions ws-viewer-header-actions">
+                            <div id="ws-viewer-tabs" class="ws-viewer-tabs"></div>
+                            <button class="ws-viewer-formats-info-btn"
+                                    data-tooltip="Supported formats:&#10;Text: .py .js .ts .html .css .json .md .yaml .sh .tex .bib .txt&#10;Image: .png .jpg .jpeg .gif .webp .svg .bmp .ico&#10;PDF: .pdf&#10;Table: .csv .tsv&#10;Diagram: .mmd .mermaid .dot .gv&#10;Audio: .mp3 .wav .ogg .flac .m4a .aac .wma&#10;Video: .mp4 .webm .avi .mov .mkv .ogv"
+                                    aria-label="Supported file formats"
+                                    title="">
+                                <i class="fas fa-info-circle"></i>
+                            </button>
+                            <button id="ws-viewer-shortcuts-btn"
+                                    class="ws-viewer-shortcuts-btn"
+                                    title="Keyboard shortcuts (Alt+/)">
+                                <i class="fas fa-keyboard"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="stx-shell-sidebar__content ws-viewer-body">
+                        <div id="ws-viewer-content" class="ws-viewer-content">
+                            <div id="ws-viewer-monaco" class="ws-viewer-monaco"></div>
+                            <div id="ws-viewer-preview" class="ws-viewer-preview"></div>
+                            <div id="ws-viewer-media" class="ws-viewer-media"></div>
+                            <div id="ws-viewer-empty" class="ws-viewer-empty">
+                                <i class="fas fa-file-alt"></i>
+                                <span>Click a file to open</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- ── App Content (React or other app mounts here) ── -->
+            <!-- app_accent drives the shell's accent line; the value needs a
+                 matching selector row in css/shell/stx-shell-sidebar.css. -->
+            <main id="main-content"
+                  class="ws-module-pane"
+                  >
+                
+<header class="app-header">
+    <h1>SciTeX Statistics</h1>
+    <span class="subtitle" id="appSub">Stats Calculator &mdash; thin UI over the scitex-stats package</span>
+</header>
+<div class="app-container">
+    <!-- Sidebar: test catalogue + status -->
+    <aside class="app-sidebar">
+        <div class="sidebar-section">
+            <div class="sidebar-section__header"><span class="sidebar-section__title">Status</span></div>
+            <div class="sidebar-section__content">
+                <div id="serviceStatus"><span class="status-indicator status-checking">&#9679; Checking&hellip;</span></div>
+            </div>
+        </div>
+        <div class="sidebar-section">
+            <div class="sidebar-section__header"><span class="sidebar-section__title">Recommend</span></div>
+            <div class="sidebar-section__content">
+                <label class="field"><span>Groups</span>
+                    <input type="number" id="recGroups" value="2" min="1" max="20">
+                </label>
+                <label class="field"><span>Outcome</span>
+                    <select id="recOutcome">
+                        <option value="continuous" selected>continuous</option>
+                        <option value="ordinal">ordinal</option>
+                        <option value="binary">binary</option>
+                    </select>
+                </label>
+                <label class="field"><span>Design</span>
+                    <select id="recDesign">
+                        <option value="between" selected>between</option>
+                        <option value="within">within</option>
+                    </select>
+                </label>
+                <label class="field checkbox"><input type="checkbox" id="recPaired"> paired</label>
+                <button class="btn btn-secondary" id="btnRecommend">Recommend tests</button>
+                <ol id="recList" class="rec-list"></ol>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main: run a test + read the result -->
+    <main class="app-main">
+        <section class="panel">
+            <div class="panel__title">Run a test</div>
+            <div class="grid">
+                <label class="field"><span>Test</span>
+                    <select id="runTest"></select>
+                </label>
+                <label class="field"><span>Alternative</span>
+                    <select id="runAlt">
+                        <option value="two-sided" selected>two-sided</option>
+                        <option value="greater">greater</option>
+                        <option value="less">less</option>
+                    </select>
+                </label>
+                <label class="field"><span>Mode</span>
+                    <select id="runMode">
+                        <option value="two" selected>two samples (data / data2)</option>
+                        <option value="one">one sample (data)</option>
+                        <option value="groups">groups (ANOVA / Kruskal&hellip;)</option>
+                    </select>
+                </label>
+            </div>
+            <label class="field"><span>Data (paste numbers &mdash; space / comma / newline separated)</span>
+                <textarea id="runData" rows="4" placeholder="e.g. 10 12 11 13 9 12"></textarea>
+            </label>
+            <label class="field" id="runData2Wrap"><span>Data 2</span>
+                <textarea id="runData2" rows="3" placeholder="second sample"></textarea>
+            </label>
+            <button class="btn" id="btnRun">Run</button>
+        </section>
+
+        <section class="panel">
+            <div class="panel__title">Result</div>
+            <div id="resultFormatted" class="result-formatted"></div>
+            <pre id="resultJson" class="result-json"></pre>
+        </section>
+
+        <section class="panel">
+            <div class="panel__title">Multiple-comparison correction</div>
+            <div class="grid">
+                <label class="field"><span>Method</span>
+                    <select id="corrMethod">
+                        <option value="fdr_bh" selected>FDR (Benjamini&ndash;Hochberg)</option>
+                        <option value="bonferroni">Bonferroni</option>
+                        <option value="holm">Holm</option>
+                        <option value="sidak">Sidak</option>
+                    </select>
+                </label>
+                <label class="field"><span>Alpha</span><input type="number" id="corrAlpha" value="0.05" step="0.005" min="0.001" max="1"></label>
+            </div>
+            <label class="field"><span>P-values (paste)</span>
+                <textarea id="corrP" rows="2" placeholder="0.01 0.02 0.03 0.5"></textarea>
+            </label>
+            <button class="btn btn-secondary" id="btnCorrect">Correct</button>
+            <pre id="corrOut" class="result-json"></pre>
+        </section>
+
+        <section class="panel">
+            <div class="panel__title">Post-hoc (pairwise after ANOVA / Kruskal)</div>
+            <div class="grid">
+                <label class="field"><span>Method</span>
+                    <select id="phMethod">
+                        <option value="tukey" selected>Tukey HSD</option>
+                        <option value="games_howell">Games&ndash;Howell</option>
+                        <option value="dunnett">Dunnett</option>
+                    </select>
+                </label>
+            </div>
+            <label class="field"><span>Groups (one per line)</span>
+                <textarea id="phGroups" rows="3" placeholder="line 1 = group A&#10;line 2 = group B&#10;line 3 = group C"></textarea>
+            </label>
+            <button class="btn btn-secondary" id="btnPosthoc">Compare</button>
+            <pre id="phOut" class="result-json"></pre>
+        </section>
+    </main>
+</div>
+
+            </main>
+        </div>
+        <!-- scitex-ui vanilla shell initialization -->
+        <script src="/static/scitex_ui/js/shell/standalone-shell-init.js"
+                defer></script>
+        <!-- Mobile pane-collapse gestures (<=768px): two-finger swipe and
+             header double-click / drag on #workspace-three-col, which this
+             template renders above. Self-guards: no-op when that container is
+             absent or the viewport is wide. See ADR 0002. -->
+        <script src="/static/scitex_ui/js/shell/mobile-swipe.js"
+                defer></script>
+        
+    <script src="/static/stats/js/stx-mount.js"></script>
+    <script src="/static/stats/js/app.js"></script>
+
+        <!-- Element inspector (Alt+I) — only emitted for DEBUG/staff -->
+        
+
+
+
+    </body>
+</html>

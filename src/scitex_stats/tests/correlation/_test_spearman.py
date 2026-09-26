@@ -135,8 +135,9 @@ def test_spearman(  # noqa: C901
 
     # Example 3: Compare with Pearson
     >>> from scitex_stats.tests.correlation import test_pearson
-    >>> x = np.random.exponential(scale=2, size=50)
-    >>> y = x + np.random.normal(0, 1, size=50)
+    >>> rng = np.random.default_rng(42)
+    >>> x = rng.exponential(scale=2, size=50)
+    >>> y = x + rng.normal(0, 1, size=50)
     >>> spearman_result = test_spearman(x, y)
     >>> pearson_result = test_pearson(x, y)
     >>> print(f"Spearman: ρ = {spearman_result['statistic']:.3f}")
@@ -151,13 +152,13 @@ def test_spearman(  # noqa: C901
 
     # Example 5: One-tailed test
     >>> x = np.arange(20)
-    >>> y = x + np.random.normal(0, 2, size=20)
+    >>> y = x + rng.normal(0, 2, size=20)
     >>> result = test_spearman(x, y, alternative='greater')
     >>> print(f"One-tailed p-value: {result['pvalue']:.4f}")
 
     # Example 6: Non-linear monotonic relationship
     >>> x = np.linspace(0, 10, 50)
-    >>> y = np.log(x + 1) + np.random.normal(0, 0.1, size=50)
+    >>> y = np.log(x + 1) + rng.normal(0, 0.1, size=50)
     >>> result = test_spearman(x, y, var_x='x', var_y='log(x+1)', plot=True)
 
     # Example 7: Export to various formats
@@ -215,14 +216,15 @@ def test_spearman(  # noqa: C901
     # Build result
     result = {
         "test_method": "Spearman's rank correlation",
-        "statistic": round(rho, decimals),
-        "stat_symbol": "r",
-        "pvalue": round(pvalue, decimals),
+        "statistic": rho,
+        "stat_symbol": "r_s",
+        "df": n - 2,
+        "pvalue": pvalue,
         "alternative": alternative,
         "alpha": alpha,
         "significant": significant,
         "stars": stars,
-        "effect_size": round(rho, decimals),
+        "effect_size": rho,
         "effect_size_metric": "rho",
         "effect_size_interpretation": interpretation,
         "rho_squared": round(rho_squared, decimals),
@@ -320,9 +322,9 @@ def main(args) -> int:
     # Example 3: Non-linear monotonic relationship
     logger.info("\nExample 3: Non-linear monotonic (logarithmic) relationship")
     logger.info("-" * 70)
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
     x3 = np.linspace(1, 50, 50)
-    y3 = np.log(x3) + np.random.normal(0, 0.2, size=50)
+    y3 = np.log(x3) + rng.normal(0, 0.2, size=50)
     result3 = test_spearman(x3, y3, var_x="x", var_y="log(x)", plot=True, verbose=True)
     logger.info(force_dataframe(result3))
     _mpl_plt.gcf().savefig("example3_logarithmic.jpg")
@@ -331,9 +333,9 @@ def main(args) -> int:
     # Example 4: Ordinal data
     logger.info("\nExample 4: Ordinal data (Likert scales)")
     logger.info("-" * 70)
-    np.random.seed(43)
-    satisfaction = np.random.randint(1, 6, size=30)
-    quality = satisfaction + np.random.randint(-1, 2, size=30)
+    rng = np.random.default_rng(43)
+    satisfaction = rng.integers(1, 6, size=30)
+    quality = satisfaction + rng.integers(-1, 2, size=30)
     quality = np.clip(quality, 1, 5)
     result4 = test_spearman(
         satisfaction,
@@ -350,9 +352,9 @@ def main(args) -> int:
     # Example 5: One-tailed test
     logger.info("\nExample 5: One-tailed test (expect positive correlation)")
     logger.info("-" * 70)
-    np.random.seed(44)
+    rng = np.random.default_rng(44)
     x5 = np.arange(30)
-    y5 = x5 + np.random.normal(0, 3, size=30)
+    y5 = x5 + rng.normal(0, 3, size=30)
     logger.info("Two-tailed test:")
     test_spearman(x5, y5, alternative="two-sided", verbose=True)
     logger.info("\nOne-tailed test (greater):")
@@ -361,9 +363,9 @@ def main(args) -> int:
     # Example 6: Exponential relationship
     logger.info("\nExample 6: Exponential relationship")
     logger.info("-" * 70)
-    np.random.seed(45)
+    rng = np.random.default_rng(45)
     x6 = np.linspace(0, 5, 40)
-    y6 = np.exp(x6 * 0.5) + np.random.normal(0, 2, size=40)
+    y6 = np.exp(x6 * 0.5) + rng.normal(0, 2, size=40)
     result6 = test_spearman(
         x6, y6, var_x="x", var_y="exp(0.5x)", plot=True, verbose=True
     )
@@ -374,18 +376,18 @@ def main(args) -> int:
     # Example 7: No correlation
     logger.info("\nExample 7: No correlation")
     logger.info("-" * 70)
-    np.random.seed(46)
-    x7 = np.random.normal(0, 1, size=50)
-    y7 = np.random.normal(0, 1, size=50)
+    rng = np.random.default_rng(46)
+    x7 = rng.normal(0, 1, size=50)
+    y7 = rng.normal(0, 1, size=50)
     result7 = test_spearman(x7, y7, var_x="x", var_y="y", verbose=True)
     logger.info(force_dataframe(result7))
 
     # Example 8: Compare Spearman vs Pearson on skewed data
     logger.info("\nExample 8: Spearman vs Pearson on skewed data")
     logger.info("-" * 70)
-    np.random.seed(47)
-    x8 = np.random.exponential(scale=2, size=60)
-    y8 = x8**0.8 + np.random.normal(0, 1, size=60)
+    rng = np.random.default_rng(47)
+    x8 = rng.exponential(scale=2, size=60)
+    y8 = x8**0.8 + rng.normal(0, 1, size=60)
 
     logger.info("Exponential distribution with power relationship:")
     logger.info("Spearman:")
@@ -396,9 +398,9 @@ def main(args) -> int:
     # Example 9: Export to multiple formats
     logger.info("\nExample 9: Export to multiple formats")
     logger.info("-" * 70)
-    np.random.seed(48)
+    rng = np.random.default_rng(48)
     x9 = np.arange(25)
-    y9 = 2 * x9 + np.random.normal(0, 5, size=25)
+    y9 = 2 * x9 + rng.normal(0, 5, size=25)
     result9 = test_spearman(
         x9,
         y9,
@@ -415,10 +417,10 @@ def main(args) -> int:
     # Example 10: Large dataset
     logger.info("\nExample 10: Large dataset with moderate correlation")
     logger.info("-" * 70)
-    np.random.seed(49)
+    rng = np.random.default_rng(49)
     n_large = 500
-    x10 = np.random.normal(100, 15, size=n_large)
-    y10 = 0.6 * x10 + np.random.normal(0, 20, size=n_large)
+    x10 = rng.normal(100, 15, size=n_large)
+    y10 = 0.6 * x10 + rng.normal(0, 20, size=n_large)
     result10 = test_spearman(
         x10, y10, var_x="Predictor", var_y="Outcome", plot=True, verbose=True
     )

@@ -126,6 +126,7 @@ def test_ttest_1samp(
     >>> result = test_ttest_1samp(scores, popmean=100)
     """
     from scitex_stats._utils._effect_size import cohens_d, interpret_cohens_d
+    from scitex_stats._utils._effect_size_ci import cohens_d_ci
     from scitex_stats._utils._formatters import p2stars
     from scitex_stats._utils._normalizers import force_dataframe
     from scitex_stats._utils._power import power_ttest
@@ -148,8 +149,8 @@ def test_ttest_1samp(
     t_stat = float(t_result.statistic)
     pvalue = float(t_result.pvalue)
 
-    # Compute effect size (Cohen's d for one sample)
-    effect_size = cohens_d(x, y=None, paired=False)  # One-sample version
+    # d = (M - popmean) / SD; cohens_d(x) alone compares against zero.
+    effect_size = cohens_d(x - popmean, y=None, paired=False)
     effect_size_interpretation = interpret_cohens_d(effect_size)
 
     # Compute statistical power
@@ -175,6 +176,7 @@ def test_ttest_1samp(
         "statistic": t_stat,
         "stat_symbol": "t",
         "alternative": alternative,
+        "df": n_x - 1,
         "n_x": n_x,
         "var_x": var_x,
         "popmean": popmean,
@@ -186,6 +188,7 @@ def test_ttest_1samp(
         "effect_size": effect_size,
         "effect_size_metric": "Cohen's d (one-sample)",
         "effect_size_interpretation": effect_size_interpretation,
+        **cohens_d_ci(effect_size, n_x, None, alpha),
         "power": power,
         "H0": H0,
     }
@@ -247,19 +250,19 @@ def main(args):
     logger.info("Demonstrating one-sample t-test")
 
     # Set random seed
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     # Example 1: Test against zero
     logger.info("\n=== Example 1: Test against zero ===")
 
-    x1 = np.random.normal(2, 1, 30)  # Mean around 2, should be significant vs 0
+    x1 = rng.normal(2, 1, 30)  # Mean around 2, should be significant vs 0
 
     test_ttest_1samp(x1, popmean=0, var_x="Differences")
 
     # Example 2: Test against non-zero value
     logger.info("\n=== Example 2: Test against reference value ===")
 
-    scores = np.random.normal(100, 15, 50)
+    scores = rng.normal(100, 15, 50)
 
     test_ttest_1samp(scores, popmean=100, var_x="Test Scores")
 

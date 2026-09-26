@@ -287,11 +287,12 @@ def test_kendall(  # noqa: C901
         "test_method": f"Kendall's tau-{variant}",
         "var_x": var_x,
         "var_y": var_y,
-        "statistic": round(float(tau), decimals),
-        "pvalue": round(float(pvalue), decimals + 1),
+        "statistic": float(tau),
+        "stat_symbol": f"τ_{variant}",
+        "pvalue": float(pvalue),
         "tau_squared": round(float(tau_squared), decimals),
-        "effect_size": round(float(tau), decimals),
-        "effect_size_metric": "kendall_tau",
+        "effect_size": float(tau),
+        "effect_size_metric": f"Kendall's tau-{variant}",
         "effect_size_interpretation": tau_interpretation,
         "n": int(n),
         "n_concordant": int(n_concordant),
@@ -371,7 +372,7 @@ def main(args) -> int:
     logger.info("\n[Example 1] Basic Kendall's tau with tied values")
     logger.info("-" * 70)
 
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
     x = np.array([1, 2, 2, 3, 4, 4, 5, 6, 7, 8, 9, 10])
     y = np.array([2, 3, 3, 5, 6, 6, 8, 9, 10, 11, 12, 13])
 

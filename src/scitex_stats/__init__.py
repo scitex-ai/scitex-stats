@@ -10,11 +10,21 @@ Functionalities
   result dict (statistic, pvalue, effect_size, power, formatted, ...).
 - `recommend_tests(StatContext(...))` — design-driven test selection from
   number of groups, sample sizes, outcome type, paired vs between.
+- `check_applicability(data, design)` / `recommend_test(data, design)` /
+  `run_all_applicable(data, design)` — data-driven ✓/✗ with reasons per
+  test, one pre-specified primary test with its decision path, and
+  sensitivity runs that never select by p-value.
 - `effect_sizes`, `power`, `correct`, `posthoc`, `descriptive`,
   `auto` — submodules exposing the primitives behind `run_test`
   (Cohen's d / Cliff's delta / eta-sq / sample-size-ttest /
   Bonferroni / FDR / Tukey HSD / Dunn / ...).
 - APA / Nature / LaTeX formatting via `result["formatted"]`.
+- `full_report(result, ...)` — six-stat reporting doctrine bundler:
+  packages n, 95% CI, method, p-value, effect size, and test statistic
+  into one dict + human-readable string, deriving the CI analytically
+  (scipy closed-form) or via bootstrap when raw data is supplied.
+  Raises when any of the six fields can't be determined — partial
+  reports are treated as incomplete, not silently accepted.
 
 IO
 --
@@ -107,12 +117,26 @@ _LAZY_ATTRS: dict[str, str] = {
     "effect_sizes": "effect_sizes",
     "posthoc": "posthoc",
     "power": "power",
+    "reporting": "reporting",
     "tests": "tests",
     # Dispatcher
     "available_tests": "_dispatch",
     "run_test": "_dispatch",
+    # Six-stat reporting doctrine (n, 95% CI, method, p-value, effect size,
+    # test statistic — see scitex_stats.reporting.full_report)
+    "full_report": "reporting",
+    # Bundled PDF/HTML/Markdown report (assumptions, primary, sensitivity, post-hoc)
+    "report": "reporting",
+    "build_report": "reporting",
+    "run_posthoc": "posthoc",
+    "select_posthoc": "posthoc",
     # JSON
     "to_json_safe": "_utils._serialize",
+    # APA 7 reporting (format + validate from one rule table)
+    "apa_render": "_utils._apa",
+    "validate_apa": "_utils._apa",
+    # Provenance receipt verification
+    "verify": "_verify",
     # Stats ↔ SciTeX bundle I/O (optional scitex-io; extra [bundle])
     "Stats": "_integration",
     "BUNDLE_AVAILABLE": "_integration",
@@ -123,6 +147,10 @@ _LAZY_ATTRS: dict[str, str] = {
     "to_figrecipe": "_figrecipe_integration",
     "annotate": "_figrecipe_integration",
     "load_and_annotate": "_figrecipe_integration",
+    # Plotting: neutral plot spec -> FigRecipe (when importable) or matplotlib
+    "plot": "_plot",
+    "plot_spec": "_plot",
+    "PLOT_SPEC_JSON_SCHEMA": "_plot",
     # Auto convenience
     "StatContext": "auto",
     "StatStyle": "auto",
@@ -131,6 +159,10 @@ _LAZY_ATTRS: dict[str, str] = {
     "get_stat_style": "auto",
     "p_to_stars": "auto",
     "recommend_tests": "auto",
+    # Data-driven applicability / primary recommendation / sensitivity runs
+    "check_applicability": "_recommend",
+    "recommend_test": "_recommend",
+    "run_all_applicable": "_recommend",
     # Descriptive
     "describe": "descriptive",
     # Parametric (6)
@@ -210,14 +242,25 @@ __all__ = [
     "effect_sizes",
     "posthoc",
     "power",
+    "reporting",
     "tests",
     # Dispatcher
     "run_test",
     "available_tests",
+    # Six-stat reporting doctrine
+    "full_report",
+    "report",
+    "build_report",
+    "run_posthoc",
+    "select_posthoc",
     # Descriptive
     "describe",
     # JSON serialization
     "to_json_safe",
+    "apa_render",
+    "validate_apa",
+    # Provenance receipt verification
+    "verify",
     # Stats ↔ SciTeX bundle I/O (optional scitex-io; extra [bundle])
     "Stats",
     "BUNDLE_AVAILABLE",
@@ -228,12 +271,19 @@ __all__ = [
     "to_figrecipe",
     "annotate",
     "load_and_annotate",
+    # Plotting
+    "plot",
+    "plot_spec",
+    "PLOT_SPEC_JSON_SCHEMA",
     # Auto convenience
     "StatContext",
     "TestRule",
     "StatStyle",
     "recommend_tests",
     "check_applicable",
+    "check_applicability",
+    "recommend_test",
+    "run_all_applicable",
     "get_stat_style",
     "p_to_stars",
     # Parametric (6)

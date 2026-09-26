@@ -245,16 +245,18 @@ def test_kruskal(  # noqa: C901
     # Compile results
     result = {
         "test_method": "Kruskal-Wallis H test",
-        "statistic": round(h_stat, decimals),
+        "statistic": h_stat,
         "stat_symbol": "H",
+        "df": n_groups - 1,
         "n_groups": n_groups,
+        "n_total": int(sum(n_samples)),
         "n_samples": n_samples,
         "var_names": var_names,
-        "pvalue": round(pvalue, decimals),
+        "pvalue": pvalue,
         "stars": p2stars(pvalue),
         "alpha": alpha,
         "significant": rejected,
-        "effect_size": round(effect_size, decimals),
+        "effect_size": float(effect_size),
         "effect_size_metric": "epsilon-squared",
         "effect_size_interpretation": effect_size_interp,
         "H0": "All groups have the same population median",
@@ -329,14 +331,14 @@ def main(args):  # noqa: C901
     logger.info("Demonstrating Kruskal-Wallis H test")
 
     # Set random seed
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     # Example 1: Three groups with clear differences
     logger.info("\n=== Example 1: Three groups with clear differences ===")
 
-    group1 = np.random.normal(5, 1, 30)
-    group2 = np.random.normal(7, 1, 30)
-    group3 = np.random.normal(9, 1, 30)
+    group1 = rng.normal(5, 1, 30)
+    group2 = rng.normal(7, 1, 30)
+    group3 = rng.normal(9, 1, 30)
 
     result1 = test_kruskal(
         [group1, group2, group3],
@@ -347,9 +349,9 @@ def main(args):  # noqa: C901
     # Example 2: No significant difference
     logger.info("\n=== Example 2: No significant difference ===")
 
-    group1 = np.random.normal(5, 1, 30)
-    group2 = np.random.normal(5.2, 1, 30)
-    group3 = np.random.normal(4.9, 1, 30)
+    group1 = rng.normal(5, 1, 30)
+    group2 = rng.normal(5.2, 1, 30)
+    group3 = rng.normal(4.9, 1, 30)
 
     result2 = test_kruskal(
         [group1, group2, group3],
@@ -360,9 +362,9 @@ def main(args):  # noqa: C901
     # Example 3: Non-normal data with outliers (with visualization)
     logger.info("\n=== Example 3: Non-normal data with outliers ===")
 
-    group1 = np.concatenate([np.random.exponential(2, 25), [20, 22]])  # Outliers
-    group2 = np.random.exponential(3, 27)
-    group3 = np.random.exponential(4, 28)
+    group1 = np.concatenate([rng.exponential(2, 25), [20, 22]])  # Outliers
+    group2 = rng.exponential(3, 27)
+    group3 = rng.exponential(4, 28)
 
     try:
         result3 = test_kruskal(
@@ -385,10 +387,10 @@ def main(args):  # noqa: C901
     # Example 4: Four groups comparison
     logger.info("\n=== Example 4: Four groups comparison ===")
 
-    group1 = np.random.normal(10, 2, 25)
-    group2 = np.random.normal(12, 2, 25)
-    group3 = np.random.normal(14, 2, 25)
-    group4 = np.random.normal(16, 2, 25)
+    group1 = rng.normal(10, 2, 25)
+    group2 = rng.normal(12, 2, 25)
+    group3 = rng.normal(14, 2, 25)
+    group4 = rng.normal(16, 2, 25)
 
     result4 = test_kruskal(
         [group1, group2, group3, group4],
@@ -400,13 +402,13 @@ def main(args):  # noqa: C901
     logger.info("\n=== Example 5: Ordinal data (Likert scale responses) ===")
 
     # Simulated Likert scale data (1-5)
-    likert1 = np.random.choice(
+    likert1 = rng.choice(
         [1, 2, 3, 4, 5], size=50, p=[0.05, 0.15, 0.40, 0.30, 0.10]
     )
-    likert2 = np.random.choice(
+    likert2 = rng.choice(
         [1, 2, 3, 4, 5], size=50, p=[0.10, 0.20, 0.30, 0.25, 0.15]
     )
-    likert3 = np.random.choice(
+    likert3 = rng.choice(
         [1, 2, 3, 4, 5], size=50, p=[0.05, 0.10, 0.25, 0.35, 0.25]
     )
 

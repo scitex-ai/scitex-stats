@@ -1,0 +1,621 @@
+/* SciTeX Statistics. Layout comes from scitex-ui panes; colours from theme tokens. */
+
+.stats-app {
+  /* --stx-app-accent defaults to transparent, so the brand accent is used. */
+  --stats-accent: var(--accent, #1a2a40);
+  height: 100%;
+  min-height: 0;
+  color: var(--text-primary);
+  background: var(--bg-page);
+}
+
+.stats-app .stx-panes:not(.stx-panes--single) {
+  height: 100%;
+  gap: 1px;
+  background: var(--border-muted);
+}
+
+.stats-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+  background: var(--bg-surface);
+}
+
+.stats-pane__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 48px;
+  min-height: 48px;
+  flex: 0 0 48px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-muted);
+  background: var(--bg-surface);
+}
+
+.stats-pane__title {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.stats-pane__actions,
+.stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.stats-pane__header .stats-pane__actions {
+  flex-wrap: nowrap;
+}
+
+.stats-pane__header .stats-btn {
+  min-height: 32px;
+  white-space: nowrap;
+}
+
+.stats-pane__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  /* keep the last controls scrollable above the hub's floating dock */
+  padding-bottom: calc(var(--site-dock-height, 0px) + 24px);
+}
+
+/* Canonical app header: leaf identity + the shared project-picker slot.
+   The slot keeps its own scitex-ui positioning rules (order 1, left). */
+.stats-app-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-muted);
+  background: var(--bg-surface);
+}
+
+.stats-app-header__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.stats-app-header__version {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-app-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.stats-dropzone {
+  transition: background-color 120ms ease, box-shadow 120ms ease;
+}
+
+/* Pointer hover and keyboard focus make the whole zone visibly targetable;
+   the colours are the shared theme tokens, not app-local ones. */
+.stats-dropzone:hover,
+.stats-dropzone:focus-within {
+  background: var(--workspace-bg-hover, var(--bg-muted));
+}
+
+/* Dragover: the same accent language the rest of the app uses. */
+.stats-dropzone--active {
+  background: var(--bg-muted);
+  box-shadow: inset 0 0 0 2px var(--stats-accent);
+}
+
+.stats-dropzone__button {
+  width: 100%;
+  min-height: 44px;
+  border-style: dashed;
+  color: var(--text-secondary);
+}
+
+.stats-app .stats-btn:focus-visible,
+.stats-dropzone__button:focus-visible {
+  outline: 2px solid var(--stats-accent);
+  outline-offset: 2px;
+}
+
+/* File choice and sample choice read as ONE decision: a titled secondary
+   action directly below the drop zone, never inline "or" text in the
+   pane-header row. */
+.stats-source {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-muted);
+}
+
+.stats-source__title {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.stats-source__sample {
+  min-height: 44px;
+}
+
+.stats-btn--secondary {
+  border-color: var(--border-default);
+  background: var(--bg-muted);
+  color: var(--text-primary);
+}
+
+.stats-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.stats-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.stats-btn:hover:not(:disabled) {
+  background: var(--workspace-bg-hover, var(--bg-muted));
+}
+
+.stats-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.stats-btn--ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.stats-btn--primary {
+  border-color: var(--stats-accent);
+  background: var(--stats-accent);
+  color: var(--text-inverse, #fff);
+  font-weight: 600;
+}
+
+.stats-btn--primary:hover:not(:disabled) {
+  background: var(--stats-accent);
+  filter: brightness(1.1);
+}
+
+.stats-badge {
+  padding: 1px 6px;
+  border: 1px solid var(--border-default);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.stats-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stats-group {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 6px;
+}
+
+.stats-group__label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.stats-group__count {
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.stats-group__remove {
+  min-height: 28px;
+  padding: 0 8px;
+}
+
+.stats-group__input,
+.stats-field select,
+.stats-field input,
+.stats-field textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.stats-group__input {
+  grid-column: 1 / -1;
+  resize: vertical;
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+
+.stats-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.stats-tests {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stats-tests__cat {
+  margin-top: 8px;
+  padding: 0 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.stats-tests__cat:first-child {
+  margin-top: 0;
+}
+
+.stats-test {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 8px;
+  /* Flat rows: no rounded card shape, and a reserved rail on the left so the
+     selected accent line never re-flows the row. */
+  border-radius: 0;
+  border-left: 4px solid transparent;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.stats-test:hover {
+  background: var(--workspace-bg-hover, var(--bg-muted));
+}
+
+.stats-test:focus-within {
+  outline: 2px solid var(--stats-accent);
+  outline-offset: -2px;
+}
+
+/* Selected = a straight 4px vertical accent line + a subtle full-row tint +
+   semibold text. No shadow, no outline, no curved treatment. */
+.stats-test:has(input:checked) {
+  background: var(--bg-muted);
+  border-left-color: var(--stats-accent);
+  box-shadow: none;
+  font-weight: 600;
+}
+
+.stats-test input {
+  accent-color: var(--stats-accent);
+}
+
+.stats-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.stats-row--actions .stats-btn {
+  flex: 1 1 auto;
+}
+
+.stats-error {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--status-error);
+}
+
+.stats-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 32px 12px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.stats-empty__icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.stats-empty p {
+  margin: 0;
+}
+
+.stats-result__title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.stats-result__formatted {
+  margin: 6px 0 10px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--stats-accent);
+  border-radius: 4px;
+  background: var(--bg-muted);
+  /* proportional face: italic symbols read as math, not code */
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* APA: italic Latin statistical symbols, upright Greek. */
+.stats-app .stx-sym {
+  font-style: italic;
+}
+
+.stats-app .stx-sym--greek {
+  font-style: normal;
+}
+
+.stats-app sub,
+.stats-app sup {
+  font-size: 0.7em;
+  line-height: 0;
+}
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.stats-table th,
+.stats-table td {
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--border-muted);
+  text-align: left;
+  vertical-align: top;
+}
+
+.stats-table th {
+  width: 45%;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.stats-table td {
+  overflow-wrap: anywhere;
+}
+
+.stats-table--desc {
+  margin-bottom: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-table--desc th,
+.stats-table--desc td {
+  width: auto;
+  text-align: right;
+}
+
+.stats-table--desc th:first-child,
+.stats-table--desc td:first-child {
+  text-align: left;
+}
+
+.stats-table--desc thead th {
+  border-bottom: 1px solid var(--text-secondary);
+}
+
+.stats-plot {
+  margin: 12px 0 6px;
+}
+
+.stats-plot__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.stats-plot__title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.stats-plot__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.stats-plot__actions a.stats-btn {
+  text-decoration: none;
+}
+
+/* The figure is a white print artefact in both themes. */
+.stats-plot__frame {
+  border: 1px solid var(--border-muted);
+  border-radius: 6px;
+  background: #fff;
+  padding: 6px;
+}
+
+.stats-plot__img {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  height: auto;
+  margin: 0 auto;
+}
+
+.stats-acc {
+  margin-top: 4px;
+}
+
+.stats-acc .stx-acc__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.stats-pre {
+  max-height: 280px;
+  margin: 0;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--bg-muted);
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  overflow: auto;
+}
+
+.stats-copy[data-state="copied"] {
+  color: var(--status-success, #2e7d32);
+}
+
+.stats-copy[data-state="copied"] .stats-copy__icon::before {
+  content: "\2713";
+  font-weight: 700;
+}
+
+.stats-copy[data-state="failed"] {
+  color: var(--status-error);
+}
+
+.stats-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.stats-app [hidden] {
+  display: none !important;
+}
+
+/* Phones (390px reference width): one column, and every actionable control
+   keeps a >=44px touch target. The pane header wraps instead of clipping. */
+@media (max-width: 480px) {
+  .stats-options {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-app-header {
+    flex-wrap: wrap;
+  }
+
+  .stats-pane__header {
+    height: auto;
+    min-height: 48px;
+    flex-wrap: wrap;
+  }
+
+  .stats-pane__header .stats-pane__actions {
+    flex-wrap: wrap;
+  }
+
+  .stats-pane__header .stats-btn,
+  .stats-source__sample,
+  .stats-dropzone__button,
+  .stats-test {
+    min-height: 44px;
+  }
+}
+
+/* Project-default mode: the active project's authorized data files, listed
+   above the manual/quick data entry. */
+.stats-project {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-muted);
+}
+
+.stats-project__title {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.stats-project__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stats-project__file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+
+.stats-project__import {
+  flex: 1 1 auto;
+  justify-content: flex-start;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.stats-project__meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-project__empty {
+  margin: 0;
+}

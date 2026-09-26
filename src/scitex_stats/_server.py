@@ -56,6 +56,91 @@ async def recommend_tests(
     return _json(result)
 
 
+def _recommend_call(fn_name: str, **kwargs) -> str:
+    import scitex_stats._recommend as rec
+
+    try:
+        return _json({"success": True, **_wrap(getattr(rec, fn_name)(**kwargs))})
+    except (TypeError, ValueError) as exc:
+        return _json({"success": False, "error": str(exc)})
+
+
+def _wrap(out):
+    return {"applicability": out} if isinstance(out, list) else out
+
+
+@mcp.tool()
+async def check_applicability(
+    groups: List[List[float]],
+    design: Optional[str] = None,
+    scale: Optional[str] = None,
+    group_names: Optional[List[str]] = None,
+) -> str:
+    """Decide for every test whether it applies to the data (✓/✗ with reasons and assumption checks).
+
+    groups: one list per group (with scale="categorical": a contingency table, rows of counts).
+    design: "independent" or "paired" — state it; None is treated as independent and flagged.
+    scale: "continuous", "ordinal" or "categorical".
+    """
+    return _recommend_call("check_applicability", data=groups, design=design, scale=scale, group_names=group_names)
+
+
+@mcp.tool()
+async def recommend_test(
+    groups: List[List[float]],
+    design: Optional[str] = None,
+    scale: Optional[str] = None,
+    group_names: Optional[List[str]] = None,
+    assume_equal_variance: bool = False,
+) -> str:
+    """Recommend ONE primary test with a plain-language reason, the decision path and secondary alternatives."""
+    return _recommend_call(
+        "recommend_test", data=groups, design=design, scale=scale,
+        group_names=group_names, assume_equal_variance=assume_equal_variance,
+    )
+
+
+@mcp.tool()
+async def run_all_applicable(
+    groups: List[List[float]],
+    design: Optional[str] = None,
+    scale: Optional[str] = None,
+    group_names: Optional[List[str]] = None,
+    primary: Optional[str] = None,
+    alternative: str = "two-sided",
+) -> str:
+    """Run every applicable test: the pre-specified primary plus sensitivity analyses.
+
+    Never selects by p-value; the output carries a p-hacking warning and an agreement report.
+    """
+    return _recommend_call(
+        "run_all_applicable", data=groups, design=design, scale=scale,
+        group_names=group_names, primary=primary, alternative=alternative,
+    )
+
+
+@mcp.tool()
+async def generate_report(
+    data: Optional[dict] = None,
+    data_file: Optional[str] = None,
+    output: str = "report.pdf",
+    design: str = "between",
+    group_names: Optional[List[str]] = None,
+    alpha: float = 0.05,
+    posthoc: str = "auto",
+    formats: Optional[List[str]] = None,
+    title: str = "Statistical report",
+) -> str:
+    """Write one bundled report (PDF, HTML, Markdown): assumptions, primary test, sensitivity, post-hoc, figure, methods."""
+    from scitex_stats._mcp.handlers import generate_report_handler
+
+    result = await generate_report_handler(
+        data=data, data_file=data_file, output=output, design=design, group_names=group_names,
+        alpha=alpha, posthoc=posthoc, formats=formats, title=title,
+    )
+    return _json(result)
+
+
 @mcp.tool()
 async def run_test(
     test_name: str,
@@ -75,6 +160,35 @@ async def run_test(
         alternative=alternative,
     )
     return _json(result)
+
+
+@mcp.tool()
+async def validate_apa(
+    text: str = "",
+    html: Optional[str] = None,
+    result: Optional[dict] = None,
+) -> str:
+    """Check statistics text (and optional HTML) against APA 7; returns violations with fixes."""
+    from scitex_stats._utils._apa import validate_apa as _validate
+
+    return _json(_validate(text, html=html, result=result))
+
+
+@mcp.tool()
+async def verify_result(
+    result: Optional[dict] = None,
+    result_file: Optional[str] = None,
+    data: Optional[list] = None,
+    data2: Optional[List[float]] = None,
+    groups: Optional[List[List[float]]] = None,
+) -> str:
+    """Verify a result's provenance receipt, input hashes and statistics by recomputing."""
+    from scitex_stats._mcp.handlers import verify_result_handler
+
+    report = await verify_result_handler(
+        result=result, result_file=result_file, data=data, data2=data2, groups=groups
+    )
+    return _json(report)
 
 
 @mcp.tool()
@@ -240,7 +354,7 @@ async def p_to_stars(
 async def skills_list() -> str:
     """List available skill pages for scitex-stats."""
     try:
-        from scitex_dev.skills import list_skills
+        from scitex_dev.ecosystem import list_skills
 
         result = list_skills(package="scitex-stats")
         return _json({"success": True, "skills": result.get("scitex-stats", [])})
@@ -252,7 +366,7 @@ async def skills_list() -> str:
 async def skills_get(name: Optional[str] = None) -> str:
     """Get a skill page for scitex-stats. Without name, returns main SKILL.md."""
     try:
-        from scitex_dev.skills import get_skill
+        from scitex_dev.ecosystem import get_skill
 
         content = get_skill(package="scitex-stats", name=name)
         if content:

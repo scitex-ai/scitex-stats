@@ -229,6 +229,7 @@ def test_anova(  # noqa: C901
     # Check assumptions if requested
     assumptions_met = True
     assumption_warnings = []
+    levene_pvalue = None
 
     if check_assumptions:
         # Check normality for each group
@@ -250,6 +251,7 @@ def test_anova(  # noqa: C901
 
         # Check homogeneity of variance (Levene's test)
         _, levene_p = stats.levene(*groups)
+        levene_pvalue = float(levene_p)
 
         if levene_p < alpha:
             assumptions_met = False
@@ -279,21 +281,23 @@ def test_anova(  # noqa: C901
     # Compile results
     result = {
         "test_method": "One-way ANOVA",
-        "statistic": round(f_stat, decimals),
+        "statistic": f_stat,
         "stat_symbol": "F",
         "n_groups": n_groups,
         "n_samples": n_samples,
         "df_between": df_between,
         "df_within": df_within,
+        "n_total": n_total,
         "var_names": var_names,
-        "pvalue": round(pvalue, decimals),
+        "pvalue": pvalue,
         "stars": p2stars(pvalue),
         "alpha": alpha,
         "significant": rejected,
-        "effect_size": round(effect_size, decimals),
+        "effect_size": float(effect_size),
         "effect_size_metric": "eta-squared",
         "effect_size_interpretation": effect_size_interp,
         "assumptions_met": assumptions_met,
+        "levene_pvalue": levene_pvalue,
         "H0": "All groups have equal population means",
     }
 

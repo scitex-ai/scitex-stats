@@ -1,0 +1,594 @@
+#!/usr/bin/env python3
+# File: tests/scitex_stats/_django/test_views.py
+"""Route tests for the scitex-stats Django app (Statistics calculator UI).
+
+Boots the app via its own app-config + scitex-ui and exercises every view
+with Django's test client, proving the app is a real, mountable SciTeX
+workspace app (compass §12 / Stats Calculator #207-#209): the thin UI shells
+out to the ``scitex_stats`` common package and returns real results.
+
+Requires the [server] extra (django + scitex-ui + scitex-app); skipped
+cleanly when absent so a base install's suite still runs.
+
+Test-style notes: each test asserts a SINGLE property and carries
+Arrange/Act/Assert markers (the repo's STX-TQ convention, per test_api.py).
+"""
+
+from __future__ import annotations
+
+import json
+import pathlib
+
+import pytest
+
+# ---------------------------------------------------------------------------
+# Django bootstrap (once), from the app's own app-config + scitex-ui.
+# ---------------------------------------------------------------------------
+django = pytest.importorskip("django")
+pytest.importorskip("scitex_app")
+pytest.importorskip("scitex_ui")
+
+import numpy as np  # noqa: E402
+from django.conf import settings  # noqa: E402
+
+if not settings.configured:
+    settings.configure(
+        SECRET_KEY="test",
+        DEBUG=True,
+        ALLOWED_HOSTS=["*"],
+        INSTALLED_APPS=[
+            "django.contrib.contenttypes",
+            "django.contrib.staticfiles",
+            "scitex_app",
+            "scitex_stats._django.apps.StatsCalculatorConfig",
+            "scitex_ui",
+        ],
+        MIDDLEWARE=[
+            "django.middleware.common.CommonMiddleware",
+            # project_save is a state-changing POST, so the token flow is
+            # enforced here too (the app settings install this middleware).
+            "django.middleware.csrf.CsrfViewMiddleware",
+        ],
+        ROOT_URLCONF="scitex_stats._django.urls",
+        TEMPLATES=[
+            {
+                "BACKEND": "django.template.backends.django.DjangoTemplates",
+                "DIRS": [],
+                "APP_DIRS": True,
+                "OPTIONS": {
+                    "context_processors": ["django.template.context_processors.request"]
+                },
+            }
+        ],
+        DATABASES={},
+        STATIC_URL="/static/",
+        DEFAULT_AUTO_FIELD="django.db.models.BigAutoField",
+        # Project scope: the shared picker renders only when a provider URL is
+        # configured (the SDK guard). This block configures Django itself, so it
+        # takes the literal path; the value the app actually SHIPS (the
+        # namespaced URL name "stats:api_project_scope") is pinned separately,
+        # by resolving it under the standalone urlconf.
+        SCITEX_PROJECT_PROVIDER_URL="/api/project-scope",
+    )
+
+django.setup()
+
+import scitex_stats._django.views  # noqa: E402  (runs the install guard, registry now ready)
+
+
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
+@pytest.fixture
+def client():
+    # Arrange
+    from django.test import Client
+    # Act
+    return Client()
+    # Assert: n/a — fixture, not a test
+
+
+@pytest.fixture
+def two_groups():
+    # Arrange
+    # Act
+    return (
+        np.random.default_rng(1).normal(10.0, 2.0, 30),
+        np.random.default_rng(2).normal(12.0, 2.0, 30),
+    )
+    # Assert: n/a — fixture, not a test
+
+
+def _post(client, path, payload):
+    return client.post(path, data=json.dumps(payload), content_type="application/json")
+
+
+# ---------------------------------------------------------------------------
+# SPA shell (index)
+# ---------------------------------------------------------------------------
+def test_index_returns_http_200(client):
+    # Arrange
+    # Act
+    resp = client.get("/")
+    # Assert
+    assert resp.status_code == 200
+
+
+def test_index_contains_stx_mount_marker(client):
+    # Arrange
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
+    assert 'name="stx-mount"' in html
+
+
+def test_index_contains_app_header(client):
+    # Arrange
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
+    assert "SciTeX Statistics" in html
+
+
+def test_index_links_app_stylesheet(client):
+    # Arrange
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
+    assert "stats/css/stats.css" in html
+
+
+def test_index_stx_mount_is_root_prefix(client):
+    # Arrange — standalone root mount is "" (contract: never a trailing "/")
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
+    assert 'content=""' in html
+
+
+# ---------------------------------------------------------------------------
+# /api/health
+# ---------------------------------------------------------------------------
+def test_health_returns_ok_status(client):
+    # Arrange
+    # Act
+    body = client.get("/api/health").json()
+    # Assert
+    assert body["status"] == "ok"
+
+
+def test_health_reports_app_name(client):
+    # Arrange
+    # Act
+    body = client.get("/api/health").json()
+    # Assert
+    assert body["app"] == "scitex-stats"
+
+
+def test_health_reports_test_count(client):
+    # Arrange
+    # Act
+    body = client.get("/api/health").json()
+    # Assert
+    assert body["tests"] > 0
+
+
+# ---------------------------------------------------------------------------
+# /api/tests (catalogue)
+# ---------------------------------------------------------------------------
+def test_tests_catalogue_contains_ttest_ind(client):
+    # Arrange
+    # Act
+    body = client.get("/api/tests").json()
+    # Assert
+    assert "ttest_ind" in body["tests"]
+
+
+def test_tests_catalogue_contains_anova(client):
+    # Arrange
+    # Act
+    body = client.get("/api/tests").json()
+    # Assert
+    assert "anova" in body["tests"]
+
+
+# ---------------------------------------------------------------------------
+# /api/run
+# ---------------------------------------------------------------------------
+def test_run_ttest_returns_statistic(client, two_groups):
+    # Arrange
+    a, b = two_groups
+    # Act
+    body = _post(client, "/api/run", {"test_name": "ttest_ind", "data": a.tolist(), "data2": b.tolist()}).json()
+    # Assert
+    assert body["statistic"] != 0
+
+
+def test_run_ttest_returns_pvalue(client, two_groups):
+    # Arrange
+    a, b = two_groups
+    # Act
+    body = _post(client, "/api/run", {"test_name": "ttest_ind", "data": a.tolist(), "data2": b.tolist()}).json()
+    # Assert
+    assert 0 < body["pvalue"] < 1
+
+
+def test_run_ttest_returns_apa_formatted(client, two_groups):
+    # Arrange
+    a, b = two_groups
+    # Act
+    body = _post(client, "/api/run", {"test_name": "ttest_ind", "data": a.tolist(), "data2": b.tolist()}).json()
+    # Assert
+    assert "t =" in body["formatted"]
+
+
+def test_run_ttest_returns_apa_segments_with_italic_symbols(client, two_groups):
+    # Arrange
+    a, b = two_groups
+    # Act
+    body = _post(client, "/api/run", {"test_name": "ttest_ind", "data": a.tolist(), "data2": b.tolist()}).json()
+    # Assert
+    assert {"text": "p", "kind": "sym"} in body["apa"]["segments"]
+
+
+def test_run_unknown_test_returns_400(client, two_groups):
+    # Arrange
+    a, b = two_groups
+    # Act
+    resp = _post(client, "/api/run", {"test_name": "not_a_test", "data": a.tolist(), "data2": b.tolist()})
+    # Assert
+    assert resp.status_code == 400
+
+
+def test_run_missing_test_name_returns_400(client):
+    # Arrange
+    # Act
+    resp = _post(client, "/api/run", {"data": [1, 2, 3]})
+    # Assert
+    assert resp.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# /api/recommend
+# ---------------------------------------------------------------------------
+def test_recommend_returns_recommendation_list(client):
+    # Arrange
+    # Act
+    resp = _post(client, "/api/recommend", {"n_groups": 2, "sample_sizes": [30, 30]})
+    # Assert
+    assert resp.status_code == 200
+
+
+def test_recommend_names_are_strings(client):
+    # Arrange
+    # Act
+    recs = _post(client, "/api/recommend", {"n_groups": 2, "sample_sizes": [30, 30]}).json()["recommendations"]
+    # Assert
+    assert all(isinstance(r, str) for r in recs)
+
+
+# ---------------------------------------------------------------------------
+# /api/effect-size
+# ---------------------------------------------------------------------------
+def test_effect_size_cohens_d_runs(client, two_groups):
+    # Arrange
+    a, b = two_groups
+    # Act
+    resp = _post(client, "/api/effect-size", {"group1": a.tolist(), "group2": b.tolist()})
+    # Assert
+    assert resp.status_code == 200
+
+
+def test_effect_size_returns_nonzero_value(client, two_groups):
+    # Arrange
+    a, b = two_groups
+    # Act
+    body = _post(client, "/api/effect-size", {"group1": a.tolist(), "group2": b.tolist()}).json()
+    # Assert
+    assert body["value"] != 0
+
+
+# ---------------------------------------------------------------------------
+# /api/power
+# ---------------------------------------------------------------------------
+def test_power_sample_size_returns_26_26(client):
+    # Arrange
+    # Act
+    n = _post(client, "/api/power", {"which": "sample_size", "effect_size": 0.8}).json()["value"]
+    # Assert
+    assert n == [26, 26]
+
+
+# ---------------------------------------------------------------------------
+# /api/posthoc
+# ---------------------------------------------------------------------------
+def test_posthoc_tukey_returns_three_comparisons(client, two_groups):
+    # Arrange
+    a, b = two_groups
+    # Act
+    body = _post(client, "/api/posthoc", {"groups": [a.tolist(), b.tolist(), (a + 1).tolist()], "method": "tukey"}).json()
+    # Assert
+    assert len(body["comparisons"]) == 3
+
+
+# ---------------------------------------------------------------------------
+# /api/correct
+# ---------------------------------------------------------------------------
+def test_correct_fdr_returns_four_rows(client):
+    # Arrange
+    # Act
+    body = _post(client, "/api/correct", {"pvalues": [0.01, 0.02, 0.03, 0.5], "method": "fdr_bh"}).json()
+    # Assert
+    assert len(body["results"]) == 4
+
+
+def test_correct_missing_pvalues_returns_400(client):
+    # Arrange
+    # Act
+    resp = _post(client, "/api/correct", {"method": "bonferroni"})
+    # Assert
+    assert resp.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# /api/describe
+# ---------------------------------------------------------------------------
+def test_describe_returns_mean(client):
+    # Arrange
+    # Act
+    resp = _post(client, "/api/describe", {"data": [1.0, 2.0, 3.0, 4.0, 5.0]})
+    # Assert
+    assert resp.status_code == 200
+
+
+def test_describe_mean_is_three(client):
+    # Arrange
+    # Act
+    stats = _post(client, "/api/describe", {"data": [1.0, 2.0, 3.0, 4.0, 5.0]}).json()["statistics"]
+    # Assert
+    assert stats["mean"] == pytest.approx(3.0)
+
+
+# ---------------------------------------------------------------------------
+# manifest.json + AppConfig
+# ---------------------------------------------------------------------------
+def test_manifest_declares_all_required_fields():
+    # Arrange
+    from pathlib import Path
+
+    manifest = Path(scitex_stats._django.__file__).parent / "manifest.json"
+    # Act
+    data = json.loads(manifest.read_text())
+    # Assert
+    assert all(data.get(k) for k in ("name", "slug", "label", "pip_package", "icon"))
+
+
+def test_manifest_has_no_hand_written_version():
+    # Arrange
+    from pathlib import Path
+
+    manifest = Path(scitex_stats._django.__file__).parent / "manifest.json"
+    # Act
+    data = json.loads(manifest.read_text())
+    # Assert
+    assert "version" not in data
+
+
+def test_pyproject_declares_scitex_apps_entry_point():
+    # Arrange
+    from pathlib import Path
+
+    pyproject = Path(__file__).resolve().parents[3] / "pyproject.toml"
+    # Act
+    text = pyproject.read_text()
+    # Assert
+    assert 'stats = "scitex_stats._django.apps:StatsCalculatorConfig"' in text
+
+
+def test_index_has_data_test_results_panes(client):
+    # Arrange
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
+    assert all(f'data-stx-pane="{p}"' in html for p in ("data", "test", "results"))
+
+
+def test_index_shows_the_leaf_title_and_package_version_once(client):
+    # Arrange
+    import scitex_stats
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
+    assert (
+        html.count('<header class="stats-app-header"') == 1
+        and html.count('<h1 class="stats-app-header__title">Stats</h1>') == 1
+        and html.count('class="stats-app-header__version"') == 1
+        and f"v{scitex_stats.__version__}" in html
+    )
+
+
+def test_index_puts_the_shared_picker_in_the_canonical_slot(client):
+    # Arrange
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
+    assert (
+        '<div class="stx-app-header__slot--project-selector">' in html
+        and "data-stx-project-picker" in html
+        and 'data-provider-url="/api/project-scope"' in html
+    )
+
+
+def test_shipped_provider_url_name_resolves_under_the_standalone_urlconf():
+    # Arrange
+    from django.test import override_settings
+    from django.urls import reverse
+    # Act
+    with override_settings(ROOT_URLCONF="scitex_stats._django._standalone_urls"):
+        url = reverse("stats:api_project_scope")
+    # Assert
+    assert url == "/api/project-scope"
+
+
+def test_app_settings_declare_the_namespaced_provider_url_name():
+    # Arrange
+    from scitex_stats._django import settings as app_settings
+    # Act
+    declared = app_settings.SCITEX_PROJECT_PROVIDER_URL
+    # Assert
+    assert declared == "stats:api_project_scope"
+
+
+def test_safe_turns_nan_into_null():
+    # Arrange
+    from scitex_stats._django.views import _safe
+    # Act
+    out = _safe({"power": float("nan"), "rows": [float("inf"), 1.0]})
+    # Assert
+    assert out == {"power": None, "rows": [None, 1.0]}
+
+
+def test_manifest_slug_is_stats():
+    # Arrange
+    from pathlib import Path
+
+    manifest = Path(scitex_stats._django.__file__).parent / "manifest.json"
+    # Act
+    data = json.loads(manifest.read_text())
+    # Assert
+    assert data["slug"] == "stats"
+
+
+def test_manifest_marks_standalone_app():
+    # Arrange
+    from pathlib import Path
+
+    manifest = Path(scitex_stats._django.__file__).parent / "manifest.json"
+    # Act
+    data = json.loads(manifest.read_text())
+    # Assert
+    assert data["standalone"] is True
+
+
+def test_app_config_module_name():
+    # Arrange
+    from scitex_stats._django.apps import StatsCalculatorConfig
+    # Act
+    # Assert
+    assert StatsCalculatorConfig.name == "scitex_stats._django"
+
+
+def test_app_config_label():
+    # Arrange
+    from scitex_stats._django.apps import StatsCalculatorConfig
+    # Act
+    # Assert
+    assert StatsCalculatorConfig.label == "stats_calculator"
+
+
+# ---------------------------------------------------------------------------
+# Hub mount contract: the hub includes this app's urls under ITS OWN prefix
+# (e.g. /apps/stats/), so every route and the mount marker the client joins
+# API paths with must work under a prefix, not only at the root.
+# ---------------------------------------------------------------------------
+
+
+def _prefixed_urlconf(prefix="apps/stats/"):
+    """A urlconf shaped like a hub mount: our urls under a prefix."""
+    import types
+
+    from django.urls import include, path
+
+    module = types.ModuleType("stats_prefixed_urlconf")
+    module.urlpatterns = [path(prefix, include("scitex_stats._django.urls"))]
+    return module
+
+
+def test_index_carries_the_prefix_marker_when_mounted_by_the_hub(client):
+    # Arrange
+    from django.test import override_settings
+    # Act
+    with override_settings(ROOT_URLCONF=_prefixed_urlconf()):
+        html = client.get("/apps/stats/").content.decode()
+    # Assert
+    assert 'name="stx-mount" content="/apps/stats"' in html
+
+
+def test_api_routes_answer_under_the_hub_prefix(client):
+    # Arrange
+    from django.test import override_settings
+    # Act
+    with override_settings(ROOT_URLCONF=_prefixed_urlconf()):
+        status = client.get("/apps/stats/api/tests").status_code
+    # Assert
+    assert status == 200
+
+
+# Off-loopback ALLOWED_HOSTS is decided by the STANDALONE settings module at
+# import time, so it is verified in a child interpreter (this process already
+# configured Django with its own settings).
+OFF_LOOPBACK_SCRIPT = """
+import django
+from django.test import Client
+
+django.setup()
+client = Client(raise_request_exception=False)
+print(client.get("/", HTTP_HOST="10.0.0.5").status_code)
+print(client.get("/", HTTP_HOST="not-configured.example").status_code)
+"""
+
+
+def test_off_loopback_host_is_accepted_only_when_configured():
+    # Arrange
+    import os
+    import subprocess
+    import sys
+
+    env = dict(os.environ)
+    env["DJANGO_SETTINGS_MODULE"] = "scitex_stats._django.settings"
+    env["SCITEX_STATS_ALLOWED_HOSTS"] = "10.0.0.5"
+    # Act
+    proc = subprocess.run(
+        [sys.executable, "-c", OFF_LOOPBACK_SCRIPT], capture_output=True, text=True, env=env
+    )
+    # Assert
+    assert proc.stdout.split() == ["200", "400"], proc.stderr[-1500:]
+
+
+def test_the_index_never_exports_its_project_id_as_the_hubs_current_project(client, tmp_path):  # noqa: F811,F401
+    """Hub-shaped regression for the mounted 500: the Hub's global template consumes
+    `current_project` as its own Project MODEL (its tree preseed calls `.pk` on it),
+    so Stats exporting a string under that name shadowed the model and broke every
+    mounted request. The Hub's consumer must still work, and Stats must publish its
+    id under the namespaced name."""
+    # Arrange: the Hub's context, and a project of ours to resolve.
+    import os
+
+    from django.template import Context, Template
+
+    from scitex_stats._django import _projects
+
+    class HubProject:
+        pk = 7
+
+    class _HubConsumer:
+        """The Hub's own template: it dereferences the model, not a string."""
+
+        template = Template("{{ current_project.pk }} and {{ stats_current_project_id }}")
+
+    root = tmp_path / "projects"
+    (root / "cohort").mkdir(parents=True)
+    previous = os.environ.get(_projects.ROOT_ENV)
+    os.environ[_projects.ROOT_ENV] = str(root)
+    try:
+        # Act
+        page = client.get("/?project=cohort").content.decode()
+        hub_rendered = _HubConsumer.template.render(Context({"current_project": HubProject(), "stats_current_project_id": "cohort"}))
+        exported_bare = 'context["current_project"]' in pathlib.Path("src/scitex_stats/_django/views.py").read_text()
+    finally:
+        if previous is None:
+            os.environ.pop(_projects.ROOT_ENV, None)
+        else:
+            os.environ[_projects.ROOT_ENV] = previous
+    # Assert
+    assert (hub_rendered.strip(), 'data-stats-project="cohort"' in page, exported_bare) == ("7 and cohort", True, False)

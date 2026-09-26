@@ -15,15 +15,19 @@ from ._handlers import (
     describe_handler,
     effect_size_handler,
     format_results_handler,
+    generate_report_handler,
     normality_test_handler,
     p_to_stars_handler,
     posthoc_test_handler,
     power_analysis_handler,
     recommend_tests_handler,
     run_test_handler,
+    verify_result_handler,
 )
 
 __all__ = [
+    "generate_report_handler",
+    "verify_result_handler",
     "recommend_tests_handler",
     "run_test_handler",
     "format_results_handler",

@@ -158,10 +158,10 @@ def posthoc_games_howell(
     >>> from scitex_stats.posthoc import posthoc_games_howell
     >>>
     >>> # Example: Groups with different variances
-    >>> np.random.seed(42)
-    >>> group1 = np.random.normal(10, 1, 20)   # Small variance
-    >>> group2 = np.random.normal(12, 5, 25)   # Large variance
-    >>> group3 = np.random.normal(11, 2, 15)   # Medium variance
+    >>> rng = np.random.default_rng(42)
+    >>> group1 = rng.normal(10, 1, 20)   # Small variance
+    >>> group2 = rng.normal(12, 5, 25)   # Large variance
+    >>> group3 = rng.normal(11, 2, 15)   # Medium variance
     >>>
     >>> results = posthoc_games_howell(
     ...     [group1, group2, group3],
@@ -299,10 +299,10 @@ if __name__ == "__main__":
     logger.info("\n[Example 1] Groups with unequal variances")
     logger.info("-" * 70)
 
-    np.random.seed(42)
-    group1 = np.random.normal(10, 1, 20)  # Small variance
-    group2 = np.random.normal(12, 5, 25)  # Large variance
-    group3 = np.random.normal(11, 2, 15)  # Medium variance
+    rng = np.random.default_rng(42)
+    group1 = rng.normal(10, 1, 20)  # Small variance
+    group2 = rng.normal(12, 5, 25)  # Large variance
+    group3 = rng.normal(11, 2, 15)  # Medium variance
 
     logger.info(
         f"Group 1: mean={np.mean(group1):.2f}, var={np.var(group1, ddof=1):.2f}, n={len(group1)}"
@@ -371,8 +371,8 @@ if __name__ == "__main__":
     logger.info("\n[Example 4] Extreme variance heterogeneity")
     logger.info("-" * 70)
 
-    extreme1 = np.random.normal(50, 1, 20)  # Very small variance
-    extreme2 = np.random.normal(55, 10, 20)  # Very large variance
+    extreme1 = rng.normal(50, 1, 20)  # Very small variance
+    extreme2 = rng.normal(55, 10, 20)  # Very large variance
 
     var_ratio = np.var(extreme2, ddof=1) / np.var(extreme1, ddof=1)
     logger.info(f"Variance ratio: {var_ratio:.1f}")

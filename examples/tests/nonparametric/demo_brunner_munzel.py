@@ -48,13 +48,13 @@ def main(args):  # noqa: C901
     )
 
     logger.info("Demonstrating Brunner-Munzel test")
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     def example_01_normal_distributions():
         """Run example 01 with normal distributions."""
         logger.info("\n=== Example 1: Normal distributions ===")
-        x1 = np.random.normal(0, 1, 50)
-        y1 = np.random.normal(0.6, 1, 50)
+        x1 = rng.normal(0, 1, 50)
+        y1 = rng.normal(0.6, 1, 50)
         _safe_call(
             test_brunner_munzel,
             x1,
@@ -71,8 +71,8 @@ def main(args):  # noqa: C901
     def example_02_skewed_distributions():
         """Run example 02 with skewed distributions."""
         logger.info("\n=== Example 2: Non-normal (skewed) distributions ===")
-        x2 = np.random.gamma(2, 2, 40)
-        y2 = np.random.gamma(3, 2, 40)
+        x2 = rng.gamma(2, 2, 40)
+        y2 = rng.gamma(3, 2, 40)
         result_df = _safe_call(
             test_brunner_munzel,
             x2,
@@ -91,8 +91,8 @@ def main(args):  # noqa: C901
     def example_03_data_with_outliers():
         """Run example 03 with data containing outliers."""
         logger.info("\n=== Example 3: Data with outliers ===")
-        x3 = np.concatenate([np.random.normal(0, 1, 35), [10, 12]])
-        y3 = np.random.normal(0.5, 1, 40)
+        x3 = np.concatenate([rng.normal(0, 1, 35), [10, 12]])
+        y3 = rng.normal(0.5, 1, 40)
         result_df = _safe_call(
             test_brunner_munzel,
             x3,
@@ -110,8 +110,8 @@ def main(args):  # noqa: C901
     def example_04_unequal_variances():
         """Run example 04 with unequal variances."""
         logger.info("\n=== Example 4: Unequal variances ===")
-        x4 = np.random.normal(0, 1, 50)
-        y4 = np.random.normal(0.5, 3, 50)
+        x4 = rng.normal(0, 1, 50)
+        y4 = rng.normal(0.5, 3, 50)
         result_df = _safe_call(
             test_brunner_munzel,
             x4,
@@ -130,8 +130,8 @@ def main(args):  # noqa: C901
     def example_05_one_sided_test():
         """Run example 05 with one-sided test."""
         logger.info("\n=== Example 5: One-sided test ===")
-        x5 = np.random.normal(0, 1, 40)
-        y5 = np.random.normal(0.8, 1, 40)
+        x5 = rng.normal(0, 1, 40)
+        y5 = rng.normal(0.8, 1, 40)
         _safe_call(
             test_brunner_munzel,
             x5,
@@ -153,8 +153,8 @@ def main(args):  # noqa: C901
     def example_06_with_visualization():
         """Run example 06 with visualization."""
         logger.info("\n=== Example 6: With visualization ===")
-        x6 = np.random.exponential(2, 50)
-        y6 = np.random.exponential(3, 50)
+        x6 = rng.exponential(2, 50)
+        y6 = rng.exponential(3, 50)
         _safe_call(
             test_brunner_munzel,
             x6,
@@ -182,8 +182,8 @@ def main(args):  # noqa: C901
 
         results_list = []
         for ii in range(5):
-            x_temp = np.random.exponential(2, 30)
-            y_temp = np.random.exponential(2.5, 30)
+            x_temp = rng.exponential(2, 30)
+            y_temp = rng.exponential(2.5, 30)
             result_temp = test_brunner_munzel(
                 x_temp, y_temp, var_x=f"Control_{ii}", var_y=f"Treatment_{ii}"
             )

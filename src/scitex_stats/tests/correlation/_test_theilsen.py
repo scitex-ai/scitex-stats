@@ -172,19 +172,19 @@ def test_theilsen(
 
 if __name__ == "__main__":
     # Example usage
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     # Clean data
     print("Example 1: Clean linear data")
     x = np.linspace(0, 10, 50)
-    y = 2 * x + 1 + np.random.normal(0, 1, 50)
+    y = 2 * x + 1 + rng.normal(0, 1, 50)
     result = test_theilsen(x, y, var_x="x", var_y="y")
 
     # Data with outliers
     print("\n" + "=" * 70)
     print("Example 2: Data with outliers")
     x_out = np.linspace(0, 10, 50)
-    y_out = 2 * x_out + 1 + np.random.normal(0, 1, 50)
+    y_out = 2 * x_out + 1 + rng.normal(0, 1, 50)
     # Add outliers
     y_out[[10, 20, 30]] += np.array([20, -15, 25])
     result_out = test_theilsen(x_out, y_out, var_x="x", var_y="y")

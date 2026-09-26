@@ -32,7 +32,8 @@ def to_json_safe(result: Dict[str, Any]) -> Dict[str, Any]:
     Returns
     -------
     dict
-        JSON-safe dict with consistent keys and a ``formatted`` summary.
+        JSON-safe dict with consistent keys, a ``formatted`` summary and an
+        ``apa`` rendering (see :func:`scitex_stats._utils._apa.apa_render`).
 
     Examples
     --------
@@ -89,6 +90,14 @@ def to_json_safe(result: Dict[str, Any]) -> Dict[str, Any]:
         if "stars" in out:
             parts.append(out["stars"])
         out["formatted"] = ", ".join(parts)
+
+    # Additive: the same summary as APA segments + plain/HTML/LaTeX.
+    if "apa" not in out and "statistic" in out and "p_value" in out:
+        from ._apa import apa_render
+
+        apa = apa_render(out)
+        if apa is not None:
+            out["apa"] = apa
 
     return out
 

@@ -1,0 +1,647 @@
+# Japanese translations for the scitex-stats Django app (JS).
+msgid ""
+msgstr ""
+"Project-Id-Version: scitex-stats\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "Two independent groups"
+msgstr "独立した2群"
+
+msgid "Paired groups"
+msgstr "対応のある2群"
+
+msgid "Three or more groups"
+msgstr "3群以上"
+
+msgid "Correlation"
+msgstr "相関"
+
+msgid "One sample"
+msgstr "1標本"
+
+msgid "Contingency table"
+msgstr "分割表"
+
+msgid "Group %s"
+msgstr "群 %s"
+
+msgid "Remove group"
+msgstr "群を削除"
+
+msgid "n = %s"
+msgstr "n = %s"
+
+msgid "No numeric columns found in this file."
+msgstr "このファイルに数値の列が見つかりません。"
+
+msgid "Choose a CSV or TSV file."
+msgstr "CSVまたはTSVファイルを選択してください。"
+
+msgid "Replace the data in the boxes with the sample dataset?"
+msgstr "入力欄のデータをサンプルデータで置き換えますか？"
+
+msgid "Enter at least one group of numbers."
+msgstr "少なくとも1群の数値を入力してください。"
+
+msgid "This test needs two groups."
+msgstr "この検定には2群が必要です。"
+
+msgid "Paired tests need both groups to have the same number of values."
+msgstr "対応のある検定では、2群の値の数を揃えてください。"
+
+msgid "This test needs at least two groups."
+msgstr "この検定には2群以上が必要です。"
+
+msgid "Pick a test."
+msgstr "検定を選んでください。"
+
+msgid "Request failed (HTTP %s)."
+msgstr "リクエストに失敗しました（HTTP %s）。"
+
+msgid "Could not reach the Statistics service."
+msgstr "統計サービスに接続できません。"
+
+msgid "Statistic"
+msgstr "統計量"
+
+msgid "p-value"
+msgstr "p値"
+
+msgid "Significance"
+msgstr "有意性"
+
+msgid "significant"
+msgstr "有意"
+
+msgid "not significant"
+msgstr "有意差なし"
+
+msgid "Effect size"
+msgstr "効果量"
+
+msgid "Interpretation"
+msgstr "解釈"
+
+msgid "Power"
+msgstr "検出力"
+
+msgid "Sample size"
+msgstr "サンプルサイズ"
+
+msgid "Null hypothesis"
+msgstr "帰無仮説"
+
+msgid "Error"
+msgstr "エラー"
+
+msgid "Enter p-values."
+msgstr "p値を入力してください。"
+
+msgid "Copy"
+msgstr "コピー"
+
+msgid "Copied"
+msgstr "コピーしました"
+
+msgid "Copy failed"
+msgstr "コピーできませんでした"
+
+msgid "Degrees of freedom"
+msgstr "自由度"
+
+msgid "Standardized statistic"
+msgstr "標準化統計量"
+
+msgid "Total sample size"
+msgstr "総サンプルサイズ"
+
+msgid "Group"
+msgstr "群"
+
+msgid "Note"
+msgstr "注"
+
+msgid "Drawing plot…"
+msgstr "プロットを描画しています…"
+
+msgid "Could not draw the plot."
+msgstr "プロットを描画できませんでした。"
+
+msgid "Creating the figure in FigRecipe…"
+msgstr "FigRecipeで図を作成しています…"
+
+msgid "Could not open the plot in FigRecipe."
+msgstr "FigRecipeでプロットを開けませんでした。"
+msgid "Design not specified: treated as independent groups. Set design='paired' for repeated measurements on the same subjects."
+msgstr "デザイン未指定のため独立群として扱いました。同じ対象者の反復測定なら「対応あり」を指定してください。"
+
+msgid "Measurement scale not specified: treated as continuous."
+msgstr "尺度未指定のため連続変数として扱いました。"
+
+msgid "%s incomplete pair(s) removed (a value was missing or not a number)."
+msgstr "不完全なペアを %s 組除外しました（欠損または数値でない値）。"
+
+msgid "%s: %s missing or non-numeric value(s) removed."
+msgstr "%s：欠損または数値でない値を %s 個除外しました。"
+
+msgid "%s: too few values for Shapiro–Wilk (n = %s)"
+msgstr "%s：Shapiro–Wilk 検定には値が少なすぎます（n = %s）"
+
+msgid "%s: all values are identical; normality cannot be assessed"
+msgstr "%s：すべて同じ値のため正規性を評価できません"
+
+msgid "%s: Shapiro–Wilk has low power at n = %s; a non-significant result does not show normality"
+msgstr "%s：n = %s では Shapiro–Wilk 検定の検出力が低く、有意でなくても正規性の証明にはなりません"
+
+msgid "%s: Shapiro–Wilk is oversensitive at n = %s; trivial departures reach significance"
+msgstr "%s：n = %s では Shapiro–Wilk 検定が過敏で、わずかな逸脱でも有意になります"
+
+msgid "Scale: %s"
+msgstr "尺度：%s"
+
+msgid "Needs a contingency table of counts; the data are %s"
+msgstr "度数の分割表が必要です（データは%s）"
+
+msgid "Needs continuous data; the data are %s"
+msgstr "連続データが必要です（データは%s）"
+
+msgid "Needs continuous or ordinal data; the data are %s"
+msgstr "連続または順序データが必要です（データは%s）"
+
+msgid "Needs independent observations; paired counts need McNemar's test (not covered here)"
+msgstr "独立な観測が必要です。対応のある度数には McNemar 検定が必要です（ここでは対象外）"
+
+msgid "Independent groups"
+msgstr "独立した群"
+
+msgid "Paired (repeated) measurements"
+msgstr "対応のある（反復）測定"
+
+msgid "Needs independent groups; the design is paired"
+msgstr "独立した群が必要です（デザインは対応あり）"
+
+msgid "Needs paired measurements; the design is independent"
+msgstr "対応のある測定が必要です（デザインは独立）"
+
+msgid "Needs a table with at least 2 rows and 2 columns; the table is %s × %s"
+msgstr "2行2列以上の表が必要です（表は %s × %s）"
+
+msgid "Needs a 2 × 2 table; the table is %s × %s"
+msgstr "2 × 2 の表が必要です（表は %s × %s）"
+
+msgid "Table: %s × %s"
+msgstr "表：%s × %s"
+
+msgid "Needs exactly 2 groups; there are %s"
+msgstr "ちょうど2群が必要です（%s 群あります）"
+
+msgid "Needs 3 or more groups; there are %s"
+msgstr "3群以上が必要です（%s 群あります）"
+
+msgid "Groups: %s"
+msgstr "群の数：%s"
+
+msgid "Each group needs n ≥ %s; the smallest n = %s"
+msgstr "各群に n ≥ %s が必要です（最小 n = %s）"
+
+msgid "Paired groups must have the same length (%s)"
+msgstr "対応のある群は同じ長さが必要です（%s）"
+
+msgid "No normality assumption (rank-based)"
+msgstr "正規性を仮定しません（順位に基づく）"
+
+msgid "Normality not rejected (Shapiro–Wilk p ≥ %s, %s)"
+msgstr "正規性は棄却されません（Shapiro–Wilk p ≥ %s、%s）"
+
+msgid "Normality rejected (Shapiro–Wilk p < %s in %s)"
+msgstr "正規性が棄却されました（Shapiro–Wilk p < %s：%s）"
+
+msgid "Normality cannot be assessed (fewer than 3 values or constant values)"
+msgstr "正規性を評価できません（値が3個未満、または一定）"
+
+msgid "Does not assume equal variances"
+msgstr "等分散を仮定しません"
+
+msgid "Spreads differ (Brown–Forsythe p %s): read the result as stochastic dominance, not a shift in location"
+msgstr "ばらつきが異なります（Brown–Forsythe p %s）。結果は位置のずれではなく確率的優越として解釈してください"
+
+msgid "Equal variances not rejected (Brown–Forsythe p %s)"
+msgstr "等分散は棄却されません（Brown–Forsythe p %s）"
+
+msgid "Variances differ (Brown–Forsythe p %s)"
+msgstr "分散が異なります（Brown–Forsythe p %s）"
+
+msgid "Equal variances cannot be assessed"
+msgstr "等分散性を評価できません"
+
+msgid "All expected counts ≥ %s (minimum %s)"
+msgstr "すべての期待度数が %s 以上です（最小 %s）"
+
+msgid "Expected count below %s in %s of %s cells (minimum %s)"
+msgstr "期待度数が %s 未満のセルが %s / %s 個あります（最小 %s）"
+
+msgid "Expected counts cannot be computed (a row or column total is zero)"
+msgstr "期待度数を計算できません（行または列の合計が0）"
+
+msgid "Exact test: valid at any expected count"
+msgstr "正確検定：期待度数によらず有効"
+
+msgid "All paired differences are zero"
+msgstr "対応のある差がすべて0です"
+
+msgid "The groups do not overlap: the Brunner–Munzel variance estimate is zero, so the test is undefined"
+msgstr "群が重なっていないため Brunner–Munzel の分散推定値が0になり、検定が定義できません"
+
+msgid "Small samples (n < %s): the Brunner–Munzel approximation is less accurate"
+msgstr "小標本（n < %s）では Brunner–Munzel の近似の精度が下がります"
+
+msgid "Sphericity is checked when the test runs (Greenhouse–Geisser correction if violated)"
+msgstr "球面性は検定実行時に確認します（満たさなければ Greenhouse–Geisser 補正）"
+
+msgid "Groups have equal length: if these are repeated measurements on the same subjects, set the design to paired."
+msgstr "群の長さが同じです。同じ対象者の反復測定なら、デザインを「対応あり」にしてください。"
+
+msgid "Contingency table (%s × %s)"
+msgstr "分割表（%s × %s）"
+
+msgid "Paired counts need McNemar's test, which this recommender does not cover"
+msgstr "対応のある度数には McNemar 検定が必要ですが、この推奨機能の対象外です"
+
+msgid "All expected counts ≥ %s"
+msgstr "すべての期待度数が %s 以上"
+
+msgid "Expected count below %s in %s of %s cells"
+msgstr "期待度数が %s 未満のセルが %s / %s 個"
+
+msgid "No exact test for tables larger than 2 × 2 here: combine categories or collect more data"
+msgstr "2 × 2 より大きい表の正確検定はありません。カテゴリを統合するか、データを増やしてください"
+
+msgid "At least 2 groups are needed to compare"
+msgstr "比較には2群以上が必要です"
+
+msgid "Each group needs n ≥ %s"
+msgstr "各群に n ≥ %s が必要です"
+
+msgid "Design not specified: treated as independent groups"
+msgstr "デザイン未指定：独立群として扱いました"
+
+msgid "Ordinal data: rank-based test"
+msgstr "順序データ：順位に基づく検定"
+
+msgid "Normality not rejected (Shapiro–Wilk, %s)"
+msgstr "正規性は棄却されません（Shapiro–Wilk、%s）"
+
+msgid "Normality rejected (Shapiro–Wilk) in %s"
+msgstr "正規性が棄却されました（Shapiro–Wilk）：%s"
+
+msgid "Normality cannot be assessed: rank-based test"
+msgstr "正規性を評価できないため順位に基づく検定"
+
+msgid "Equal variances declared in advance (documented reason)"
+msgstr "等分散を事前に宣言（根拠あり）"
+
+msgid "Default: Welch's t-test (no documented reason to assume equal variances)"
+msgstr "既定：Welch の t 検定（等分散を仮定する根拠がないため）"
+
+msgid "Internal check: %s is not applicable"
+msgstr "内部チェック：%s は適用できません"
+
+msgid "Primary test: %s"
+msgstr "主検定：%s"
+
+msgid "Brunner–Munzel is undefined for these data (the groups do not overlap): Mann–Whitney U instead"
+msgstr "このデータでは Brunner–Munzel が定義できない（群が重ならない）ため Mann–Whitney U を使用"
+
+msgid "Welch's t-test compares two independent means without assuming equal variances. It is the default over Student's t-test: it loses little power when variances are equal and keeps the false-positive rate when they are not."
+msgstr "Welch の t 検定は等分散を仮定せずに独立2群の平均を比較します。等分散のときも検出力の損失はわずかで、不等分散のときは偽陽性率を保つため、Student の t 検定より優先する既定です。"
+
+msgid "Student's t-test was chosen because equal variances were declared in advance (a documented reason) and are not rejected by the data."
+msgstr "等分散が事前に宣言され（根拠あり）、データでも棄却されないため Student の t 検定を選びました。"
+
+msgid "The Mann–Whitney U test compares two independent groups by ranks, so it does not rely on normality."
+msgstr "Mann–Whitney U 検定は独立2群を順位で比較するため、正規性に依存しません。"
+
+msgid "The Brunner–Munzel test compares two independent groups by ranks without assuming equal spreads, which differ here."
+msgstr "Brunner–Munzel 検定は等しいばらつきを仮定せずに独立2群を順位で比較します。このデータではばらつきが異なります。"
+
+msgid "The paired t-test compares two related measurements; the paired differences are consistent with normality."
+msgstr "対応のある t 検定は関連する2測定を比較します。差は正規性と矛盾しません。"
+
+msgid "The Wilcoxon signed-rank test compares two related measurements by ranks, so it does not rely on normal differences."
+msgstr "Wilcoxon 符号付順位検定は関連する2測定を順位で比較するため、差の正規性に依存しません。"
+
+msgid "One-way ANOVA compares three or more independent means; normality and equal variances are not rejected."
+msgstr "一元配置分散分析は独立した3群以上の平均を比較します。正規性・等分散性は棄却されません。"
+
+msgid "Welch's ANOVA compares three or more independent means without assuming equal variances, which differ here."
+msgstr "Welch の分散分析は等分散を仮定せずに独立した3群以上の平均を比較します。このデータでは分散が異なります。"
+
+msgid "The Kruskal–Wallis H test compares three or more independent groups by ranks, so it does not rely on normality."
+msgstr "Kruskal–Wallis H 検定は独立した3群以上を順位で比較するため、正規性に依存しません。"
+
+msgid "Repeated-measures ANOVA compares three or more related conditions; the residuals are consistent with normality."
+msgstr "反復測定分散分析は関連する3条件以上を比較します。残差は正規性と矛盾しません。"
+
+msgid "The Friedman test compares three or more related conditions by ranks, so it does not rely on normality."
+msgstr "Friedman 検定は関連する3条件以上を順位で比較するため、正規性に依存しません。"
+
+msgid "The chi-square test of independence applies because every expected count is at least 5."
+msgstr "すべての期待度数が5以上なので、カイ二乗独立性検定を適用できます。"
+
+msgid "Fisher's exact test is used because some expected counts are below 5, where the chi-square approximation is unreliable."
+msgstr "期待度数が5未満のセルがあり、カイ二乗近似が信頼できないため Fisher の正確検定を用います。"
+
+msgid "Assumes equal variances; use only with a documented reason stated before seeing the data."
+msgstr "等分散を仮定します。データを見る前に示した根拠がある場合のみ使用してください。"
+
+msgid "Does not assume equal variances; a natural sensitivity analysis."
+msgstr "等分散を仮定しません。感度分析として自然です。"
+
+msgid "Rank-based: less power when normality holds, and it tests stochastic ordering rather than means."
+msgstr "順位に基づく：正規性が成り立つと検出力が低く、平均ではなく確率的順序を検定します。"
+
+msgid "Rank-based and robust to unequal spreads, but it tests P(X < Y) = 0.5 rather than means."
+msgstr "順位に基づきばらつきの違いに頑健ですが、平均ではなく P(X < Y) = 0.5 を検定します。"
+
+msgid "Preferred when spreads differ; here they do not, or the samples are too small for its approximation."
+msgstr "ばらつきが異なる場合に推奨されますが、このデータでは異ならないか、近似には標本が小さすぎます。"
+
+msgid "Assumes equal spreads under the null hypothesis; the spreads differ here."
+msgstr "帰無仮説のもとで等しいばらつきを仮定しますが、このデータではばらつきが異なります。"
+
+msgid "Rank-based: less power when the differences are normal."
+msgstr "順位に基づく：差が正規分布なら検出力が低くなります。"
+
+msgid "Does not assume equal variances; slightly less power when they are equal. A natural sensitivity analysis."
+msgstr "等分散を仮定しません。等分散なら検出力がわずかに低下します。感度分析として自然です。"
+
+msgid "Rank-based: less power when normality holds."
+msgstr "順位に基づく：正規性が成り立つと検出力が低くなります。"
+
+msgid "Rank-based: less power when the residuals are normal."
+msgstr "順位に基づく：残差が正規分布なら検出力が低くなります。"
+
+msgid "Exact and always valid, but conservative; not needed when every expected count is at least 5."
+msgstr "正確で常に有効ですが保守的です。期待度数がすべて5以上なら不要です。"
+
+msgid "Applicable, but not the pre-specified choice for this design."
+msgstr "適用できますが、このデザインで事前に定めた選択ではありません。"
+
+msgid "Sensitivity analyses only. The primary test was fixed before any p-value was seen. Choosing a test after seeing several p-values (for example, the smallest) inflates the false-positive rate; this is p-hacking. Report the primary test as the result and the others as sensitivity analyses."
+msgstr "感度分析のみです。主検定は p 値を見る前に固定されています。複数の p 値を見てから検定を選ぶ（例：最小のものを選ぶ）と偽陽性率が上昇します。これは p ハッキングです。主検定を結果として報告し、その他は感度分析として報告してください。"
+
+msgid "No test produced a p-value."
+msgstr "p 値を出した検定はありません。"
+
+msgid "Only one applicable test; there is nothing to compare."
+msgstr "適用できる検定が1つだけなので、比較対象がありません。"
+
+msgid "The tests disagree at α = %s (%s of %s significant). Report the primary test; the disagreement is itself a finding worth reporting."
+msgstr "α = %s で検定結果が一致しません（%s / %s が有意）。主検定を報告してください。不一致自体も報告に値する所見です。"
+
+msgid "All %s tests agree at α = %s (%s)."
+msgstr "%s 個の検定すべてが α = %s で一致しています（%s）。"
+
+msgid "Welch's t-test"
+msgstr "Welch の t 検定"
+
+msgid "Student's t-test"
+msgstr "Student の t 検定"
+
+msgid "Mann–Whitney U test"
+msgstr "Mann–Whitney U 検定"
+
+msgid "Brunner–Munzel test"
+msgstr "Brunner–Munzel 検定"
+
+msgid "Paired t-test"
+msgstr "対応のある t 検定"
+
+msgid "Wilcoxon signed-rank test"
+msgstr "Wilcoxon 符号付順位検定"
+
+msgid "Welch's ANOVA"
+msgstr "Welch の分散分析"
+
+msgid "One-way ANOVA"
+msgstr "一元配置分散分析"
+
+msgid "Kruskal–Wallis H test"
+msgstr "Kruskal–Wallis H 検定"
+
+msgid "Repeated-measures ANOVA"
+msgstr "反復測定分散分析"
+
+msgid "Friedman test"
+msgstr "Friedman 検定"
+
+msgid "Chi-square test of independence"
+msgstr "カイ二乗独立性検定"
+
+msgid "Fisher's exact test"
+msgstr "Fisher の正確検定"
+
+msgid "continuous"
+msgstr "連続"
+
+msgid "ordinal"
+msgstr "順序"
+
+msgid "categorical"
+msgstr "カテゴリ"
+
+msgid "each group"
+msgstr "各群"
+
+msgid "paired differences"
+msgstr "対応のある差"
+
+msgid "residuals (subject + condition)"
+msgstr "残差（対象者＋条件）"
+
+msgid "differences"
+msgstr "差"
+
+msgid "residuals"
+msgstr "残差"
+
+msgid "Applicable"
+msgstr "適用可"
+
+msgid "Not applicable"
+msgstr "適用不可"
+
+msgid "Recommended"
+msgstr "推奨"
+
+msgid "No test can be recommended for these data."
+msgstr "このデータに推奨できる検定はありません。"
+
+msgid "Recommended primary test"
+msgstr "推奨する主検定"
+
+msgid "Decision path"
+msgstr "判断の経路"
+
+msgid "Alternatives (%s), secondary"
+msgstr "代替の検定（%s）：副次的"
+
+msgid "Sensitivity analyses"
+msgstr "感度分析"
+
+msgid "Role"
+msgstr "役割"
+
+msgid "Test"
+msgstr "検定"
+
+msgid "Result"
+msgstr "結果"
+
+msgid "Primary (pre-specified)"
+msgstr "主検定（事前指定）"
+
+msgid "Sensitivity"
+msgstr "感度分析"
+
+msgid "Assumption tests are diagnostic, not confirmatory: they are not corrected for multiplicity, have low power in small samples and flag trivial departures in large ones. Check the Q-Q plots and spreads visually as well."
+msgstr "前提の検定は診断用で、確証的なものではありません。多重性の補正はしておらず、小標本では検出力が低く、大標本ではわずかな逸脱でも有意になります。Q-Q プロットとばらつきも目で確認してください。"
+
+msgid "Welch's correction is used by default whether or not the equal-variance test is significant; that test is reported, not used to switch tests. The classic equal-variance test is chosen only with a reason documented in advance."
+msgstr "等分散性の検定が有意かどうかにかかわらず、既定で Welch の補正を用います。その検定結果は報告のみで、検定の切り替えには使いません。等分散を仮定する従来の検定は、事前に根拠を示した場合のみ選びます。"
+
+msgid "p ≥ %s: normality not rejected"
+msgstr "p ≥ %s：正規性は棄却されない"
+
+msgid "p ≥ %s: equal variances not rejected"
+msgstr "p ≥ %s：等分散は棄却されない"
+
+msgid "Reported only (mean-centred; less robust to non-normality)"
+msgstr "報告のみ（平均中心。非正規性に弱い）"
+
+msgid "Descriptive; no significance test"
+msgstr "記述統計のみ（有意性検定なし）"
+
+msgid "≥ %s in every cell (%s of %s cells below)"
+msgstr "全セルで %s 以上（下回るセル %s / %s）"
+
+msgid "Shapiro–Wilk"
+msgstr "Shapiro–Wilk"
+
+msgid "Brown–Forsythe"
+msgstr "Brown–Forsythe"
+
+msgid "Levene"
+msgstr "Levene"
+
+msgid "Largest / smallest variance"
+msgstr "最大分散 / 最小分散"
+
+msgid "Minimum expected count"
+msgstr "最小期待度数"
+
+msgid "all groups"
+msgstr "全群"
+
+msgid "all cells"
+msgstr "全セル"
+
+msgid "not rejected"
+msgstr "棄却されない"
+
+msgid "rejected"
+msgstr "棄却"
+
+msgid "not assessable"
+msgstr "評価不能"
+
+msgid "reported"
+msgstr "報告のみ"
+
+msgid "met"
+msgstr "満たす"
+
+msgid "not met"
+msgstr "満たさない"
+
+msgid "Default: Welch's ANOVA (no documented reason to assume equal variances)"
+msgstr "既定：Welch の分散分析（等分散を仮定する根拠がないため）"
+
+msgid "One-way ANOVA was chosen because equal variances were declared in advance (a documented reason) and are not rejected by the data."
+msgstr "等分散が事前に宣言され（根拠あり）、データでも棄却されないため一元配置分散分析を選びました。"
+
+msgid "Welch's ANOVA compares three or more independent means without assuming equal variances. It is the default over one-way ANOVA: it loses little power when variances are equal and keeps the false-positive rate when they are not."
+msgstr "Welch の分散分析は等分散を仮定せずに独立した3群以上の平均を比較します。等分散のときも検出力の損失はわずかで、不等分散のときは偽陽性率を保つため、一元配置分散分析より優先する既定です。"
+
+msgid "Assumption checks"
+msgstr "前提条件のチェック"
+
+msgid "Check"
+msgstr "チェック"
+
+msgid "Sample"
+msgstr "対象"
+
+msgid "Threshold"
+msgstr "基準"
+
+msgid "Decision"
+msgstr "判定"
+
+msgid "Normal Q-Q plot: %s"
+msgstr "正規 Q-Q プロット：%s"
+
+msgid "Quick analysis"
+msgstr "クイック分析"
+
+msgid "Use project data"
+msgstr "プロジェクトのデータを使う"
+
+msgid "That project file is not available."
+msgstr "そのプロジェクトのファイルは利用できません。"
+
+msgid "No project is active."
+msgstr "有効なプロジェクトがありません。"
+
+msgid "Run a test first."
+msgstr "先に検定を実行してください。"
+
+msgid "No provenance in the current result."
+msgstr "現在の結果に来歴がありません。"
+
+msgid "Draw a plot first."
+msgstr "先にプロットを描画してください。"
+
+msgid "Save failed."
+msgstr "保存に失敗しました。"
+
+msgid "A report needs at least two groups of numbers."
+msgstr "レポートには数値の群が2つ以上必要です。"
+
+msgid "Building report…"
+msgstr "レポートを作成しています…"
+
+msgid "Could not build the report."
+msgstr "レポートを作成できませんでした。"
+
+msgid "Report downloaded."
+msgstr "レポートをダウンロードしました。"
+
+msgid "Saving report to Files…"
+msgstr "レポートをファイルに保存しています…"
+
+msgid "Could not save the report."
+msgstr "レポートを保存できませんでした。"
+
+msgid "Saved to Files:"
+msgstr "ファイルに保存しました:"
+
+msgid "Open Files"
+msgstr "ファイルを開く"
+
+msgid "PDF reports are not available on this server."
+msgstr "このサーバーではPDFレポートを作成できません。"

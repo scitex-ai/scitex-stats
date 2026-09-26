@@ -27,6 +27,6 @@ Development Installation
 
 .. code-block:: bash
 
-   git clone https://github.com/ywatanabe1989/scitex-stats.git
+   git clone https://github.com/scitex-ai/scitex-stats.git
    cd scitex-stats
    pip install -e ".[dev]"

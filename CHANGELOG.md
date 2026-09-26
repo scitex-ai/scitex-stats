@@ -7,6 +7,113 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- The report's determinism contract is now stated accurately where it ships. The
+  comment in `reporting/_pdf/_html.py` claimed two runs over the same input were
+  **byte-identical**; the artifacts contradict that (measured: two renders with the
+  same timestamp differed inside an object carrying `/Length1 ... /FlateDecode`, an
+  embedded font program, while metadata was identical and zero pages differed). The
+  shipped contract is now **content determinism** — identical page text, metadata,
+  page count and decoded content streams, with the creation date taken from the
+  report timestamp — documented in `reporting/_pdf/_render.py`,
+  `reporting/_pdf/_html.py` and the `scitex_stats.report` docstring, and asserted by
+  `tests/scitex_stats/reporting/_pdf/test__api.py::test_pdf_is_content_deterministic_for_the_same_input_and_timestamp`.
+  No behaviour changed.
+
+## [0.2.27] — 2026-09-17
+
+### Changed
+- The Statistics app's data and test panes follow the operator UI review:
+  - The file drop zone answers the pointer and the keyboard — hover /
+    focus-within tint, the dragover accent ring, and a native "choose a file"
+    button inside it. The zone itself stays a click target (a click that misses
+    an interactive child opens the picker), so mouse, touch and keyboard all
+    reach the file dialog.
+  - `Load sample dataset` is a titled secondary action directly below the drop
+    zone, with a one-line description of what it loads and a confirmation
+    before it replaces anything already typed; the ambiguous inline "or" label
+    is gone.
+  - Selected test rows are flat: a 4px vertical accent line on the left edge, a
+    subtle full-row tint and semibold text — no rounded card, no shadow.
+  - Phones (390px): single-column options, a wrapping pane header, and >=44px
+    touch targets for every control.
+
+## [0.2.26] — 2026-09-17
+
+### Added
+- `scitex_stats.run_posthoc` / `select_posthoc`: post-hoc after a 3+ group
+  omnibus test, chosen deterministically (ANOVA: Tukey HSD or Games–Howell by
+  Brown–Forsythe; Welch's ANOVA: Games–Howell; Kruskal–Wallis: Dunn–Holm;
+  Friedman: Nemenyi or Wilcoxon–Holm; RM ANOVA: paired t–Holm). Exact
+  studentized-range p values, adjusted p (APA), pairwise effect sizes with CIs;
+  a non-significant omnibus skips comparisons unless `when="always"`, which flags it.
+- `scitex_stats.report(data, design=..., output="report.pdf")`, `scitex-stats
+  report data.csv --out report.pdf` and the `generate_report` MCP tool: one PDF
+  (plus HTML and Markdown) with metadata, data summary and exclusions,
+  assumption checks, applicability and primary test, APA result, sensitivity
+  analyses, post-hoc table, figure with brackets, methods paragraph and
+  references. WeasyPrint renders offline; new `[report]` extra.
+- Stats app: "Download report (PDF)" and "Save to Files" in Results (EN/JA).
+- Provenance receipt on every `run_test`, `full_report` and MCP `run_test`
+  result (`result["provenance"]`, schema `scitex-stats/provenance@1`): test
+  and parameters, per-input SHA-256 with n, seed, library versions, UTC
+  timestamp, result and receipt hashes. See skill `17_provenance-verify.md`.
+- `scitex_stats.verify(result, data=...)`, `scitex-stats verify` CLI and the
+  `verify_result` MCP tool: receipt/result/input hash checks plus a
+  bit-for-bit recompute.
+- `result["input_integrity"]`: NaN exclusions (with indices and reason),
+  type coercions; `run_test(nan_policy="omit"|"raise")`.
+- APA 7 output fixed at the source: every result carries an `apa` block
+  (plain / html / latex / rule / table / descriptives), with
+  `scitex_stats.validate_apa()` and `scitex-stats validate-apa` as the
+  checked contract.
+- Data-driven test selection: `check_applicability()`, `recommend_test()`,
+  `run_all_applicable()` — with `scitex-stats tests check-applicability` /
+  `recommend-test` / `execute-all` and their MCP tools — plus explicit
+  assumption checks, thresholds and Q-Q data.
+- Neutral, versioned plot spec per result; the Statistics app gains a Plot
+  view (FigRecipe or plain matplotlib) with `Open in FigRecipe`.
+- Statistics Django app: a three-pane workflow shell (`1. Data Input` /
+  `2. Test Selection` / `3. Results`) served by `scitex-stats gui serve`
+  standalone or mounted by the hub under its own prefix.
+
+### Changed
+- `full_report` bootstrap CIs are seeded by default: `seed=42`, a fresh
+  `numpy.random.default_rng(seed)` per interval (previously unseeded).
+  `random_state=` is a deprecated alias. New `ci_method` field.
+- `run_test` / MCP `run_test` raise `InputIntegrityError` on infinite,
+  non-numeric or empty inputs, and on NaN in contingency tables; NaN in
+  paired designs is excluded pairwise (MCP `data_file` columns were
+  previously `dropna()`-ed independently, which misaligned pairs).
+- Demo and docstring code uses `numpy.random.default_rng` instead of global
+  `np.random.seed` state.
+- The app's dependency floors now name the releases that actually ship the
+  shared shell: `scitex-app>=0.24.0` (ships `scitex_app/app_shell.html`) and
+  `scitex-ui>=0.22.0` (ships the `scitex_static` tag library behind
+  `{% app_static %}` and the canonical project selector). The previous
+  `scitex-ui>=0.19.0` floor could resolve a scitex-ui whose shell cannot
+  render the app template at all, and `scitex-app` was not declared.
+- `scitex-stats tests`: the leaf nouns `applicability` and `run-all` are now
+  the verb-first `check-applicability` and `execute-all`. The old spellings
+  stay available as hidden deprecation aliases that forward to the new
+  commands, so existing scripts keep working.
+
+### Fixed
+- Standalone app: `scitex_stats._django.settings` never installed
+  `scitex_app`, so every page of `scitex-stats gui serve` answered 500 with
+  `TemplateDoesNotExist: scitex_app/app_shell.html` while the test suite
+  (which configures its own `INSTALLED_APPS`) stayed green. Fixed, and
+  pinned by a test that boots the real settings module in a child
+  interpreter.
+- Assumption-check statistics and thresholds now render in APA form
+  (`W = .97, p ≥ .05, α = .05`), routed through the library formatter
+  rather than app-side string building.
+- `×` renders on phones, `p` is italic inside "p-value", and Sample /
+  Recommend preselect the primary test.
+- Development gates: the APA test modules mirror their source packages
+  (PS-202/PS-204), the cross-package import gate is regenerated (PS-140),
+  and the `.po` reader the i18n test needs is a declared `[dev]` dependency.
+
 ## [0.2.24] — 2026-06-03
 
 ### Added

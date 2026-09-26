@@ -147,6 +147,7 @@ def test_ttest_rel(
         x, y = resolved["x"], resolved["y"]
 
     from scitex_stats._utils._effect_size import cohens_d, interpret_cohens_d
+    from scitex_stats._utils._effect_size_ci import cohens_d_ci
     from scitex_stats._utils._formatters import p2stars
     from scitex_stats._utils._normalizers import force_dataframe
     from scitex_stats._utils._power import power_ttest
@@ -199,6 +200,7 @@ def test_ttest_rel(
         "statistic": t_stat,
         "stat_symbol": "t",
         "alternative": alternative,
+        "df": n_pairs - 1,
         "n_pairs": n_pairs,
         "var_x": var_x,
         "var_y": var_y,
@@ -209,6 +211,7 @@ def test_ttest_rel(
         "effect_size": effect_size,
         "effect_size_metric": "Cohen's d (paired)",
         "effect_size_interpretation": effect_size_interpretation,
+        **cohens_d_ci(effect_size, n_pairs, None, alpha),
         "power": power,
         "H0": H0,
     }
@@ -278,13 +281,13 @@ def main(args):
     logger.info("Demonstrating paired samples t-test")
 
     # Set random seed
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     # Example 1: Significant paired difference
     logger.info("\n=== Example 1: Significant paired difference ===")
 
-    before = np.random.normal(10, 2, 30)
-    after = before + np.random.normal(2, 1, 30)  # Correlated increase
+    before = rng.normal(10, 2, 30)
+    after = before + rng.normal(2, 1, 30)  # Correlated increase
 
     test_ttest_rel(before, after, var_x="Before", var_y="After")
 

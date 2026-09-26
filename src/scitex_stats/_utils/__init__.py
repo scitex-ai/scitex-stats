@@ -23,8 +23,11 @@ from ._effect_size import (
     prob_superiority,
 )
 
+# APA rendering (segments + plain/HTML/LaTeX)
+from ._apa import apa_render, validate_apa
+
 # Formatters
-from ._formatters import fmt_stat, fmt_sym, italicize_stats, p2stars
+from ._formatters import fmt_stat, fmt_sym, fmt_sym_md, italicize_stats, p2stars
 
 # Normalizers
 from ._normalizers import force_dataframe
@@ -53,12 +56,15 @@ __all__ = [
     # Formatters
     "fmt_stat",
     "fmt_sym",
+    "fmt_sym_md",
     "italicize_stats",
     "p2stars",
     # Normalizers
     "force_dataframe",
     # Serialization
     "to_json_safe",
+    "apa_render",
+    "validate_apa",
     # CSV/DataFrame column resolution
     "resolve_columns",
     "resolve_groups",

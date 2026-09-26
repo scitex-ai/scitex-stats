@@ -1,0 +1,237 @@
+{% extends "scitex_app/app_shell.html" %}
+{% load static i18n scitex_i18n scitex_panes scitex_static scitex_project_picker %}
+{% comment %}
+Host chrome comes from scitex_app/app_shell.html: the hub maps it to its own
+base page (site header + dock), standalone falls back to scitex-ui's shell.
+{% endcomment %}
+{% block extra_css %}
+    <meta name="stx-mount" content="{{ stx_mount }}">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    {% scitex_project_provider_meta %}
+    <link rel="stylesheet" href="{% app_static 'scitex_ui/css/app/form-controls.css' %}">
+    <link rel="stylesheet" href="{% app_static 'stats/css/stats.css' %}">
+    <link rel="stylesheet" href="{% app_static 'stats/css/recommend.css' %}">
+    <link rel="stylesheet" href="{% app_static 'stats/css/report.css' %}">
+{% endblock %}
+
+{% block scitex_app_content %}
+<div class="stats-app" data-stats-app>
+  {% comment %}
+  Canonical app header: leaf title, the LEAF package version, then the shared
+  project picker in the slot the scitex-ui stylesheet pins (order 1, left,
+  never right-aligned) and finally the app's own actions.
+  {% endcomment %}
+  <header class="stats-app-header" data-stats-header data-stats-project="{{ stats_current_project_id }}">
+    <h1 class="stats-app-header__title">{% translate "Stats" %}</h1>
+    <span class="stats-app-header__version" data-stats-version>v{{ stats_version }}</span>
+    <div class="stx-app-header__slot--project-selector">
+      {% scitex_project_picker scope="project" current=stats_current_project_id %}
+    </div>
+    <div class="stats-app-header__actions" data-stats-header-actions>
+      <button type="button" class="stats-btn stats-btn--ghost" id="statsModeToggle" data-stats-mode-toggle hidden>{% translate "Quick analysis" %}</button>
+    </div>
+  </header>
+{% translate "1. Data Input" as label_data %}{% translate "2. Test Selection" as label_test %}{% translate "3. Results" as label_results %}
+{% scitex_panes "stats" columns="minmax(0,1.1fr) minmax(0,0.9fr) minmax(0,1.2fr)" active="data" %}
+  {% scitex_pane "data" label=label_data order=1 css_class="stats-pane" %}
+    <header class="stats-pane__header" data-stx-pane-header>
+      <h2 class="stats-pane__title">{% translate "1. Data Input" %}</h2>
+      <div class="stats-pane__actions">
+        <input type="file" id="statsCsv" accept=".csv,.tsv,.txt,text/csv" hidden>
+      </div>
+    </header>
+    <div class="stats-pane__body stats-dropzone" id="statsDataDrop">
+      {% comment %}
+      PROJECT-DEFAULT MODE. The active project's authorized CSV/TSV files come
+      from the provider-backed endpoint, server-rendered here; Quick analysis
+      (below) is the explicit stateless alternative.
+      {% endcomment %}
+      <section class="stats-project" id="statsProjectFiles" data-stats-project-panel{% if not stats_current_project_id %} hidden{% endif %}>
+        <h3 class="stats-project__title">{% translate "Project data" %}</h3>
+        <ul class="stats-project__list" data-stats-project="{{ stats_current_project_id }}">
+          {% for f in project_files %}
+          <li class="stats-project__file">
+            <button type="button" class="stats-btn stats-btn--ghost stats-project__import" data-file="{{ f.name }}">{{ f.name }}</button>
+            <span class="stats-project__meta">{{ f.size }} B</span>
+          </li>
+          {% empty %}
+          <li class="stats-project__empty stats-hint">{% translate "No CSV or TSV files in this project yet." %}</li>
+          {% endfor %}
+        </ul>
+      </section>
+      <section class="stats-manual" id="statsManualData" data-stats-manual>
+        <p class="stats-hint">{% translate "One group per box. Paste numbers separated by spaces, commas or new lines." %}</p>
+        <button type="button" class="stats-btn stats-dropzone__button" id="statsChooseFile">{% translate "Drop a CSV or TSV file here, or choose a file" %}</button>
+        <section class="stats-source" aria-labelledby="statsSourceTitle">
+          <h3 class="stats-source__title" id="statsSourceTitle">{% translate "No dataset yet?" %}</h3>
+          <button type="button" class="stats-btn stats-btn--secondary stats-source__sample" id="statsSample">{% translate "Load sample dataset" %}</button>
+          <p class="stats-hint" id="statsSampleHint">{% translate "Loads the sample two-group dataset into the boxes below, replacing anything already entered." %}</p>
+        </section>
+      </section>
+      <div class="stats-options">
+        <label class="stats-field"><span>{% translate "Design" %}</span>
+          <select class="stx-select" id="statsDesign">
+            <option value="independent" selected>{% translate "Independent groups" %}</option>
+            <option value="paired">{% translate "Paired / repeated measures" %}</option>
+          </select>
+        </label>
+        <label class="stats-field"><span>{% translate "Measurement scale" %}</span>
+          <select class="stx-select" id="statsScale">
+            <option value="continuous" selected>{% translate "Continuous" %}</option>
+            <option value="ordinal">{% translate "Ordinal" %}</option>
+            <option value="categorical">{% translate "Categorical (one row of counts per box)" %}</option>
+          </select>
+        </label>
+      </div>
+      <div id="statsGroups" class="stats-groups"></div>
+      <div class="stats-row">
+        <button type="button" class="stats-btn stats-btn--ghost" id="statsAddGroup">+ {% translate "Add group" %}</button>
+        <button type="button" class="stats-btn stats-btn--ghost" id="statsClear">{% translate "Clear" %}</button>
+      </div>
+    </div>
+  {% endscitex_pane %}
+
+  {% scitex_pane "test" label=label_test order=2 css_class="stats-pane" %}
+    <header class="stats-pane__header" data-stx-pane-header>
+      <h2 class="stats-pane__title">{% translate "2. Test Selection" %}</h2>
+      <div class="stats-pane__actions">
+        <button type="button" class="stats-btn" id="statsRecommend">{% translate "Select recommended test" %}</button>
+        <button type="button" class="stats-btn stats-btn--primary" id="statsCalculate">{% translate "Calculate" %}</button>
+      </div>
+    </header>
+    <div class="stats-pane__body">
+      <p id="statsError" class="stats-error" role="alert" hidden></p>
+      <div id="statsTests" class="stats-tests" role="radiogroup" aria-label="{% translate 'Statistical test' %}"></div>
+      <div class="stats-options">
+        <label class="stats-field"><span>{% translate "Alternative hypothesis" %}</span>
+          <select class="stx-select" id="statsAlt">
+            <option value="two-sided" selected>{% translate "two-sided" %}</option>
+            <option value="greater">{% translate "greater" %}</option>
+            <option value="less">{% translate "less" %}</option>
+          </select>
+        </label>
+        <label class="stats-field" id="statsPopmeanWrap" hidden><span>{% translate "Population mean" %}</span>
+          <input type="number" id="statsPopmean" value="0" step="any">
+        </label>
+      </div>
+    </div>
+  {% endscitex_pane %}
+
+  {% scitex_pane "results" label=label_results order=3 css_class="stats-pane" %}
+    <header class="stats-pane__header" data-stx-pane-header>
+      <h2 class="stats-pane__title">{% translate "3. Results" %}</h2>
+      <div class="stats-pane__actions">
+        <button type="button" class="stats-btn stats-btn--ghost stats-copy" id="statsCopy" hidden><span class="stats-copy__icon" aria-hidden="true"></span><span class="stats-copy__label">{% translate "Copy" %}</span></button>
+        <span id="statsCopyStatus" class="stats-visually-hidden" role="status" aria-live="polite"></span>
+      </div>
+    </header>
+    <div class="stats-pane__body">
+      <section id="statsSummary" class="stats-summary" aria-live="polite" hidden>
+        <h3 class="stats-summary__title">{% translate "Applicable tests" %}</h3>
+        <ul id="statsRecNotes" class="stats-notes" hidden></ul>
+        <div class="stats-applic-wrap">
+          <table class="stats-applic">
+            <thead><tr><th scope="col"><span class="stats-visually-hidden">{% translate "Applicable" %}</span></th><th scope="col">{% translate "Test" %}</th><th scope="col">{% translate "Reasons" %}</th></tr></thead>
+            <tbody id="statsApplicRows"></tbody>
+          </table>
+        </div>
+        <div id="statsRecCard" class="stats-rec"></div>
+        <div id="statsAssumptions" class="stats-assumptions"></div>
+        <figure id="statsPlotSlot" class="stats-plot-slot" data-stats-plot-slot hidden></figure>
+        <div class="stats-row stats-row--actions">
+          <button type="button" class="stats-btn" id="statsRunAll">{% translate "Run all applicable (sensitivity)" %}</button>
+        </div>
+        <div id="statsRunAllOut" class="stats-runall" hidden></div>
+      </section>
+      <div id="statsEmpty" class="stats-empty">
+        <div class="stats-empty__icon" aria-hidden="true">&sigma;</div>
+        <p>{% translate "Enter data, pick a test, then press Calculate." %}</p>
+      </div>
+      <div id="statsResult" class="stats-result" hidden>
+        <p id="statsResultTitle" class="stats-result__title"></p>
+        <p id="statsFormatted" class="stats-result__formatted"></p>
+        <div class="stats-row stats-row--actions" id="statsSaveRow" data-stats-save-row hidden>
+          <button type="button" class="stats-btn" id="statsSaveResults">{% translate "Save results" %}</button>
+          <button type="button" class="stats-btn" id="statsSaveProvenance">{% translate "Save provenance" %}</button>
+          <button type="button" class="stats-btn" id="statsSaveConfig">{% translate "Save config" %}</button>
+          <span class="stats-hint" id="statsSaveStatus" role="status" aria-live="polite"></span>
+        </div>
+        <table class="stats-table stats-table--desc" id="statsDescTable" hidden><thead id="statsDescHead"></thead><tbody id="statsDescRows"></tbody></table>
+        <table class="stats-table"><tbody id="statsResultRows"></tbody></table>
+        <section class="stats-plot" id="statsPlot" aria-labelledby="statsPlotTitle" hidden>
+          <div class="stats-plot__head">
+            <h3 class="stats-plot__title" id="statsPlotTitle">{% translate "Plot" %}</h3>
+            <div class="stats-plot__actions">
+              <a class="stats-btn stats-btn--ghost" id="statsPlotSvg" download="stats-plot.svg" hidden>SVG</a>
+              <a class="stats-btn stats-btn--ghost" id="statsPlotPng" download="stats-plot.png" hidden>PNG</a>
+              <button type="button" class="stats-btn" id="statsOpenFigrecipe" hidden>{% translate "Open in FigRecipe" %}</button>
+              <button type="button" class="stats-btn stats-btn--ghost" id="statsSavePlot">{% translate "Save plot" %}</button>
+            </div>
+          </div>
+          <div class="stats-plot__frame"><img id="statsPlotImg" class="stats-plot__img" alt="{% translate 'Plot of the test result' %}" hidden></div>
+          <p id="statsPlotStatus" class="stats-hint" role="status" aria-live="polite"></p>
+        </section>
+        <details class="stx-acc stats-acc">
+          <summary>{% translate "Raw result" %}</summary>
+          <div class="stx-acc__body"><pre id="statsJson" class="stats-pre"></pre></div>
+        </details>
+      </div>
+
+      <section class="stats-report" aria-labelledby="statsReportTitle">
+        <h3 id="statsReportTitle" class="stats-report__title">{% translate "Report" %}</h3>
+        <p class="stats-hint">{% translate "One PDF with assumption checks, the recommended test, sensitivity analyses, post-hoc comparisons, a figure and a methods paragraph." %}</p>
+        <div class="stats-row">
+          <button type="button" class="stats-btn stats-btn--primary" id="statsReportPdf">{% translate "Download report (PDF)" %}</button>
+          <button type="button" class="stats-btn" id="statsReportSave" hidden>{% translate "Save to Files" %}</button>
+        </div>
+        <p id="statsReportStatus" class="stats-hint stats-report__status" role="status" aria-live="polite"></p>
+      </section>
+
+      <details class="stx-acc stats-acc">
+        <summary>{% translate "Multiple-comparison correction" %}</summary>
+        <div class="stx-acc__body">
+          <label class="stats-field"><span>{% translate "Method" %}</span>
+            <select class="stx-select" id="statsCorrMethod">
+              <option value="fdr_bh" selected>FDR (Benjamini–Hochberg)</option>
+              <option value="bonferroni">Bonferroni</option>
+              <option value="holm">Holm</option>
+              <option value="sidak">Šidák</option>
+            </select>
+          </label>
+          <label class="stats-field"><span>{% translate "P-values" %}</span>
+            <textarea id="statsCorrP" rows="2" placeholder="0.01 0.02 0.03 0.5"></textarea>
+          </label>
+          <button type="button" class="stats-btn" id="statsCorrect">{% translate "Correct" %}</button>
+          <table class="stats-table"><tbody id="statsCorrOut"></tbody></table>
+        </div>
+      </details>
+
+      <details class="stx-acc stats-acc">
+        <summary>{% translate "Post-hoc comparisons" %}</summary>
+        <div class="stx-acc__body">
+          <p class="stats-hint">{% translate "Uses the groups in Data." %}</p>
+          <label class="stats-field"><span>{% translate "Method" %}</span>
+            <select class="stx-select" id="statsPhMethod">
+              <option value="tukey" selected>Tukey HSD</option>
+              <option value="games_howell">Games–Howell</option>
+              <option value="dunnett">Dunnett</option>
+            </select>
+          </label>
+          <button type="button" class="stats-btn" id="statsPosthoc">{% translate "Compare groups" %}</button>
+          <table class="stats-table"><tbody id="statsPhOut"></tbody></table>
+        </div>
+      </details>
+    </div>
+  {% endscitex_pane %}
+{% endscitex_panes %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    {% scitex_js_catalog "scitex_stats._django" %}
+    <script src="{% app_static 'stats/js/stx-mount.js' %}"></script>
+    <script src="{% app_static 'stats/js/plot.js' %}"></script>
+    <script src="{% app_static 'stats/js/app.js' %}"></script>
+    <script src="{% app_static 'stats/js/recommend.js' %}"></script>
+    <script src="{% app_static 'stats/js/report.js' %}"></script>
+{% endblock %}

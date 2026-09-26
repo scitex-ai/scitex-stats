@@ -177,14 +177,14 @@ def main(args):
     logger.info("Demonstrating eta-squared effect size for ANOVA")
 
     # Set random seed
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     # Example 1: Three groups with clear differences
     logger.info("\n=== Example 1: Three groups with differences ===")
 
-    group1 = np.random.normal(0, 1, 30)
-    group2 = np.random.normal(0.5, 1, 30)
-    group3 = np.random.normal(1.0, 1, 30)
+    group1 = rng.normal(0, 1, 30)
+    group2 = rng.normal(0.5, 1, 30)
+    group3 = rng.normal(1.0, 1, 30)
 
     eta2 = eta_squared([group1, group2, group3])
     interpretation = interpret_eta_squared(eta2)
@@ -195,11 +195,11 @@ def main(args):
     # Example 2: Different effect sizes
     logger.info("\n=== Example 2: Different effect sizes ===")
 
-    control = np.random.normal(0, 1, 40)
+    control = rng.normal(0, 1, 40)
 
     for shift in [0.0, 0.3, 0.6, 1.0]:
-        treatment1 = np.random.normal(shift, 1, 40)
-        treatment2 = np.random.normal(shift * 1.5, 1, 40)
+        treatment1 = rng.normal(shift, 1, 40)
+        treatment2 = rng.normal(shift * 1.5, 1, 40)
 
         eta2 = eta_squared([control, treatment1, treatment2])
         interpretation = interpret_eta_squared(eta2)
@@ -209,7 +209,7 @@ def main(args):
     # Example 3: Many groups
     logger.info("\n=== Example 3: Five groups ===")
 
-    groups = [np.random.normal(i * 0.3, 1, 25) for i in range(5)]
+    groups = [rng.normal(i * 0.3, 1, 25) for i in range(5)]
     eta2_many = eta_squared(groups)
 
     logger.info(
@@ -242,7 +242,7 @@ def main(args):
     eta2_values = []
 
     for n_groups in n_groups_list:
-        groups_test = [np.random.normal(i * 0.4, 1, 30) for i in range(n_groups)]
+        groups_test = [rng.normal(i * 0.4, 1, 30) for i in range(n_groups)]
         eta2_values.append(eta_squared(groups_test))
 
     ax.plot(n_groups_list, eta2_values, "o-", linewidth=2, markersize=8)

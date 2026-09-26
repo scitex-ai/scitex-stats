@@ -184,6 +184,7 @@ def test_brunner_munzel(
         interpret_prob_superiority,
         prob_superiority,
     )
+    from scitex_stats._utils._effect_size_ci import brunner_munzel_df
     from scitex_stats._utils._formatters import p2stars
     from scitex_stats._utils._normalizers import force_dataframe
 
@@ -222,6 +223,7 @@ def test_brunner_munzel(
         "test_method": "Brunner-Munzel test",
         "statistic": w_stat,
         "stat_symbol": "BM",
+        "df": brunner_munzel_df(x, y),
         "alternative": alternative,
         "n_x": n_x,
         "n_y": n_y,

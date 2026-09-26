@@ -56,9 +56,12 @@ rule and empirical verification table.
 - [11_workflows.md](11_workflows.md) — Common analysis patterns
 - [12_cli-reference.md](12_cli-reference.md) — Extended CLI patterns
 - [13_mcp-tools.md](13_mcp-tools.md) — MCP tools for AI agents
+- [15_six-stat-reporting.md](15_six-stat-reporting.md) — Six-stat reporting doctrine (n, CI, method, p, effect size, statistic) + full_report()
+- [16_apa7-reporting.md](16_apa7-reporting.md) — Exact APA 7 line per test (result["apa"]), table/descriptives forms, validate_apa(), with APA 7 section per rule
+- [17_provenance-verify.md](17_provenance-verify.md) — Provenance receipts, seed=42 determinism, input integrity, verify() before reporting any number
 
 ### Reference
-- [20_test-catalog.md](20_test-catalog.md) — All 23 statistical tests with categories
+- [22_test-catalog.md](22_test-catalog.md) — All 23 statistical tests with categories
 - [21_effect-sizes.md](21_effect-sizes.md) — Effect size measures and interpretation
 
 ## CLI
@@ -81,8 +84,10 @@ scitex-stats <command> [options]
 | `stats_normality_test` | Normality testing |
 | `stats_format_results` | Format for publication |
 | `stats_p_to_stars` | p-value to significance stars |
+| `stats_verify_result` | Verify a result's receipt, data hashes and statistics by recompute |
 
 
 ## Environment
 
 - [14_env-vars.md](14_env-vars.md) — SCITEX_* env vars read by scitex-stats at runtime
+- [20_env-vars.md](20_env-vars.md) — SCITEX_STATS_* env vars read by the standalone Django app (`scitex-stats gui`)

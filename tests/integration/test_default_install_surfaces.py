@@ -30,6 +30,8 @@ def _scitex_stats_exe():
     local = os.path.join(os.path.dirname(sys.executable), "scitex-stats")
     if os.path.exists(local):
         return local
+    # Fall back to PATH (was a self-recursion — infinite loop whenever the
+    # console script is not co-located with the running interpreter).
     return shutil.which("scitex-stats")
 
 
@@ -228,16 +230,33 @@ def test_mcp_doctor_clean_exe():
         [exe, "mcp", "doctor"], capture_output=True, timeout=30
     )
 
+def _doctor_env(exe):
+    """`mcp doctor`'s PATH with the console script's directory prepended.
+
+    The doctor's CLI check is about PATH MEMBERSHIP — `shutil.which("scitex-stats")`.
+    This harness invokes the script by ABSOLUTE path (the copy co-installed with
+    the interpreter under test), so the ambient PATH may legitimately not contain
+    it and the check failed for a reason that has nothing to do with the build.
+    Establishing the precondition is the harness's job, not the doctor's.
+    """
+    import os
+
+    env = dict(os.environ)
+    env["PATH"] = os.pathsep.join([os.path.dirname(exe), env.get("PATH", "")])
+    return env
+
+
 def test_mcp_doctor_clean_returncode_proc():
     """`scitex-stats mcp doctor` reports all checks passing."""
     # Arrange
     exe = _scitex_stats_exe()
     # Act
     proc = subprocess.run(
-        [exe, "mcp", "doctor"], capture_output=True, timeout=30
+        [exe, "mcp", "doctor"], capture_output=True, timeout=30, env=_doctor_env(exe)
     )
     # Assert
     assert proc.returncode == 0, proc.stderr.decode(errors="replace")
+
 
 def test_mcp_doctor_clean_stdout_proc():
     """`scitex-stats mcp doctor` reports all checks passing."""
@@ -245,7 +264,7 @@ def test_mcp_doctor_clean_stdout_proc():
     exe = _scitex_stats_exe()
     # Act
     proc = subprocess.run(
-        [exe, "mcp", "doctor"], capture_output=True, timeout=30
+        [exe, "mcp", "doctor"], capture_output=True, timeout=30, env=_doctor_env(exe)
     )
     # Assert
     assert b"All checks passed" in proc.stdout

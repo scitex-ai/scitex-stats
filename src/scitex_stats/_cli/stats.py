@@ -80,6 +80,7 @@ def _emit(payload: "dict | list", as_json: bool = True, indent: int = 2):
 
 
 def run_tests_list(*, as_json: bool = True) -> int:
+    """List available test names to stdout as JSON (default) or plain text. Returns 0."""
     import scitex_stats as ss
 
     tests = ss.available_tests()
@@ -102,6 +103,21 @@ def run_tests_execute(
     alternative: str = "two-sided",
     as_json: bool = True,
 ) -> int:
+    """Run a named statistical test and print results.
+
+    Keyword-only arguments:
+      test_name   — name of the test to run (see ``available_tests()``)
+      data        — path to input file (.csv, .tsv, .npy, .json) or ``"-"`` for stdin JSON
+      x           — column name for first variable (DataFrame input), optional
+      y           — column name for second variable (DataFrame input), optional
+      groups      — comma-separated column names for multi-group (e.g. ``"A,B,C"``);
+                    requires CSV/DataFrame input, optional
+      popmean     — population mean for one-sample tests (default 0.0)
+      alternative — ``"two-sided"`` (default), ``"less"``, or ``"greater"``
+      as_json     — print JSON (True, default) or human-readable
+
+    Returns 0 on success, 1 on error.
+    """
     import scitex_stats as ss
 
     df = _read_data(data)
@@ -155,6 +171,17 @@ def run_tests_describe(
     funcs: "str | None" = None,
     as_json: bool = True,
 ) -> int:
+    """Compute descriptive statistics for a data file and print results.
+
+    Keyword-only arguments:
+      data    — path to input file (.csv, .tsv, .npy, .json) or ``"-"`` for stdin JSON
+      column  — column name to analyze (DataFrame input), optional
+      funcs   — comma-separated list of statistic function names (e.g. ``"mean,std"``),
+                optional; without it all available descriptives are computed
+      as_json — print JSON (True, default) or human-readable
+
+    Returns 0 on success.
+    """
     import scitex_stats as ss
 
     arr = _read_data(data)
@@ -189,6 +216,19 @@ def run_tests_recommend(
     top_k: int = 3,
     as_json: bool = True,
 ) -> int:
+    """Recommend statistical tests for a study design and print results.
+
+    Keyword-only arguments:
+      n_groups     — number of groups in the study
+      sample_sizes — comma-separated sample sizes (e.g. ``"10,12,9"``), one per group
+      outcome      — ``"continuous"`` (default), ``"binary"``, or ``"ordinal"``
+      design       — ``"between"`` (default) or ``"within"``
+      paired       — if True, override design to within-subject
+      top_k        — number of recommendations to return (default 3)
+      as_json      — print JSON (True, default) or plain text
+
+    Returns 0 on success.
+    """
     import scitex_stats as ss
 
     sizes = [int(s) for s in sample_sizes.split(",")]
@@ -210,6 +250,7 @@ def run_tests_recommend(
 
 
 def run_format_pvalue(*, p: float, style: "str | None" = None) -> int:
+    """Convert a p-value to APA significance stars (e.g. ``"***"``) and print to stdout. Returns 0."""
     import scitex_stats as ss
 
     stars = ss.p_to_stars(p, style=style)

@@ -128,13 +128,14 @@ def test_shapiro(  # noqa: C901
     Examples
     --------
     >>> # Normal data
-    >>> x = np.random.normal(0, 1, 100)
+    >>> rng = np.random.default_rng(42)
+    >>> x = rng.normal(0, 1, 100)
     >>> result = test_shapiro(x)
     >>> result['normal']
     True
 
     >>> # Non-normal data
-    >>> x = np.random.exponential(2, 100)
+    >>> x = rng.exponential(2, 100)
     >>> result = test_shapiro(x)
     >>> result['normal']
     False
@@ -344,8 +345,9 @@ def test_normality(
 
     Examples
     --------
-    >>> x = np.random.normal(0, 1, 50)
-    >>> y = np.random.exponential(2, 50)
+    >>> rng = np.random.default_rng(42)
+    >>> x = rng.normal(0, 1, 50)
+    >>> y = rng.exponential(2, 50)
     >>> check = check_normality(x, y, var_names=['Normal', 'Exponential'])
     >>> check['all_normal']
     False

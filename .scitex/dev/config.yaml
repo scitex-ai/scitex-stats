@@ -11,3 +11,15 @@ audit:
     dirs:
       # Claude Code writes claude-code.log here at runtime. Already in .gitignore.
       - logs
+
+  # PS-224: the CLA Assistant job delegates to the fleet's shared cla.yml with
+  # `secrets: inherit` under attacker-triggerable events. That is the
+  # ecosystem-standard CLA wiring (every leaf reuses scitex-ai/.github/cla.yml),
+  # and this leaf does not control the callee's runner destination. Exempting
+  # THIS JOB ONLY (not the whole file) per the constitution; the reason is
+  # mandatory and must not be blank.
+  exemptions:
+    PS-224:
+      - path: .github/workflows/cla.yml::call
+        line: 0
+        reason: "CLA Assistant reuses the fleet's shared scitex-ai/.github/cla.yml callee; this leaf does not choose the runner destination. Standard ecosystem CLA wiring, not a per-repo secret-leak decision."
