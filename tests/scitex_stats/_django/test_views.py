@@ -138,6 +138,55 @@ def test_index_links_app_stylesheet(client):
     assert "stats/css/stats.css" in html
 
 
+# ---------------------------------------------------------------------------
+# Wizard tabs (Data / Test / Results): Writer underline-tab style.
+# The switcher renders via scitex-ui panes, whose stock phone tabs are boxed
+# pills; the leaf override in stats.css restyles them to a flat bar where the
+# active tab carries only a bottom border. Pinned here (this module mirrors
+# views.py, so the PS-204 mirror rule keeps holding).
+# ---------------------------------------------------------------------------
+def _stats_css():
+    # Arrange/Act helper, not a test: the shipped leaf stylesheet.
+    return pathlib.Path(
+        "src/scitex_stats/_django/static/stats/css/stats.css"
+    ).read_text(encoding="utf-8")
+
+
+def _wizard_tab_rule(css, selector):
+    # Arrange/Act helper, not a test: one rule block from the stylesheet.
+    import re as _re
+
+    match = _re.search(_re.escape(selector) + r"\s*\{(.*?)\}", css, _re.S)
+    return match.group(1) if match else ""
+
+
+def test_wizard_active_tab_carries_underline():
+    # Arrange
+    css = _stats_css()
+    # Act
+    block = _wizard_tab_rule(css, '.stats-app .stx-panes__tab[aria-selected="true"]')
+    # Assert
+    assert "border-bottom: 2px solid var(--stats-accent)" in block
+
+
+def test_wizard_tab_has_no_pill_fill():
+    # Arrange
+    css = _stats_css()
+    # Act
+    block = _wizard_tab_rule(css, ".stats-app .stx-panes__tab")
+    # Assert
+    assert "background: transparent" in block
+
+
+def test_wizard_tab_bar_is_flat():
+    # Arrange
+    css = _stats_css()
+    # Act
+    block = _wizard_tab_rule(css, ".stats-app .stx-panes--single > .stx-panes__tabs")
+    # Assert
+    assert "gap: 0" in block
+
+
 def test_index_stx_mount_is_root_prefix(client):
     # Arrange — standalone root mount is "" (contract: never a trailing "/")
     # Act
