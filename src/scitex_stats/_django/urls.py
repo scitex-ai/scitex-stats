@@ -7,9 +7,24 @@ standalone uses ``_standalone_urls`` which includes this one. ``app_name``
 is set so namespace-relative reverse() works from a host urlconf.
 """
 
-from django.urls import path
+# PS-233: `django` and `scitex-ui` are `[server]`-only distributions. This
+# module is a Django URLconf — it has no meaning without them — so the
+# guards FAIL LOUDLY with the extra to install instead of silently degrading.
+try:
+    from django.urls import path
+except ImportError as exc:
+    raise ImportError(
+        "scitex_stats._django.urls needs Django, which is not installed. "
+        "Install the optional stack: pip install 'scitex-stats[server]'"
+    ) from exc
 
-from scitex_ui.project_scope import project_listing_view
+try:
+    from scitex_ui.project_scope import project_listing_view
+except ImportError as exc:
+    raise ImportError(
+        "scitex_stats._django.urls needs scitex-ui, which is not installed. "
+        "Install the optional stack: pip install 'scitex-stats[server]'"
+    ) from exc
 
 from . import _plot_views, _projects, views
 

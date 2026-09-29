@@ -32,7 +32,7 @@
 
 | # | Problem | Solution |
 |---|---------|----------|
-| 1 | **Bare `scipy.stats` returns `(statistic, p)`** — effect size, CI, normality check, power each need manual follow-up calls. | **One call, one dict** — `ss.run_test("ttest_ind", g1, g2)` returns statistic, p, Cohen's d, power, and an APA string in a unified result dict. |
+| 1 | **Bare `scipy.stats` returns** `(statistic, p)` — effect size, CI, normality check, power each need manual follow-up calls. | **One call, one dict** — `ss.run_test("ttest_ind", g1, g2)` returns statistic, p, Cohen's d, power, and an APA string in a unified result dict. |
 | 2 | **Test selection requires expertise** — parametric vs non-parametric, paired vs independent, one-way vs repeated-measures. | **Auto-recommend** — `ss.recommend_tests(StatContext(...))` ranks the appropriate tests from the design alone. |
 | 3 | **APA formatting is manual** — every paper spells out `t(58) = 2.34, p = .021, d = 0.60` by hand. | **`result["formatted"]`** — APA / Nature / LaTeX strings live on the same result dict every test returns. |
 
@@ -98,17 +98,21 @@ uv pip install "scitex-stats[all]"
 
 | Extra | Pulls in |
 |---|---|
-| `mcp` | fastmcp (MCP server for AI agents) |
-| `plot` | matplotlib (for the optional plotting helpers) |
+| `all` | everything below (recommended) |
+| `server` | django + scitex-app + scitex-ui (Statistics GUI app) |
+| `report` | weasyprint (PDF report output; HTML and Markdown need nothing extra) |
 | `figrecipe` | figrecipe (publication figures + auto CSV export) |
-| `all` | `mcp` + `plot` + `figrecipe` (recommended) |
+| `bundle` | scitex-io (Stats ↔ SciTeX bundle I/O) |
 | `dev` | pytest, pytest-cov, nbconvert, ipykernel, + every optional dep so the test suite runs |
 | `docs` | Sphinx + RTD theme + myst-parser (docs build only) |
 
+<sub><b>Table 1.</b> Optional extras and what each pulls in. The MCP server and plotting helpers ship in the base install — no extra needed.</sub>
+
 ```bash
-uv pip install "scitex-stats[mcp]"        # MCP server only
-uv pip install -e ".[dev]"                # editable install for contributors
-pip install scitex-stats[all]             # pip works too, just slower
+uv pip install scitex-stats                 # base install (MCP server + plots included)
+uv pip install "scitex-stats[server]"       # + Statistics GUI app
+uv pip install -e ".[dev]"                  # editable install for contributors
+pip install scitex-stats[all]               # pip works too, just slower
 ```
 
 </details>
@@ -322,6 +326,8 @@ workflow.
 | [`02_test_recommendation.ipynb`](./examples/02_test_recommendation.ipynb) | `StatContext` → `recommend_tests` → top recommendation through `run_test` |
 | [`03_multiple_comparison.ipynb`](./examples/03_multiple_comparison.ipynb) | Family of comparisons → `correct.correct_fdr` (Benjamini-Hochberg) |
 
+<sub><b>Table 2.</b> Runnable example notebooks and the workflow each demonstrates.</sub>
+
 ```bash
 # Re-execute every notebook in place (refreshes outputs)
 bash examples/00_run_all.sh
@@ -457,6 +463,8 @@ The ecosystem modules compose:
 | `scitex.plt` | [figrecipe](https://github.com/ywatanabe1989/figrecipe) | Publication-ready figures with auto CSV export |
 | `scitex.io` | [scitex-io](https://github.com/ywatanabe1989/scitex-io) | Universal file I/O (30+ formats) |
 | `scitex.clew` | [scitex-clew](https://github.com/ywatanabe1989/scitex-clew) | Reproducibility verification via hash DAGs |
+
+<sub><b>Table 3.</b> SciTeX ecosystem modules composed with scitex-stats.</sub>
 
 The SciTeX system follows the Four Freedoms for Research, inspired by [the Free Software Definition](https://www.gnu.org/philosophy/free-sw.en.html):
 
