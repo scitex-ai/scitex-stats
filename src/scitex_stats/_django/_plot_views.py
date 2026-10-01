@@ -43,7 +43,7 @@ _POSTHOC = {"tukey", "games_howell"}
 def discover_app_names() -> List[str]:
     """Names of installed ``scitex.apps`` plugins, read from metadata only."""
     try:
-        from scitex_app.plugins import discover_plugin_apps
+        from scitex_sdk.app.plugins import discover_plugin_apps
 
         return [p.name for p in discover_plugin_apps()]
     except ImportError:

@@ -18,7 +18,7 @@ should the hub ever co-mount this with an unrelated app under a similar name.
 """
 
 try:
-    from scitex_app._django import ScitexAppConfig
+    from scitex_sdk.app._django import ScitexAppConfig
 except ImportError as exc:
     raise ImportError(
         "scitex_stats._django.apps needs scitex-app, which is not installed. "

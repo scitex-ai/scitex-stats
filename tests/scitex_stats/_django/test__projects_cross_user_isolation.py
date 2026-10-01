@@ -58,6 +58,7 @@ resolution and urlconf all run.
 from __future__ import annotations
 
 import contextlib
+import importlib
 import json
 import os
 import pathlib
@@ -65,12 +66,14 @@ import pathlib
 import pytest
 
 pytest.importorskip("django")
-pytest.importorskip("scitex_app")
-pytest.importorskip("scitex_ui")
+pytest.importorskip("scitex_sdk")
+importlib.import_module('scitex_sdk.app')
+pytest.importorskip("scitex_sdk")
+importlib.import_module('scitex_sdk.ui')
 
 from django.test import Client, RequestFactory, override_settings  # noqa: E402
 from django.utils.module_loading import import_string  # noqa: E402
-from scitex_ui.project_scope import ProjectEntry  # noqa: E402
+from scitex_sdk.ui.project_scope import ProjectEntry  # noqa: E402
 
 from scitex_stats._django import _projects  # noqa: E402
 

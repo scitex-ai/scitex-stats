@@ -58,14 +58,14 @@ INSTALLED_APPS = [
 # broken install would resurface later as TemplateDoesNotExist pointing at
 # scitex-ui's shell.
 try:
-    import scitex_ui  # noqa: F401
+    import scitex_sdk.ui as scitex_ui  # noqa: F401
 except ImportError as exc:
     raise ImportError(
-        "scitex_stats._django.settings needs scitex-ui, which is not installed. "
+        "scitex_stats._django.settings needs scitex-sdk UI, which is not installed. "
         "Install the optional stack: pip install 'scitex-stats[server]'"
     ) from exc
 
-INSTALLED_APPS.append("scitex_ui")
+INSTALLED_APPS.append("scitex_sdk.ui")
 
 # scitex-app ships `scitex_app/app_shell.html`, the base template stats.html
 # EXTENDS, and its templatetags provide the workbench directives inside it.
@@ -75,21 +75,21 @@ INSTALLED_APPS.append("scitex_ui")
 # tests, which configure their own INSTALLED_APPS (that list has it).
 # PS-233 guard (fails LOUDLY — same rationale as the scitex-ui import above).
 try:
-    import scitex_app  # noqa: F401,E402
+    import scitex_sdk.app as scitex_app  # noqa: F401,E402
 except ImportError as exc:
     raise ImportError(
-        "scitex_stats._django.settings needs scitex-app, which is not installed. "
+        "scitex_stats._django.settings needs scitex-sdk app, which is not installed. "
         "Install the optional stack: pip install 'scitex-stats[server]'"
     ) from exc
 
-INSTALLED_APPS.append("scitex_app")
+INSTALLED_APPS.append("scitex_sdk.app")
 
 # PS-233 guard (fails LOUDLY — same rationale as above).
 try:
-    from scitex_app.i18n import i18n_settings, with_locale_middleware  # noqa: E402
+    from scitex_sdk.app.i18n import i18n_settings, with_locale_middleware  # noqa: E402
 except ImportError as exc:
     raise ImportError(
-        "scitex_stats._django.settings needs scitex-app, which is not installed. "
+        "scitex_stats._django.settings needs scitex-sdk app, which is not installed. "
         "Install the optional stack: pip install 'scitex-stats[server]'"
     ) from exc
 
@@ -132,7 +132,7 @@ TEMPLATES = [
                 # The app declares "scope": "project" in its manifest, so the
                 # templates need `app_scope` to decide whether the shared
                 # project picker renders (SDK contract, scitex-app).
-                "scitex_app._app_scope.app_scope_context",
+                "scitex_sdk.app._app_scope.app_scope_context",
             ],
         },
     },
