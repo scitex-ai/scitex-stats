@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 const { JSDOM, VirtualConsole } = require("jsdom");
-const leaf = process.env.STATS_TEST_LEAF || path.resolve(__dirname, "../../src/scitex_stats/_django");
+const leaf = process.env.STATS_TEST_LEAF || path.resolve(__dirname, "../../../../../../src/scitex_stats/_django");
 const markup = fs.readFileSync(path.join(leaf, "templates/stats/stats.html"), "utf8")
   .replace(/\{% comment %\}[\s\S]*?\{% endcomment %\}/g, "")
   .replace(/\{%[\s\S]*?%\}/g, "").replace(/\{\{[\s\S]*?\}\}/g, "");

@@ -5,7 +5,7 @@ const path = require("node:path");
 const test = require("node:test");
 const { JSDOM } = require("jsdom");
 
-const leaf = path.resolve(__dirname, "../../src/scitex_stats/_django");
+const leaf = path.resolve(__dirname, "../../../../../../src/scitex_stats/_django");
 const markup = fs.readFileSync(path.join(leaf, "templates/stats/stats.html"), "utf8")
   .replace(/\{% comment %\}[\s\S]*?\{% endcomment %\}/g, "")
   .replace(/\{%[\s\S]*?%\}/g, "")
