@@ -65,6 +65,32 @@
 
   var lastPayload = null;
   var lastRec = null;
+  var generation = 0;
+
+  function alignmentError(payload, testName) {
+    if (!app.rowIntegrityError) return _("Could not verify source row alignment. Reload the application before continuing.");
+    return app.rowIntegrityError(testName, payload.design === "paired" ? "within" : payload.design);
+  }
+
+  function invalidateRecommendation() {
+    generation += 1;
+    lastPayload = null;
+    lastRec = null;
+    renderNotes([]);
+    $("statsApplicRows").textContent = "";
+    $("statsRecCard").textContent = "";
+    $("statsAssumptions").textContent = "";
+    $("statsRunAll").hidden = true;
+    $("statsRunAllOut").hidden = true;
+    $("statsRunAllOut").textContent = "";
+    setVisible(false);
+  }
+
+  function refuseAlignment(message) {
+    invalidateRecommendation();
+    renderNotes([{ msg: message, args: [] }]);
+    setVisible(true);
+  }
 
   function setVisible(show) {
     $("statsSummary").hidden = !show;
@@ -210,12 +236,19 @@
 
   async function recommend(opts) {
     var payload = currentPayload();
-    if (!payload) { lastRec = null; setVisible(false); return; }
+    if (!payload) { invalidateRecommendation(); return; }
+    var error = alignmentError(payload);
+    if (error) { refuseAlignment(error); return; }
     var key = JSON.stringify(payload);
     if (key === lastPayload && !(opts && opts.force)) return;
+    invalidateRecommendation();
     lastPayload = key;
+    var requestGeneration = generation;
     var r = await app.api("/api/recommend-test", payload);
-    if (JSON.stringify(currentPayload()) !== key) return; // data changed meanwhile
+    // Source provenance can change while compacted arrays remain identical.
+    if (requestGeneration !== generation || JSON.stringify(currentPayload()) !== key) return;
+    error = alignmentError(payload);
+    if (error) { refuseAlignment(error); return; }
     if (!r.ok) {
       lastRec = null;
       renderNotes([{ msg: (r.body && r.body.error) || "Request failed (HTTP %s).", args: r.body && r.body.error ? [] : [r.status] }]);
@@ -267,12 +300,26 @@
   async function runAll() {
     var payload = currentPayload();
     var out = $("statsRunAllOut");
-    if (!payload || !lastRec) return;
+    if (!payload) { invalidateRecommendation(); return; }
+    var error = alignmentError(payload, lastRec && lastRec.primary && lastRec.primary.test_id);
+    if (error) { refuseAlignment(error); return; }
+    if (!lastRec) return;
+    if (JSON.stringify(payload) !== lastPayload) { invalidateRecommendation(); return; }
+    if (!app.beginRequest || !app.requestCurrent || !app.requestLatest) return;
+    var request = app.beginRequest("run-all");
+    var requestGeneration = generation;
+    var key = JSON.stringify(payload);
+    function current() {
+      return app.requestCurrent(request) && requestGeneration === generation && JSON.stringify(currentPayload()) === key;
+    }
     var btn = $("statsRunAll");
+    out.textContent = "";
+    out.hidden = true;
     btn.disabled = true;
     try {
       payload.primary = lastRec.primary ? lastRec.primary.test_id : null;
       var r = await app.api("/api/run-all", payload);
+      if (!current()) return;
       out.textContent = "";
       out.hidden = false;
       if (!r.ok) { out.appendChild(el("p", "stats-error", (r.body && r.body.error) || "HTTP " + r.status)); return; }
@@ -301,15 +348,17 @@
       wrap.appendChild(table);
       out.append(wrap, itemNode("p", res.agreement.summary_item, "stats-agreement is-" + res.agreement.status));
     } catch (e) {
+      if (!current()) return;
       out.hidden = false;
       out.textContent = _("Could not reach the Statistics service.");
     } finally {
-      btn.disabled = false;
+      if (app.requestLatest(request)) btn.disabled = false;
     }
   }
 
   var timer = null;
   function soon() {
+    invalidateRecommendation();
     clearTimeout(timer);
     timer = setTimeout(function () { recommend(); }, 500);
   }
@@ -317,6 +366,7 @@
   function init() {
     $("statsRecommend").addEventListener("click", function () { recommend({ force: true, show: true }); });
     $("statsRunAll").addEventListener("click", runAll);
+    document.addEventListener("stats:data-change", soon);
     $("statsGroups").addEventListener("input", soon);
     new MutationObserver(soon).observe($("statsGroups"), { childList: true });
     $("statsDesign").addEventListener("change", soon);
