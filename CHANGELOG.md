@@ -7,7 +7,20 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.29] — 2026-10-03
+
+### Changed
+- The Statistics Django app uses `scitex-sdk[gui]>=0.3.1` for the shared
+  standalone and mounted application contracts, templates, static assets,
+  workspace shell, and project picker.
+
 ### Fixed
+- Remove duplicate visible step headings from the data and test panes while
+  preserving their accessible labels.
+- Keep the Add group and Clear controls at least 44px tall on phones when the
+  app uses the shared SDK shell.
+- Guard optional PDF report capability checks so the app remains usable when
+  PDF support is unavailable.
 - The report's determinism contract is now stated accurately where it ships. The
   comment in `reporting/_pdf/_html.py` claimed two runs over the same input were
   **byte-identical**; the artifacts contradict that (measured: two renders with the
