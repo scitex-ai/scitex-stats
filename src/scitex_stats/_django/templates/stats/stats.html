@@ -1,14 +1,14 @@
-{% extends "scitex_app/app_shell.html" %}
+{% extends "scitex_sdk/app/app_shell.html" %}
 {% load static i18n scitex_i18n scitex_panes scitex_static scitex_project_picker %}
 {% comment %}
-Host chrome comes from scitex_app/app_shell.html: the hub maps it to its own
-base page (site header + dock), standalone falls back to scitex-ui's shell.
+Host chrome comes from scitex_sdk/app/app_shell.html: the hub maps it to its own
+base page (site header + dock), standalone uses the SDK UI shell.
 {% endcomment %}
 {% block extra_css %}
     <meta name="stx-mount" content="{{ stx_mount }}">
     <meta name="csrf-token" content="{{ csrf_token }}">
     {% scitex_project_provider_meta %}
-    <link rel="stylesheet" href="{% app_static 'scitex_ui/css/app/form-controls.css' %}">
+    <link rel="stylesheet" href="{% app_static 'scitex_sdk/ui/css/app/form-controls.css' %}">
     <link rel="stylesheet" href="{% app_static 'stats/css/stats.css' %}">
     <link rel="stylesheet" href="{% app_static 'stats/css/recommend.css' %}">
     <link rel="stylesheet" href="{% app_static 'stats/css/report.css' %}">

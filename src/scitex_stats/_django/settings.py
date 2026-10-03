@@ -52,44 +52,44 @@ INSTALLED_APPS = [
     "scitex_stats._django.apps.StatsCalculatorConfig",
 ]
 
-# scitex-ui supplies the shared workspace shell partial that stats.html
+# scitex-sdk UI supplies the shared workspace shell partial that stats.html
 # extends. It is a REQUIRED member of the `server` extra, so this import
 # fails LOUDLY on purpose (PS-233 guard): a try/except that swallowed a
 # broken install would resurface later as TemplateDoesNotExist pointing at
-# scitex-ui's shell.
+# scitex-sdk UI's shell.
 try:
-    import scitex_ui  # noqa: F401
+    import scitex_sdk.ui  # noqa: F401
 except ImportError as exc:
     raise ImportError(
-        "scitex_stats._django.settings needs scitex-ui, which is not installed. "
+        "scitex_stats._django.settings needs scitex-sdk UI, which is not installed. "
         "Install the optional stack: pip install 'scitex-stats[server]'"
     ) from exc
 
-INSTALLED_APPS.append("scitex_ui")
+INSTALLED_APPS.append("scitex_sdk.ui")
 
-# scitex-app ships `scitex_app/app_shell.html`, the base template stats.html
+# scitex-sdk ships `scitex_sdk/app/app_shell.html`, the base template stats.html
 # EXTENDS, and its templatetags provide the workbench directives inside it.
-# APP_DIRS only searches installed apps, so leaving scitex_app out of
+# APP_DIRS only searches installed apps, so leaving scitex_sdk.app out of
 # INSTALLED_APPS made every standalone page 500 with
 # `TemplateDoesNotExist: scitex_app/app_shell.html` — invisible to the app
 # tests, which configure their own INSTALLED_APPS (that list has it).
-# PS-233 guard (fails LOUDLY — same rationale as the scitex-ui import above).
+# PS-233 guard (fails LOUDLY — same rationale as the scitex-sdk UI import above).
 try:
-    import scitex_app  # noqa: F401,E402
+    import scitex_sdk.app  # noqa: F401,E402
 except ImportError as exc:
     raise ImportError(
-        "scitex_stats._django.settings needs scitex-app, which is not installed. "
+        "scitex_stats._django.settings needs scitex-sdk app, which is not installed. "
         "Install the optional stack: pip install 'scitex-stats[server]'"
     ) from exc
 
-INSTALLED_APPS.append("scitex_app")
+INSTALLED_APPS.append("scitex_sdk.app")
 
 # PS-233 guard (fails LOUDLY — same rationale as above).
 try:
-    from scitex_app.i18n import i18n_settings, with_locale_middleware  # noqa: E402
+    from scitex_sdk.app.i18n import i18n_settings, with_locale_middleware  # noqa: E402
 except ImportError as exc:
     raise ImportError(
-        "scitex_stats._django.settings needs scitex-app, which is not installed. "
+        "scitex_stats._django.settings needs scitex-sdk app, which is not installed. "
         "Install the optional stack: pip install 'scitex-stats[server]'"
     ) from exc
 
@@ -107,7 +107,7 @@ globals().update(i18n_settings())
 
 ROOT_URLCONF = "scitex_stats._django._standalone_urls"
 
-# Project scope (SDK contract, scitex-ui): the app renders the picker, the HOST
+# Project scope (SDK contract, scitex-sdk UI): the app renders the picker, the HOST
 # supplies the project list. A hub mount overrides both settings with its own
 # provider; standalone falls back to local folders (see _projects.py). The
 # dotted path must name a CLASS: `host_project_provider()` imports it and calls
@@ -131,8 +131,8 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 # The app declares "scope": "project" in its manifest, so the
                 # templates need `app_scope` to decide whether the shared
-                # project picker renders (SDK contract, scitex-app).
-                "scitex_app._app_scope.app_scope_context",
+                # project picker renders (SDK contract, scitex-sdk).
+                "scitex_sdk.app._app_scope.app_scope_context",
             ],
         },
     },

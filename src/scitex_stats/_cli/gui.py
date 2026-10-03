@@ -48,17 +48,17 @@ PACKAGE = "scitex-stats"
 def _embed():
     """Return ``scitex_app.embed``, or exit with an actionable message.
 
-    Only the import is guarded: an ImportError raised from INSIDE scitex-app
+    Only the import is guarded: an ImportError raised from INSIDE scitex-sdk
     is a real bug, not an absent optional dependency, and must not be
-    reported as "install scitex-app".
+    reported as "install scitex-sdk".
     """
     try:
-        import scitex_app.embed as embed
+        import scitex_sdk.app.embed as embed
     except ImportError:
         click.secho(
-            "scitex-app is not installed -- the GUI lifecycle (serve/status/"
+            "scitex-sdk app is not installed -- the GUI lifecycle (serve/status/"
             "stop) is delegated to it. Install it with:\n"
-            "  pip install 'scitex-stats[server]'  (needs scitex-app >= 0.11.0)",
+            "  pip install 'scitex-stats[server]'  (needs scitex-sdk >= 0.3.1)",
             fg="red",
             err=True,
         )

@@ -592,7 +592,7 @@
     flex-wrap: wrap;
   }
 
-  .stats-pane__header .stats-btn,
+  .stats-app .stats-btn,
   .stats-source__sample,
   .stats-dropzone__button,
   .stats-test {
