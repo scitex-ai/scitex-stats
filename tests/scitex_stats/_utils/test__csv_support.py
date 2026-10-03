@@ -11,22 +11,34 @@ import pytest
 from scitex_stats._utils._csv_support import resolve_columns, resolve_groups
 
 
+@pytest.fixture
+def paired_column_source(tmp_path):
+    """Keep DataFrame/CSV source arrangement outside the shared test intent."""
+    def select_source(frame, source_kind):
+        if source_kind == "csv":
+            source = tmp_path / "paired.csv"
+            frame.to_csv(source, index=False)
+            return source
+        return frame
+
+    return select_source
+
+
 @pytest.mark.parametrize("source_kind", ["dataframe", "csv"])
 @pytest.mark.parametrize(
     "engine_name",
     ["test_ttest_rel", "test_wilcoxon", "test_pearson", "test_spearman", "test_kendall"],
 )
-def test_paired_columns_keep_original_observation_positions(engine_name, source_kind, tmp_path):
+def test_paired_columns_keep_original_observation_positions(
+    engine_name, source_kind, tmp_path, paired_column_source
+):
     # Arrange
     import scitex_stats
 
     x = np.array([9, np.nan, 8, 4, 7, 3, 6, 2, 5], dtype=float)
     y = np.array([1, 20, np.nan, 2, 3, 8, 4, 9, 7], dtype=float)
     frame = pd.DataFrame({"before": x, "after": y}, index=[7, 2, 2, 9, 4, 6, 1, 3, 0])
-    source = frame
-    if source_kind == "csv":
-        source = tmp_path / "paired.csv"
-        frame.to_csv(source, index=False)
+    source = paired_column_source(frame, source_kind)
     engine = getattr(scitex_stats, engine_name)
     expected = engine(x, y)
     # Act
@@ -54,11 +66,13 @@ def test_unpaired_columns_keep_independent_missing_value_removal(engine_name):
 def test_preserve_rows_keeps_missing_positions_for_joint_mask():
     # Arrange
     frame = pd.DataFrame({"x": [1, np.nan, 3], "y": [4, 5, np.nan]})
+    expected = frame.to_numpy()
     # Act
     actual = resolve_columns(frame, preserve_rows=True, x="x", y="y")
+    observed = np.column_stack([actual["x"], actual["y"]])
     # Assert
-    np.testing.assert_equal(
-        np.column_stack([actual["x"], actual["y"]]), frame.to_numpy()
+    assert observed.shape == expected.shape and np.array_equal(
+        observed, expected, equal_nan=True
     )
 
 
@@ -77,18 +91,23 @@ def test_preserve_rows_keeps_existing_staggered_missingness_fixture(df_with_nan)
     expected = df_with_nan[["x", "y"]].to_numpy()
     # Act
     actual = resolve_columns(df_with_nan, preserve_rows=True, x="x", y="y")
+    observed = np.column_stack([actual["x"], actual["y"]])
     # Assert
-    np.testing.assert_equal(np.column_stack([actual["x"], actual["y"]]), expected)
+    assert observed.shape == expected.shape and np.array_equal(
+        observed, expected, equal_nan=True
+    )
 
 
 def test_preserve_rows_keeps_true_zeros_and_original_order():
     # Arrange
     frame = pd.DataFrame({"x": [0.0, 3.0, np.nan, 1.0], "y": [2.0, 0.0, 5.0, 4.0]})
+    expected = frame.to_numpy()
     # Act
     actual = resolve_columns(frame, preserve_rows=True, x="x", y="y")
+    observed = np.column_stack([actual["x"], actual["y"]])
     # Assert
-    np.testing.assert_equal(
-        np.column_stack([actual["x"], actual["y"]]), frame.to_numpy()
+    assert observed.shape == expected.shape and np.array_equal(
+        observed, expected, equal_nan=True
     )
 
 

@@ -184,14 +184,17 @@ def test_paired_dispatch_matches_scipy_hypothesis(test_name, alternative):
     y = np.array([5, 9, 9, 15, 16, 19, 23, 26], dtype=float)
     scipy_name = "wilcoxon" if test_name == "wilcoxon" else "ttest_rel"
     expected = getattr(stats, scipy_name)(x, y, alternative=alternative)
+    reference = np.asarray([expected.statistic, expected.pvalue])
     # Act
     actual = run_test(test_name, data=x, data2=y, alternative=alternative)
+    observed = np.asarray([actual["statistic"], actual["pvalue"]])
     # Assert
-    np.testing.assert_allclose(
-        [actual["statistic"], actual["pvalue"]],
-        [expected.statistic, expected.pvalue],
+    assert observed.shape == reference.shape and np.allclose(
+        observed,
+        reference,
         rtol=1e-12,
         atol=1e-14,
+        equal_nan=True,
     )
 
 
