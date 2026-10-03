@@ -14,12 +14,21 @@ import json
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, Optional, Tuple
 
-from django.conf import settings
-from django.http import HttpResponse, JsonResponse
-from django.utils.module_loading import import_string
-from django.utils.translation import gettext as _
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_GET, require_POST
+# PS-233: `django` is a `[server]`-only distribution. This module is a Django
+# view set — it has no meaning without the framework — so the guard FAILS
+# LOUDLY with the extra to install instead of silently degrading.
+try:
+    from django.conf import settings
+    from django.http import HttpResponse, JsonResponse
+    from django.utils.module_loading import import_string
+    from django.utils.translation import gettext as _
+    from django.views.decorators.csrf import csrf_exempt
+    from django.views.decorators.http import require_GET, require_POST
+except ImportError as exc:
+    raise ImportError(
+        "scitex_stats._django._report_views needs Django, which is not installed. "
+        "Install the optional stack: pip install 'scitex-stats[server]'"
+    ) from exc
 
 HUB_SAVE_TO_FILES = "apps.workspace.files_app.services.save_to_downloads"
 HUB_USER_ROOT = "apps.workspace.files_app.services.user_root"

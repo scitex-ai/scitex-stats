@@ -68,7 +68,16 @@ class PlotResult:
         """Save the image; the FigRecipe backend also writes the editable ``.yaml`` recipe."""
         path = Path(path)
         if self.backend == "figrecipe":
-            import figrecipe
+            # PS-233: `figrecipe` is a `[figrecipe]`/`[all]`-only distribution;
+            # guarded here (unreachable when it is absent — render_spec already
+            # raised — but the guard is the contract).
+            try:
+                import figrecipe
+            except ImportError as exc:
+                raise ImportError(
+                    "figrecipe is required for backend='figrecipe': "
+                    "pip install 'scitex-stats[figrecipe]'"
+                ) from exc
 
             figrecipe.save(self.figure, path, validate=False, verbose=False)
             return path

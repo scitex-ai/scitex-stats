@@ -1,0 +1,13 @@
+# Custom CLI vocabulary for scitex-stats.
+# Words listed here are accepted by the §1d audit on top of the global
+# catalog and Moby POS dictionary (mirrors scitex-scholar).
+
+nouns: []
+
+# Transitive verbs (require an object — typically take a positional or `--key`).
+transitive_verbs: []
+
+# Verb-synonym exemptions (§1f): each entry needs an inline `# why` comment.
+verb_exceptions:
+  - check  # why: `tests check-applicability` mirrors the public Python API `ss.check_applicability`; renaming the CLI verb alone would split the CLI/Python vocabulary for no operator gain.
+  - verify  # why: `scitex-stats verify` checks a saved result against its provenance receipt (module `scitex_stats._verify`, Python API `verify`); `verify` is the domain-correct verb and renaming would split the CLI/Python vocabulary for no operator gain.

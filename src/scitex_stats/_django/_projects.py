@@ -47,11 +47,20 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 
-from scitex_ui.project_scope import (
-    PROJECT_QUERY_PARAM,
-    LocalProjectProvider,
-    resolve_project,
-)
+# PS-233: `scitex-ui` is a `[server]`-only distribution. This module is the
+# project-scope surface — it has no meaning without the SDK — so the guard
+# FAILS LOUDLY with the extra to install instead of silently degrading.
+try:
+    from scitex_ui.project_scope import (
+        PROJECT_QUERY_PARAM,
+        LocalProjectProvider,
+        resolve_project,
+    )
+except ImportError as exc:
+    raise ImportError(
+        "scitex_stats._django._projects needs scitex-ui, which is not installed. "
+        "Install the optional stack: pip install 'scitex-stats[server]'"
+    ) from exc
 
 # Where standalone looks for projects. Overridable so tests — and users whose
 # data lives elsewhere — do not have to write into $HOME.
@@ -128,7 +137,15 @@ def provider(request: Any = None) -> Any:
     request is threaded through every call so a host provider can decide per
     caller (its ``list_projects(request)`` is the authorization).
     """
-    from scitex_ui.project_scope import host_project_provider
+    # PS-233: `scitex-ui` is `[server]`-only; guarded (unreachable when it is
+    # absent — the module import already raised — but the guard is the contract).
+    try:
+        from scitex_ui.project_scope import host_project_provider
+    except ImportError as exc:
+        raise ImportError(
+            "scitex_stats._django._projects needs scitex-ui, which is not installed. "
+            "Install the optional stack: pip install 'scitex-stats[server]'"
+        ) from exc
 
     host = host_project_provider()
     return host if host is not None else StandaloneProjectProvider()
@@ -322,8 +339,16 @@ def storage(request: Any = None) -> Any:
     than falling through to local folders; a broken registration is treated the
     same way instead of crashing the request.
     """
-    from django.conf import settings
-    from django.utils.module_loading import import_string
+    # PS-233: `django` is `[server]`-only; guarded (unreachable when it is
+    # absent — the module import already raised — but the guard is the contract).
+    try:
+        from django.conf import settings
+        from django.utils.module_loading import import_string
+    except ImportError as exc:
+        raise ImportError(
+            "scitex_stats._django._projects needs Django, which is not installed. "
+            "Install the optional stack: pip install 'scitex-stats[server]'"
+        ) from exc
 
     host = provider(request)
     fallback = NoHostStorage() if not isinstance(host, LocalProjectProvider) else StandaloneProjectStorage()

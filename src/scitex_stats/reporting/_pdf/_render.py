@@ -19,6 +19,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional, Union
 
+import scitex_logging as slogging
+
 
 class RendererUnavailable(RuntimeError):
     """No PDF renderer is installed; HTML and Markdown can still be written."""
@@ -55,7 +57,15 @@ def _offline_fetcher():
     try:
         from weasyprint.urls import URLFetcher  # WeasyPrint >= 66
     except ImportError:
-        from weasyprint.urls import default_url_fetcher
+        # PS-233: a fallback import inside an `except ImportError` handler is
+        # itself unguarded, so it gets its own guard and fails loudly.
+        try:
+            from weasyprint.urls import default_url_fetcher
+        except ImportError as exc:
+            raise RendererUnavailable(
+                "PDF output needs WeasyPrint: pip install 'scitex-stats[report]' "
+                "(plus Pango, see https://doc.courtbouillon.org/weasyprint/stable/first_steps.html)."
+            ) from exc
 
         def fetch(url, *args, **kwargs):
             if not url.startswith("data:"):
@@ -73,13 +83,23 @@ def html_to_pdf(html: str, target: Optional[Union[str, Path]] = None) -> bytes:
             "PDF output needs WeasyPrint: pip install 'scitex-stats[report]' "
             "(plus Pango, see https://doc.courtbouillon.org/weasyprint/stable/first_steps.html)."
         )
-    import logging
+    # PS-233: unguarded function-level import of the `[report]`-only
+    # distribution; guarded here (unreachable when WeasyPrint is absent —
+    # pdf_renderer() already raised — but the guard is the contract).
+    try:
+        from weasyprint import HTML
+    except ImportError as exc:
+        raise RendererUnavailable(
+            "PDF output needs WeasyPrint: pip install 'scitex-stats[report]' "
+            "(plus Pango, see https://doc.courtbouillon.org/weasyprint/stable/first_steps.html)."
+        ) from exc
 
-    from weasyprint import HTML
-
-    wp_logger = logging.getLogger("weasyprint")
+    # PS-220: scitex-logging owns diagnostic output — `slogging.getLogger`
+    # returns a stdlib Logger, so silencing WeasyPrint's per-step INFO lines
+    # keeps working exactly as `logging.getLogger("weasyprint")` did.
+    wp_logger = slogging.getLogger("weasyprint")
     level = wp_logger.level
-    wp_logger.setLevel(logging.ERROR)  # its per-step INFO lines drown the caller's logs
+    wp_logger.setLevel(slogging.ERROR)  # its per-step INFO lines drown the caller's logs
     try:
         data = HTML(string=html, base_url=None, url_fetcher=_offline_fetcher()).write_pdf()
     finally:

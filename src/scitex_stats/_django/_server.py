@@ -21,7 +21,9 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import Optional
+from typing import Any, Optional
+
+import click
 
 # The single source of truth for the stats GUI port; the CLI imports it from
 # here rather than restating the literal (so the launcher and the CLI cannot
@@ -36,25 +38,28 @@ from typing import Optional
 DEFAULT_PORT = 31299
 
 
-def _require_sdk():
-    """Import the scitex-app SDK, or exit with the install hint.
+def _require_sdk() -> Any:
+    """Import django and the scitex-app SDK, or exit with the install hint.
 
-    Only `serve`/`open` actually need the SDK; the import is deferred so a
+    Only `serve`/`open` actually need them; the imports are deferred so a
     base install (no [server]) can still import this module and register the
-    `gui` CLI group without it.
+    `gui` CLI group without them. Every import is guarded (PS-233): django
+    and scitex-app are `[server]`-only distributions.
     """
     try:
+        import django
+
         from scitex_app import hosts_to_allow
         from scitex_app.embed import run_standalone
     except ImportError:
-        print(
+        click.echo(
             "The Statistics GUI requires the [server] extra (scitex-app, "
             "scitex-ui, django). Install it with:\n"
             "  pip install 'scitex-stats[server]'",
-            file=sys.stderr,
+            err=True,
         )
         sys.exit(1)
-    return hosts_to_allow, run_standalone
+    return django, hosts_to_allow, run_standalone
 
 
 def run(
@@ -79,7 +84,7 @@ def run(
     # than making the caller set an env var to permit what they already
     # asked for. settings.py reads this variable and APPENDS, so an
     # explicitly configured list survives alongside the bind address.
-    hosts_to_allow, run_standalone = _require_sdk()
+    _django, hosts_to_allow, run_standalone = _require_sdk()
     _contributed = hosts_to_allow(host)
     if _contributed:
         _configured = os.environ.get("SCITEX_STATS_ALLOWED_HOSTS", "")
@@ -91,12 +96,10 @@ def run(
 
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "scitex_stats._django.settings")
 
-    print(f"SciTeX Statistics GUI: http://{host}:{port}")
-    print("Press Ctrl+C to stop")
+    click.echo(f"SciTeX Statistics GUI: http://{host}:{port}")
+    click.echo("Press Ctrl+C to stop")
 
-    import django
-
-    django.setup()
+    _django.setup()
 
     # No `migrate` here on purpose: the Statistics app has NO models, so
     # DATABASES={} (settings.py) and a `migrate --run-syncdb` call would raise

@@ -34,7 +34,17 @@ else:
 # "hub" | "standalone" -- the browser tab alone must distinguish the two
 # (fleet convention; scitex-hub reads the same setting and defaults to "hub").
 # These settings only boot the STANDALONE server, so standalone is the default.
-SCITEX_APP_MODE = os.environ.get("SCITEX_APP_MODE", "standalone")
+#
+# PS-145: stats must not read another package's env var directly. The
+# canonical name is stats-owned (`SCITEX_STATS_APP_MODE`); the pre-convention
+# `SCITEX_APP_MODE` survives as a LOUD legacy fallback via `resolve_env`
+# (mirrors scitex-scholar), and the Django setting name is unchanged so
+# mounted hosts (scitex-hub) keep working.
+from scitex_stats._env import resolve_env  # noqa: E402
+
+SCITEX_APP_MODE = resolve_env(
+    "SCITEX_STATS_APP_MODE", legacy="SCITEX_APP_MODE", default="standalone"
+)
 
 INSTALLED_APPS = [
     "django.contrib.contenttypes",
@@ -43,10 +53,17 @@ INSTALLED_APPS = [
 ]
 
 # scitex-ui supplies the shared workspace shell partial that stats.html
-# extends. It is a REQUIRED member of the `server` extra, so this import is
-# hard on purpose: a try/except would swallow a broken install and resurface
-# it later as TemplateDoesNotExist pointing at scitex-ui's shell.
-import scitex_ui  # noqa: F401
+# extends. It is a REQUIRED member of the `server` extra, so this import
+# fails LOUDLY on purpose (PS-233 guard): a try/except that swallowed a
+# broken install would resurface later as TemplateDoesNotExist pointing at
+# scitex-ui's shell.
+try:
+    import scitex_ui  # noqa: F401
+except ImportError as exc:
+    raise ImportError(
+        "scitex_stats._django.settings needs scitex-ui, which is not installed. "
+        "Install the optional stack: pip install 'scitex-stats[server]'"
+    ) from exc
 
 INSTALLED_APPS.append("scitex_ui")
 
@@ -56,11 +73,25 @@ INSTALLED_APPS.append("scitex_ui")
 # INSTALLED_APPS made every standalone page 500 with
 # `TemplateDoesNotExist: scitex_app/app_shell.html` — invisible to the app
 # tests, which configure their own INSTALLED_APPS (that list has it).
-import scitex_app  # noqa: F401,E402
+# PS-233 guard (fails LOUDLY — same rationale as the scitex-ui import above).
+try:
+    import scitex_app  # noqa: F401,E402
+except ImportError as exc:
+    raise ImportError(
+        "scitex_stats._django.settings needs scitex-app, which is not installed. "
+        "Install the optional stack: pip install 'scitex-stats[server]'"
+    ) from exc
 
 INSTALLED_APPS.append("scitex_app")
 
-from scitex_app.i18n import i18n_settings, with_locale_middleware  # noqa: E402
+# PS-233 guard (fails LOUDLY — same rationale as above).
+try:
+    from scitex_app.i18n import i18n_settings, with_locale_middleware  # noqa: E402
+except ImportError as exc:
+    raise ImportError(
+        "scitex_stats._django.settings needs scitex-app, which is not installed. "
+        "Install the optional stack: pip install 'scitex-stats[server]'"
+    ) from exc
 
 MIDDLEWARE = with_locale_middleware(
     [
