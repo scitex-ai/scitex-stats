@@ -1,0 +1,10 @@
+{
+  "name": "scitex-stats-frontend-tests",
+  "private": true,
+  "scripts": {
+    "test": "node --test test_*.cjs"
+  },
+  "devDependencies": {
+    "jsdom": "27.4.0"
+  }
+}

@@ -146,3 +146,78 @@ def test_call_test_raises_on_unrouted_test_name():
             popmean=0.0,
             return_as="dict",
         )
+
+
+@pytest.mark.parametrize("test_name", ["ttest_rel", "ttest_paired", "wilcoxon"])
+@pytest.mark.parametrize("alternative", ["two-sided", "greater", "less"])
+def test_paired_dispatch_preserves_requested_hypothesis(test_name, alternative):
+    # Arrange
+    import scitex_stats
+
+    x = np.array([8, 10, 13, 17, 21, 25, 30, 35], dtype=float)
+    y = np.array([5, 9, 9, 15, 16, 19, 23, 26], dtype=float)
+    engine_name = "test_wilcoxon" if test_name == "wilcoxon" else "test_ttest_rel"
+    expected = getattr(scitex_stats, engine_name)(x, y, alternative=alternative)
+    # Act
+    actual = run_test(test_name, data=x, data2=y, alternative=alternative)
+    # Assert
+    assert (
+        actual["alternative"],
+        actual["provenance"]["test"]["parameters"]["alternative"],
+        actual["statistic"],
+        actual["pvalue"],
+    ) == (
+        alternative,
+        alternative,
+        pytest.approx(expected["statistic"]),
+        pytest.approx(expected["pvalue"]),
+    )
+
+
+@pytest.mark.parametrize("test_name", ["ttest_rel", "ttest_paired", "wilcoxon"])
+@pytest.mark.parametrize("alternative", ["two-sided", "greater", "less"])
+def test_paired_dispatch_matches_scipy_hypothesis(test_name, alternative):
+    # Arrange
+    from scipy import stats
+
+    x = np.array([8, 10, 13, 17, 21, 25, 30, 35], dtype=float)
+    y = np.array([5, 9, 9, 15, 16, 19, 23, 26], dtype=float)
+    scipy_name = "wilcoxon" if test_name == "wilcoxon" else "ttest_rel"
+    expected = getattr(stats, scipy_name)(x, y, alternative=alternative)
+    reference = np.asarray([expected.statistic, expected.pvalue])
+    # Act
+    actual = run_test(test_name, data=x, data2=y, alternative=alternative)
+    observed = np.asarray([actual["statistic"], actual["pvalue"]])
+    # Assert
+    assert observed.shape == reference.shape and np.allclose(
+        observed,
+        reference,
+        rtol=1e-12,
+        atol=1e-14,
+        equal_nan=True,
+    )
+
+
+@pytest.mark.parametrize("test_name", ["ttest_rel", "ttest_paired", "wilcoxon"])
+def test_paired_dispatch_omitted_alternative_remains_two_sided(test_name):
+    # Arrange
+    import scitex_stats
+
+    x = np.array([8, 10, 13, 17, 21, 25, 30, 35], dtype=float)
+    y = np.array([5, 9, 9, 15, 16, 19, 23, 26], dtype=float)
+    engine_name = "test_wilcoxon" if test_name == "wilcoxon" else "test_ttest_rel"
+    expected = getattr(scitex_stats, engine_name)(x, y)
+    # Act
+    actual = run_test(test_name, data=x, data2=y)
+    # Assert
+    assert (
+        actual["alternative"],
+        actual["provenance"]["test"]["parameters"]["alternative"],
+        actual["statistic"],
+        actual["pvalue"],
+    ) == (
+        "two-sided",
+        "two-sided",
+        pytest.approx(expected["statistic"]),
+        pytest.approx(expected["pvalue"]),
+    )

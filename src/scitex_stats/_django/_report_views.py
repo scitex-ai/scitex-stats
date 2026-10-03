@@ -39,7 +39,8 @@ def _import(path: Optional[str]) -> Optional[Callable]:
     if not path:
         return None
     try:
-        return import_string(path)
+        service = import_string(path)
+        return service if callable(service) else None
     except (ImportError, AttributeError):
         return None
 
