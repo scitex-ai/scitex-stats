@@ -19,8 +19,8 @@ versions follow [Semantic Versioning](https://semver.org/).
   preserving their accessible labels.
 - Keep the Add group and Clear controls at least 44px tall on phones when the
   app uses the shared SDK shell.
-- Guard optional PDF report capability checks so the app remains usable when
-  PDF support is unavailable.
+- Treat non-callable report host services as unavailable in capability checks
+  and Save to Files.
 - The report's determinism contract is now stated accurately where it ships. The
   comment in `reporting/_pdf/_html.py` claimed two runs over the same input were
   **byte-identical**; the artifacts contradict that (measured: two renders with the
