@@ -51,7 +51,7 @@ from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 # project-scope surface — it has no meaning without the SDK — so the guard
 # FAILS LOUDLY with the extra to install instead of silently degrading.
 try:
-    from scitex_ui.project_scope import (
+    from scitex_sdk.ui.project_scope import (
         PROJECT_QUERY_PARAM,
         LocalProjectProvider,
         resolve_project,
@@ -140,7 +140,7 @@ def provider(request: Any = None) -> Any:
     # PS-233: `scitex-ui` is `[server]`-only; guarded (unreachable when it is
     # absent — the module import already raised — but the guard is the contract).
     try:
-        from scitex_ui.project_scope import host_project_provider
+        from scitex_sdk.ui.project_scope import host_project_provider
     except ImportError as exc:
         raise ImportError(
             "scitex_stats._django._projects needs scitex-ui, which is not installed. "

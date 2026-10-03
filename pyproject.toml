@@ -105,7 +105,7 @@ server = [
     # workspace shell the SDK began shipping in 0.24.0. Below that the
     # template resolves to nothing (TemplateDoesNotExist: scitex_app/
     # app_shell.html) and every page of the app 500s.
-    "scitex-app>=0.24.0",
+    "scitex-sdk>=0.3.0",
     # >=0.22.0: the app shell template loads scitex-ui's template-tag
     # libraries `scitex_static` (first shipped in 0.21.2 — it provides
     # `{% app_static %}`) and `scitex_project_picker`, and adopts the
@@ -113,7 +113,6 @@ server = [
     # (0.22.0). A lower floor lets a resolver pick a scitex-ui whose
     # shell cannot render our template at all: every page returns 500
     # ("'scitex_static' is not a registered tag library").
-    "scitex-ui>=0.22.0",
 ]
 dev = [
     "pytest>=7.0.0",
@@ -141,10 +140,9 @@ dev = [
     # tests import them unguarded, so a fresh `-e .[dev]` must provide them
     # at the same floors as [server] (PS-210).
     "django>=4.2",
-    "scitex-app>=0.24.0",
+    "scitex-sdk>=0.3.0",
     # `scitex_static` / `scitex_project_picker` libraries + the canonical
     # project-selector asset.
-    "scitex-ui>=0.22.0",
     # Note: fastmcp / mcp / scitex-dev / scitex-logging / pingouin come in via [project.dependencies].
     "weasyprint>=60",
 ]

@@ -19,7 +19,7 @@ except ImportError as exc:
     ) from exc
 
 try:
-    from scitex_ui.project_scope import project_listing_view
+    from scitex_sdk.ui.project_scope import project_listing_view
 except ImportError as exc:
     raise ImportError(
         "scitex_stats._django.urls needs scitex-ui, which is not installed. "

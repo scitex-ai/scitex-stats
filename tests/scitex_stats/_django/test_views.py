@@ -16,6 +16,7 @@ Arrange/Act/Assert markers (the repo's STX-TQ convention, per test_api.py).
 
 from __future__ import annotations
 
+import importlib
 import json
 import pathlib
 
@@ -25,8 +26,10 @@ import pytest
 # Django bootstrap (once), from the app's own app-config + scitex-ui.
 # ---------------------------------------------------------------------------
 django = pytest.importorskip("django")
-pytest.importorskip("scitex_app")
-pytest.importorskip("scitex_ui")
+pytest.importorskip("scitex_sdk")
+importlib.import_module('scitex_sdk.app')
+pytest.importorskip("scitex_sdk")
+importlib.import_module('scitex_sdk.ui')
 
 import numpy as np  # noqa: E402
 from django.conf import settings  # noqa: E402
@@ -39,9 +42,9 @@ if not settings.configured:
         INSTALLED_APPS=[
             "django.contrib.contenttypes",
             "django.contrib.staticfiles",
-            "scitex_app",
+            'scitex_sdk.app',
             "scitex_stats._django.apps.StatsCalculatorConfig",
-            "scitex_ui",
+            'scitex_sdk.ui',
         ],
         MIDDLEWARE=[
             "django.middleware.common.CommonMiddleware",

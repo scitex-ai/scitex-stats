@@ -41,11 +41,11 @@ import pytest
 
 # ===== AUTO-GENERATED: cross-package imports =====
 CROSS_PACKAGE_IMPORTS = [
-    'scitex_app',
-    'scitex_app._django',
-    'scitex_app.embed',
-    'scitex_app.i18n',
-    'scitex_app.plugins',
+    'scitex_sdk.app',
+    'scitex_sdk.app._django',
+    'scitex_sdk.app.embed',
+    'scitex_sdk.app.i18n',
+    'scitex_sdk.app.plugins',
     'scitex_clew._hash',
     'scitex_config',
     'scitex_dev',
@@ -56,9 +56,9 @@ CROSS_PACKAGE_IMPORTS = [
     'scitex_dev.linter._rules._base',
     'scitex_io.bundle',
     'scitex_logging',
-    'scitex_ui',
-    'scitex_ui.branding',
-    'scitex_ui.project_scope',
+    'scitex_sdk.ui',
+    'scitex_sdk.ui.branding',
+    'scitex_sdk.ui.project_scope',
 ]
 # ===== END AUTO-GENERATED =====
 

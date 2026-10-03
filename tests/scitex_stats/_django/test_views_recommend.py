@@ -3,13 +3,16 @@
 
 from __future__ import annotations
 
+import importlib
 from pathlib import Path
 
 import pytest
 
 pytest.importorskip("django")
-pytest.importorskip("scitex_app")
-pytest.importorskip("scitex_ui")
+pytest.importorskip("scitex_sdk")
+importlib.import_module('scitex_sdk.app')
+pytest.importorskip("scitex_sdk")
+importlib.import_module('scitex_sdk.ui')
 
 from .test_views import (  # noqa: E402,F401  (shared Django bootstrap + fixture)
     _post,

@@ -30,7 +30,7 @@ except ImportError as exc:
     ) from exc
 
 try:
-    from scitex_app._django import mount_prefix
+    from scitex_sdk.app._django import mount_prefix
 except ImportError as exc:
     raise ImportError(
         "scitex_stats._django.views needs scitex-app, which is not installed. "
@@ -106,7 +106,7 @@ def index(request):
     # PS-233: `scitex-ui` is `[server]`-only; guarded (unreachable when it is
     # absent — the module import already raised — but the guard is the contract).
     try:
-        from scitex_ui.branding import shell_context
+        from scitex_sdk.ui.branding import shell_context
     except ImportError as exc:
         raise ImportError(
             "scitex_stats._django.views.index needs scitex-ui, which is not installed. "

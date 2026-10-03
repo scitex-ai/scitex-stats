@@ -49,8 +49,8 @@ def _require_sdk() -> Any:
     try:
         import django
 
-        from scitex_app import hosts_to_allow
-        from scitex_app.embed import run_standalone
+        from scitex_sdk.app import hosts_to_allow
+        from scitex_sdk.app.embed import run_standalone
     except ImportError:
         click.echo(
             "The Statistics GUI requires the [server] extra (scitex-app, "
