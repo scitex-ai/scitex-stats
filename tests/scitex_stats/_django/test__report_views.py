@@ -123,12 +123,11 @@ def test_save_without_host_service_is_501(tmp_path):
     assert resp.status_code == 501
 
 
-def test_non_callable_host_service_is_unavailable(monkeypatch):
+def test_non_callable_host_service_is_unavailable():
     # Arrange
     request = _save_request({"groups": []})
     capabilities_request = RequestFactory().get("/api/report/capabilities")
     capabilities_request.user = _User()
-    monkeypatch.setattr(_report_views, "_pdf_available", lambda: False)
     # Act
     with override_settings(SCITEX_APP_SAVE_TO_FILES=f"{__name__}.fake_save"):
         callable_service_retained = _report_views.files_saver() is fake_save
