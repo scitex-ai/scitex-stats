@@ -37,7 +37,7 @@ _TWO_SAMPLE = {
     "kendall",
 }
 
-# Tests that accept (x, y) without alternative
+# Paired tests that accept (x, y, alternative=...)
 _PAIRED = {"ttest_rel", "ttest_paired", "wilcoxon"}
 
 # Tests that accept (data,) only
@@ -266,7 +266,7 @@ def _call_test(
         return func(data, data2, alternative=alternative, **common)
 
     if test_name in _PAIRED:
-        return func(data, data2, **common)
+        return func(data, data2, alternative=alternative, **common)
 
     if test_name in _ONE_SAMPLE:
         return func(data, **common)
