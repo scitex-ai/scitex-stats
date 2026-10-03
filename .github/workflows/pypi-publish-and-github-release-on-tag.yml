@@ -1,6 +1,6 @@
 name: release
 
-# Tag-driven release pipeline — SELF-HOSTED (Spartan CPU) via the scitex-ci SIF.
+# Tag-driven release: SIF compute stages, GitHub-hosted release creation.
 #
 # The intended operator flow is:
 #
@@ -34,7 +34,7 @@ name: release
 # fail-loud: a missing SIF/shim/interpreter is a HARD error, never a
 # bare-runner fallback.
 #
-# runs-on driven by repo Actions Variable CI_RUNS_ON; SIF + apptainer paths
+# Compute runs-on uses repo Actions Variable CI_RUNS_ON; SIF + apptainer paths
 # come from SCITEX_CI_SIF / SCITEX_CI_APPTAINER (same as pytest-matrix).
 #
 # Manual re-run: the workflow also accepts a `version` input via
@@ -142,7 +142,9 @@ jobs:
 
   release:
     needs: [build, publish]
-    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '["self-hosted","Linux","X64","scitex-ci"]') }}
+    # Creating the GitHub release needs gh and the existing dist artifact only.
+    # Direct native jobs are excluded by the organization runner-group policy.
+    runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
