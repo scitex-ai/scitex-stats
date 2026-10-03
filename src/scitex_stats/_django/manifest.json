@@ -30,6 +30,6 @@
   "frontend_type": "vanilla",
   "embedded_package": true,
   "dependencies": {
-    "python": ["scitex-stats", "scitex-app", "scitex-ui", "django"]
+    "python": ["scitex-stats", "scitex-sdk", "django"]
   }
 }

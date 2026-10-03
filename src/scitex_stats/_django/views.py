@@ -13,7 +13,7 @@ from __future__ import annotations
 import math
 from typing import Any, Dict, List
 
-# PS-233: `django` and `scitex-app` are `[server]`-only distributions. This
+# PS-233: `django` and `scitex-sdk` are `[server]`-only distributions. This
 # module is a Django view set — it has no meaning without them — so the
 # guards FAIL LOUDLY with the extra to install instead of silently degrading.
 try:
@@ -30,10 +30,10 @@ except ImportError as exc:
     ) from exc
 
 try:
-    from scitex_app._django import mount_prefix
+    from scitex_sdk.app.embed import mount_prefix
 except ImportError as exc:
     raise ImportError(
-        "scitex_stats._django.views needs scitex-app, which is not installed. "
+        "scitex_stats._django.views needs scitex-sdk, which is not installed. "
         "Install the optional stack: pip install 'scitex-stats[server]'"
     ) from exc
 
@@ -103,13 +103,13 @@ def _safe(payload: Any) -> Any:
 
 def index(request):
     """Serve the Statistics page (Data | Test | Results panes)."""
-    # PS-233: `scitex-ui` is `[server]`-only; guarded (unreachable when it is
+    # PS-233: `scitex-sdk UI` is `[server]`-only; guarded (unreachable when it is
     # absent — the module import already raised — but the guard is the contract).
     try:
-        from scitex_ui.branding import shell_context
+        from scitex_sdk.ui.branding import shell_context
     except ImportError as exc:
         raise ImportError(
-            "scitex_stats._django.views.index needs scitex-ui, which is not installed. "
+            "scitex_stats._django.views.index needs scitex-sdk UI, which is not installed. "
             "Install the optional stack: pip install 'scitex-stats[server]'"
         ) from exc
 

@@ -8,7 +8,7 @@ what this file mirrors.
 
 WHERE THE ENFORCEMENT LIVES. This app has no row-level permission table of its
 own — it is project-scoped, and the HOST owns scope and authorization (the
-scitex-app contract). So the two seams every read and write has to pass are:
+scitex-sdk contract). So the two seams every read and write has to pass are:
 
     data scope   ``_projects.authorized_project(project_id, request)`` — the
                  provider is asked WITH the request, so the listing it returns
@@ -19,11 +19,10 @@ scitex-app contract). So the two seams every read and write has to pass are:
                  SEPARATE from the listing, because the hub lists read-only
                  collaborators too and a listing is not write authority.
 
-``can()`` itself is not shipped by scitex-app yet: ``scitex_app.authz`` says in
-its own words that "``can()`` IS NOT HERE YET" and ships only the Verdict value
-it will return — and 0.26.1 is the latest release. So until the SDK lands it,
-the request-aware pair above IS this app's implementation of the same rule, and
-these tests pin the isolation AT those seams rather than waiting on the SDK.
+The released SDK provides ``can()`` and ``scope_for()`` resolved-actor access
+APIs. This leaf still uses the existing request-aware provider and storage
+seams above; these tests pin isolation at those seams. Adoption of the SDK's
+grant contract remains separate from this namespace migration.
 
 BOTH SEAMS ARE PINNED INDEPENDENTLY, which is why the stub host has THREE
 users: ``bob`` is listed nothing (his refusal could come from either seam),
@@ -58,6 +57,7 @@ resolution and urlconf all run.
 from __future__ import annotations
 
 import contextlib
+import importlib
 import json
 import os
 import pathlib
@@ -65,12 +65,13 @@ import pathlib
 import pytest
 
 pytest.importorskip("django")
-pytest.importorskip("scitex_app")
-pytest.importorskip("scitex_ui")
+pytest.importorskip("scitex_sdk")
+importlib.import_module("scitex_sdk.app")
+importlib.import_module("scitex_sdk.ui")
 
 from django.test import Client, RequestFactory, override_settings  # noqa: E402
 from django.utils.module_loading import import_string  # noqa: E402
-from scitex_ui.project_scope import ProjectEntry  # noqa: E402
+from scitex_sdk.ui.project_scope import ProjectEntry  # noqa: E402
 
 from scitex_stats._django import _projects  # noqa: E402
 
