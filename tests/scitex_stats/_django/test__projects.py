@@ -420,7 +420,13 @@ def test_plot_save_prefers_the_rendered_figure_then_the_spec():
     # Act
     save_plot = js.split("async function savePlot()", 1)[1].split("\n  }", 1)[0]
     # Assert
-    assert "saveRenderedPlot()" in save_plot and "plot-spec.json" in save_plot
+    rendered_call = "saveRenderedPlot(owner, request)"
+    spec_name = "plot-spec.json"
+    assert (
+        rendered_call in save_plot
+        and spec_name in save_plot
+        and save_plot.index(rendered_call) < save_plot.index(spec_name)
+    )
 
 
 # ---------------------------------------------------------------------------
