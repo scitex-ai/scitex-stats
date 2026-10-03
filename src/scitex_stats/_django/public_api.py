@@ -6,13 +6,20 @@ API discovery and host activation remain the generic consumer's responsibility.
 """
 
 import json
-import logging
 
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+import scitex_logging as slogging
 
-logger = logging.getLogger("scitex")
+try:
+    from django.http import JsonResponse
+    from django.views.decorators.csrf import csrf_exempt
+    from django.views.decorators.http import require_POST
+except ImportError as error:
+    raise ImportError(
+        "scitex_stats._django.public_api needs Django. "
+        "Install the optional stack: pip install 'scitex-stats[server]'"
+    ) from error
+
+logger = slogging.getLogger("scitex")
 
 
 def run_recommend(body: dict) -> dict:

@@ -28,16 +28,20 @@ def public_client():
 
 
 def test_wrong_method_remains_django_405(public_client):
-    # Arrange / Act
-    response = public_client.get("/recommend/")
+    # Arrange
+    endpoint = "/recommend/"
+    # Act
+    response = public_client.get(endpoint)
     # Assert
     assert (response.status_code, response["Allow"]) == (405, "POST")
 
 
 def test_malformed_json_keeps_public_500_envelope(public_client):
-    # Arrange / Act
+    # Arrange
+    malformed_body = "{"
+    # Act
     response = public_client.post(
-        "/recommend/", data="{", content_type="application/json"
+        "/recommend/", data=malformed_body, content_type="application/json"
     )
     # Assert
     assert (response.status_code, response.json()) == (
@@ -54,9 +58,11 @@ def test_malformed_json_keeps_public_500_envelope(public_client):
     reason="This genuine missing-umbrella boundary requires an installation without scitex",
 )
 def test_anonymous_keyless_post_reaches_missing_umbrella_503(public_client):
-    # Arrange / Act: no CSRF token or idempotency key, as in the existing public API.
+    # Arrange: no CSRF token or idempotency key, as in the existing public API.
+    body = json.dumps({})
+    # Act
     response = public_client.post(
-        "/recommend/", data=json.dumps({}), content_type="application/json"
+        "/recommend/", data=body, content_type="application/json"
     )
     # Assert
     assert (response.status_code, response.json()) == (
