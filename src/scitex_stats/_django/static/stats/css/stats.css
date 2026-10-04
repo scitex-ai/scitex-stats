@@ -15,6 +15,36 @@
   background: var(--border-muted);
 }
 
+/* Wizard tabs (Data / Test / Results) follow the Writer underline-tab
+   style: a flat bar with no pill/box container; the active tab carries
+   only a bottom border plus brighter text. This neutralises the boxed
+   scitex-ui pill tabs, scoped to the stats app. */
+.stats-app .stx-panes--single > .stx-panes__tabs {
+  gap: 0;
+  padding: 0 8px;
+}
+
+.stats-app .stx-panes__tab {
+  flex: 1 1 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.stats-app .stx-panes__tab[aria-selected="true"] {
+  border: 0;
+  border-bottom: 2px solid var(--stats-accent);
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
 .stats-pane {
   display: flex;
   flex-direction: column;
@@ -562,7 +592,7 @@
     flex-wrap: wrap;
   }
 
-  .stats-pane__header .stats-btn,
+  .stats-app .stats-btn,
   .stats-source__sample,
   .stats-dropzone__button,
   .stats-test {

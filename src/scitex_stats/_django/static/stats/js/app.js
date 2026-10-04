@@ -130,6 +130,65 @@
   }
 
   // ---- Data -------------------------------------------------------------
+  // Import alignment is a property of the SOURCE rows, not equal array lengths.
+  // No omission policy is chosen here: any discarded data cell is uncertain.
+  var rowIntegrity = { status: "manual", reason: "new-manual-input", source: "manual" };
+  var importedSnapshot = null;
+  var ROW_DEPENDENT = { ttest_rel: 1, wilcoxon: 1, pearson: 1, spearman: 1, kendall: 1, friedman: 1 };
+
+  function groupSnapshot() {
+    return JSON.stringify(Array.prototype.map.call(
+      $("statsGroups").querySelectorAll(".stats-group__input"),
+      function (area) { return area.value; }
+    ));
+  }
+
+  function invalidateImportedRows() {
+    if (rowIntegrity.source === "csv") {
+      rowIntegrity = { status: "uncertain", reason: "edited-or-restored-data", source: "csv" };
+      importedSnapshot = null;
+    }
+    document.dispatchEvent(new CustomEvent("stats:data-change"));
+  }
+
+  function currentRowIntegrity() {
+    // Also catches form restoration/programmatic edits which emit no input event.
+    if (importedSnapshot !== null && importedSnapshot !== groupSnapshot()) invalidateImportedRows();
+    return { status: rowIntegrity.status, reason: rowIntegrity.reason, source: rowIntegrity.source };
+  }
+
+  function rowIntegrityError(testName, design) {
+    var integrity = currentRowIntegrity();
+    if ((ROW_DEPENDENT[testName] || design === "within") && integrity.status === "uncertain") {
+      return _("This analysis needs matching source rows. Imported data contain missing or invalid cells, or have changed. Reload a complete CSV or TSV file with one observation per row.");
+    }
+    return "";
+  }
+
+  function csvRowIntegrity(text, sep, cols) {
+    var lines = String(text).split(/\r?\n/);
+    if (lines[lines.length - 1] === "") lines.pop(); // ordinary terminal newline
+    var rows = lines.map(function (line) { return line.split(sep); });
+    // Recognize only an unambiguous label row; numeric-looking/missing markers
+    // never grant alignment. Unsupported header syntax remains uncertain.
+    var header = rows.length > 1 && rows[0].length === cols && rows[0].every(function (cell) {
+      cell = String(cell).trim();
+      return /^[A-Za-z_][A-Za-z0-9_ .-]*$/.test(cell) && !/^(nan|inf|infinity|null|none|na)$/i.test(cell);
+    });
+    if (header) rows.shift();
+    var aligned = rows.length > 0 && rows.every(function (row) {
+      return row.length === cols && row.every(function (cell) {
+        cell = String(cell).trim();
+        return cell !== "" && Number.isFinite(Number(cell));
+      });
+    });
+    return {
+      status: aligned ? "aligned" : "uncertain",
+      reason: aligned ? "complete-numeric-source-rows" : "missing-or-invalid-source-rows",
+      source: "csv",
+    };
+  }
+
   function groupName(i) { return fmt(_("Group %s"), [i + 1]); }
 
   function addGroup(values) {
@@ -154,13 +213,17 @@
     remove.setAttribute("aria-label", _("Remove group"));
     remove.textContent = "×";
     remove.addEventListener("click", function () {
+      invalidateImportedRows();
       row.remove();
       renumber();
     });
     function updateCount() {
       setSegments(count, withSymbol(fmt(_("n = %s"), [parseNumbers(area.value).length]), "n"));
     }
-    area.addEventListener("input", updateCount);
+    area.addEventListener("input", function () {
+      invalidateImportedRows();
+      updateCount();
+    });
     label.append(name, count);
     row.append(label, remove, area);
     wrap.appendChild(row);
@@ -180,10 +243,13 @@
     );
   }
 
-  function setGroups(groups) {
+  function setGroups(groups, integrity) {
     $("statsGroups").innerHTML = "";
     groups.forEach(function (g) { addGroup(g); });
     if (groups.length < 2) addGroup();
+    rowIntegrity = integrity || { status: "manual", reason: "new-manual-input", source: "manual" };
+    importedSnapshot = integrity ? groupSnapshot() : null;
+    document.dispatchEvent(new CustomEvent("stats:data-change"));
   }
 
   // True when the user has typed or loaded something the sample would replace.
@@ -202,11 +268,16 @@
     var groups = [];
     for (var c = 0; c < cols; c++) {
       var col = rows
-        .map(function (r) { return r[c] === undefined ? NaN : Number(String(r[c]).trim()); })
+        .map(function (r) {
+          var cell = r[c] === undefined ? "" : String(r[c]).trim();
+          // A missing observation is not zero. Keep explicit "0" values,
+          // while matching the number boxes' existing empty-value handling.
+          return cell === "" ? NaN : Number(cell);
+        })
         .filter(function (n) { return Number.isFinite(n); });
       if (col.length) groups.push(col);
     }
-    if (groups.length) setGroups(groups);
+    if (groups.length) setGroups(groups, csvRowIntegrity(text, sep, cols));
     else showError(_("No numeric columns found in this file."));
   }
 
@@ -272,62 +343,151 @@
       alternative: $("statsAlt").value,
       popmean: $("statsPopmean") ? Number($("statsPopmean").value) : null,
       group_sizes: readGroups().map(function (g) { return g.length; }),
+      // Metadata only; no persisted values or restore proof is claimed.
+      row_integrity: currentRowIntegrity(),
     };
   }
 
+  // Responses belong to the exact inputs that dispatched them, and to the
+  // latest request for their output. This is page-local ownership, not stored
+  // source-row proof. Raw values catch silent edits; events also catch ABA
+  // imports/options even when the visible values return to their old state.
+  var analysisGeneration = 0;
+  var analysisKey = null;
+  var requestSequences = Object.create(null);
+  var resultOwner = null;
+
+  function clearResult() {
+    resultOwner = null;
+    lastPlain = "";
+    lastApaHtml = "";
+    ["statsJson", "statsFormatted", "statsResultTitle", "statsResultRows", "statsDescHead", "statsDescRows"].forEach(function (id) {
+      $(id).textContent = "";
+    });
+    $("statsResult").hidden = true;
+    $("statsCopy").hidden = true;
+    $("statsDescTable").hidden = true;
+    $("statsEmpty").hidden = $("statsSummary") && !$("statsSummary").hidden;
+    showCopyState("idle");
+  }
+
+  function invalidateAnalysis() {
+    analysisGeneration += 1;
+    analysisKey = null;
+    clearResult();
+    ["statsRunAllOut", "statsCorrOut", "statsPhOut"].forEach(function (id) { $(id).textContent = ""; });
+    $("statsRunAllOut").hidden = true;
+    showError("");
+    setSaveStatus("");
+    document.dispatchEvent(new CustomEvent("stats:analysis-change"));
+  }
+
+  function currentAnalysisKey() {
+    var integrity = currentRowIntegrity();
+    var checked = document.querySelector('input[name="statsTest"]:checked');
+    var key = JSON.stringify({
+      groups: groupSnapshot(), project: projectId(), test: checked ? checked.value : null,
+      group_names: Array.prototype.map.call($("statsGroups").querySelectorAll(".stats-group__label span"), function (label) { return label.textContent; }),
+      options: ["statsDesign", "statsScale", "statsAlt", "statsPopmean", "statsCorrP", "statsCorrMethod", "statsPhMethod"].map(function (id) {
+        return $(id) ? $(id).value : null;
+      }),
+      row_integrity: integrity,
+    });
+    if (analysisKey !== null && analysisKey !== key) invalidateAnalysis();
+    analysisKey = key;
+    return key;
+  }
+
+  function beginRequest(lane) {
+    var key = currentAnalysisKey();
+    requestSequences[lane] = (requestSequences[lane] || 0) + 1;
+    return { generation: analysisGeneration, key: key, lane: lane, sequence: requestSequences[lane] };
+  }
+
+  function requestLatest(owner) {
+    return !!owner && requestSequences[owner.lane] === owner.sequence;
+  }
+
+  function requestCurrent(owner) {
+    var key = currentAnalysisKey();
+    return requestLatest(owner) && owner.generation === analysisGeneration && owner.key === key;
+  }
+
   function lastResult() {
+    if (!requestCurrent(resultOwner)) return null;
     var pre = $("statsJson");
     if (!pre || !pre.textContent.trim()) return null;
     try { return JSON.parse(pre.textContent); } catch (e) { return null; }
   }
 
-  async function saveArtifact(kind, name, payload, payloadBase64) {
+  async function saveArtifact(kind, name, payload, payloadBase64, owner) {
+    if (owner && !requestCurrent(owner)) return;
     if (!projectId()) { setSaveStatus(_("No project is active.")); return; }
+    var request = beginRequest("save");
     var body = { project: projectId(), kind: kind, name: name, payload: payload };
     if (payloadBase64) body.payload_base64 = payloadBase64;
     // State the project in the URL as well as the body: the server binds the
     // write to the project the REQUEST resolves, so the request must be the
     // project's own URL rather than relying on ambient stored state.
-    var res = await api("/api/project-save?project=" + encodeURIComponent(projectId()), body);
-    setSaveStatus(res.ok ? fmt(_("Saved %s to the project"), [res.body.path || name]) : _("Save failed."));
+    try {
+      var res = await api("/api/project-save?project=" + encodeURIComponent(projectId()), body);
+      if (!requestCurrent(request) || (owner && !requestCurrent(owner))) return;
+      setSaveStatus(res.ok ? fmt(_("Saved %s to the project"), [res.body.path || name]) : _("Save failed."));
+    } catch (e) {
+      if (requestCurrent(request) && (!owner || requestCurrent(owner))) setSaveStatus(_("Save failed."));
+    }
   }
 
   async function saveResults() {
     var result = lastResult();
     if (!result) { setSaveStatus(_("Run a test first.")); return; }
-    await saveArtifact("results", "result.json", result);
+    await saveArtifact("results", "result.json", result, null, resultOwner);
   }
 
   async function saveProvenance() {
     var result = lastResult();
     if (!result || !result.provenance) { setSaveStatus(_("No provenance in the current result.")); return; }
-    await saveArtifact("provenance", "provenance.json", result.provenance);
+    await saveArtifact("provenance", "provenance.json", result.provenance, null, resultOwner);
   }
 
   function saveConfig() {
     return saveArtifact("config", "config.json", currentConfig());
   }
 
-  async function saveRenderedPlot() {
+  async function saveRenderedPlot(owner, request) {
+    var plot = window.stxStatsPlot;
+    function current() { return requestCurrent(request) && requestCurrent(owner) && plot.owner() === owner; }
+    if (!current()) return false;
     var link = $("statsPlotPng");
     var href = link && !link.hidden ? link.getAttribute("href") : "";
     if (!href) return false;
     var response = await fetch(href);
+    if (!current()) return false;
     if (!response.ok) return false;
     var view = new Uint8Array(await response.arrayBuffer());
+    if (!current()) return false;
     var binary = "";
     for (var i = 0; i < view.length; i++) binary += String.fromCharCode(view[i]);
-    await saveArtifact("plots", "plot.png", null, window.btoa(binary));
+    await saveArtifact("plots", "plot.png", null, window.btoa(binary), owner);
     return true;
   }
 
   async function savePlot() {
     // Prefer the RENDERED plot: a project should get the figure, not only its
     // spec. The spec is the fallback when no image has been drawn yet.
-    if (await saveRenderedPlot()) return;
-    var spec = window.stxStatsPlot && window.stxStatsPlot.spec ? window.stxStatsPlot.spec() : null;
-    if (!spec) { setSaveStatus(_("Draw a plot first.")); return; }
-    await saveArtifact("plots", "plot-spec.json", spec);
+    var request = beginRequest("save-plot");
+    var plot = window.stxStatsPlot;
+    var owner = plot && plot.owner ? plot.owner() : null;
+    if (!owner) { setSaveStatus(_("Draw a plot first.")); return; }
+    try {
+      if (await saveRenderedPlot(owner, request)) return;
+      if (!requestCurrent(request) || !requestCurrent(owner) || plot.owner() !== owner) return;
+      var spec = plot.spec ? plot.spec() : null;
+      if (!spec) { setSaveStatus(_("Draw a plot first.")); return; }
+      await saveArtifact("plots", "plot-spec.json", spec, null, owner);
+    } catch (e) {
+      if (requestCurrent(request) && requestCurrent(owner)) setSaveStatus(_("Save failed."));
+    }
   }
 
   // ---- Test -------------------------------------------------------------
@@ -378,6 +538,8 @@
   }
 
   function buildPayload(test, groups) {
+    var alignmentError = rowIntegrityError(test.name);
+    if (alignmentError) return alignmentError;
     var filled = groups.filter(function (g) { return g.length; });
     var payload = { test_name: test.name, alternative: $("statsAlt").value, group_names: [] };
     groups.forEach(function (g, i) { if (g.length) payload.group_names.push(groupName(i)); });
@@ -403,19 +565,23 @@
     if (!test) return showError(_("Pick a test."));
     var payload = buildPayload(test, readGroups());
     if (typeof payload === "string") return showError(payload);
+    var request = beginRequest("calculate");
+    clearResult();
+    if (window.stxStatsPlot && window.stxStatsPlot.invalidate) window.stxStatsPlot.invalidate();
     showError("");
     var btn = $("statsCalculate");
     btn.disabled = true;
     try {
       var r = await api("/api/run", payload);
+      if (!requestCurrent(request)) return;
       if (!r.ok) return showError((r.body && r.body.error) || fmt(_("Request failed (HTTP %s)."), [r.status]));
-      renderResult(test, r.body);
-      if (window.stxStatsPlot) window.stxStatsPlot.draw(payload);
+      renderResult(test, r.body, request);
+      if (window.stxStatsPlot) window.stxStatsPlot.draw(payload, request);
       if (window.stxPanes) window.stxPanes.show("results", "stats");
     } catch (e) {
-      showError(_("Could not reach the Statistics service."));
+      if (requestCurrent(request)) showError(_("Could not reach the Statistics service."));
     } finally {
-      btn.disabled = false;
+      if (requestLatest(request)) btn.disabled = false;
     }
   }
 
@@ -472,7 +638,8 @@
   var lastPlain = "";
   var lastApaHtml = "";
 
-  function renderResult(test, res) {
+  function renderResult(test, res, owner) {
+    resultOwner = owner;
     var apa = res.apa || null;
     $("statsEmpty").hidden = true;
     $("statsResult").hidden = false;
@@ -491,26 +658,38 @@
     var pvalues = parseNumbers($("statsCorrP").value);
     var out = $("statsCorrOut");
     if (!pvalues.length) return rows(out, [[_("Error"), _("Enter p-values.")]]);
-    var r = await api("/api/correct", { pvalues: pvalues, method: $("statsCorrMethod").value });
-    if (!r.ok) return rows(out, [[_("Error"), (r.body && r.body.error) || "HTTP " + r.status]]);
-    rows(out, (r.body.results || []).map(function (x) {
-      return [[S("p"), T(" " + x.p_apa)], [T("→ "), S("p"), T(" " + x.p_adjusted_apa + (x.rejected ? " *" : ""))]];
-    }));
+    var request = beginRequest("correct");
+    try {
+      var r = await api("/api/correct", { pvalues: pvalues, method: $("statsCorrMethod").value });
+      if (!requestCurrent(request)) return;
+      if (!r.ok) return rows(out, [[_("Error"), (r.body && r.body.error) || "HTTP " + r.status]]);
+      rows(out, (r.body.results || []).map(function (x) {
+        return [[S("p"), T(" " + x.p_apa)], [T("→ "), S("p"), T(" " + x.p_adjusted_apa + (x.rejected ? " *" : ""))]];
+      }));
+    } catch (e) {
+      if (requestCurrent(request)) rows(out, [[_("Error"), _("Could not reach the Statistics service.")]]);
+    }
   }
 
   async function posthoc() {
     var groups = readGroups().filter(function (g) { return g.length; });
     var out = $("statsPhOut");
     if (groups.length < 2) return rows(out, [[_("Error"), _("This test needs at least two groups.")]]);
-    var r = await api("/api/posthoc", {
-      groups: groups,
-      method: $("statsPhMethod").value,
-      group_names: groups.map(function (_g, i) { return groupName(i); }),
-    });
-    if (!r.ok) return rows(out, [[_("Error"), (r.body && r.body.error) || "HTTP " + r.status]]);
-    rows(out, (r.body.comparisons || []).map(function (c) {
-      return [c.group_i + " – " + c.group_j, [S("p"), T(" " + c.p_apa + " " + (c.pstars || ""))]];
-    }));
+    var request = beginRequest("posthoc");
+    try {
+      var r = await api("/api/posthoc", {
+        groups: groups,
+        method: $("statsPhMethod").value,
+        group_names: groups.map(function (_g, i) { return groupName(i); }),
+      });
+      if (!requestCurrent(request)) return;
+      if (!r.ok) return rows(out, [[_("Error"), (r.body && r.body.error) || "HTTP " + r.status]]);
+      rows(out, (r.body.comparisons || []).map(function (c) {
+        return [c.group_i + " – " + c.group_j, [S("p"), T(" " + c.p_apa + " " + (c.pstars || ""))]];
+      }));
+    } catch (e) {
+      if (requestCurrent(request)) rows(out, [[_("Error"), _("Could not reach the Statistics service.")]]);
+    }
   }
 
   function escapeHtml(text) {
@@ -588,6 +767,8 @@
   }
 
   async function copyResult() {
+    if (!lastResult()) return;
+    var owner = resultOwner;
     var clip = resultClip();
     var ok = false;
     if (window.isSecureContext && navigator.clipboard && navigator.clipboard.write && window.ClipboardItem) {
@@ -599,18 +780,31 @@
         ok = true;
       } catch (e) { ok = false; }
     }
+    if (!requestCurrent(owner)) return;
     if (!ok) ok = legacyCopy(clip);
     if (!ok) selectResultText();
+    if (!requestCurrent(owner)) return;
     showCopyState(ok ? "copied" : "failed");
   }
 
   // Shared with recommend.js (loaded next).
-  window.stxStatsApp = { _: _, fmt: fmt, api: api, readGroups: readGroups, groupName: groupName, setSegments: setSegments };
+  window.stxStatsApp = { _: _, fmt: fmt, api: api, readGroups: readGroups, groupName: groupName, setSegments: setSegments,
+    rowIntegrityError: rowIntegrityError, beginRequest: beginRequest, requestCurrent: requestCurrent, requestLatest: requestLatest };
 
   async function init() {
     setGroups([[], []]);
     renderTests(null);
-    $("statsAddGroup").addEventListener("click", function () { addGroup(); });
+    document.addEventListener("stats:data-change", invalidateAnalysis);
+    document.addEventListener("change", function (event) {
+      if (event.target.name === "statsTest" || ["statsDesign", "statsScale", "statsAlt", "statsPopmean", "statsCorrP", "statsCorrMethod", "statsPhMethod"].indexOf(event.target.id) !== -1) invalidateAnalysis();
+    });
+    document.addEventListener("input", function (event) {
+      if (["statsPopmean", "statsCorrP"].indexOf(event.target.id) !== -1) invalidateAnalysis();
+    });
+    $("statsAddGroup").addEventListener("click", function () {
+      invalidateImportedRows();
+      addGroup();
+    });
     $("statsClear").addEventListener("click", function () { setGroups([[], []]); });
     $("statsSample").addEventListener("click", function () {
       if (hasUserData() && !window.confirm(_("Replace the data in the boxes with the sample dataset?"))) return;

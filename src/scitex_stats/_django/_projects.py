@@ -47,18 +47,18 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 
-# PS-233: `scitex-ui` is a `[server]`-only distribution. This module is the
+# PS-233: `scitex-sdk UI` is a `[server]`-only distribution. This module is the
 # project-scope surface — it has no meaning without the SDK — so the guard
 # FAILS LOUDLY with the extra to install instead of silently degrading.
 try:
-    from scitex_ui.project_scope import (
+    from scitex_sdk.ui.project_scope import (
         PROJECT_QUERY_PARAM,
         LocalProjectProvider,
         resolve_project,
     )
 except ImportError as exc:
     raise ImportError(
-        "scitex_stats._django._projects needs scitex-ui, which is not installed. "
+        "scitex_stats._django._projects needs scitex-sdk UI, which is not installed. "
         "Install the optional stack: pip install 'scitex-stats[server]'"
     ) from exc
 
@@ -137,13 +137,13 @@ def provider(request: Any = None) -> Any:
     request is threaded through every call so a host provider can decide per
     caller (its ``list_projects(request)`` is the authorization).
     """
-    # PS-233: `scitex-ui` is `[server]`-only; guarded (unreachable when it is
+    # PS-233: `scitex-sdk UI` is `[server]`-only; guarded (unreachable when it is
     # absent — the module import already raised — but the guard is the contract).
     try:
-        from scitex_ui.project_scope import host_project_provider
+        from scitex_sdk.ui.project_scope import host_project_provider
     except ImportError as exc:
         raise ImportError(
-            "scitex_stats._django._projects needs scitex-ui, which is not installed. "
+            "scitex_stats._django._projects needs scitex-sdk UI, which is not installed. "
             "Install the optional stack: pip install 'scitex-stats[server]'"
         ) from exc
 

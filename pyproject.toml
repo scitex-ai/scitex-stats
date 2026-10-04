@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "scitex-stats"
-version = "0.2.28"
+version = "0.2.30"
 description = "Publication-ready statistical testing framework with 25 tests, effect sizes, power analysis, and MCP server"
 readme = "README.md"
 license = "AGPL-3.0-only"
@@ -93,27 +93,12 @@ figrecipe = [
 bundle = [
     "scitex-io>=0.2.16",
 ]
-# Statistics app (standalone + hub integration): scitex_stats._django exposes
-# the calculator as a SciTeX workspace app via the scitex-app SDK
-# (scitex_app.embed.run_standalone / ScitexAppConfig) and scitex-ui's shell.
-# `scitex-stats gui` (open/serve/status/stop) and the hub mount both need this.
-# scitex-app is already a hard dep; scitex-ui + django are added here so the
-# app boots out of the box.
+# Statistics app (standalone + host integration): the SDK supplies the
+# shared App/UI contracts, workspace shell, picker, and GUI lifecycle.
+# The gui extra provides Django for both standalone and mounted operation.
 server = [
     "django>=4.2",
-    # >=0.24.0: stats.html extends `scitex_app/app_shell.html`, the shared
-    # workspace shell the SDK began shipping in 0.24.0. Below that the
-    # template resolves to nothing (TemplateDoesNotExist: scitex_app/
-    # app_shell.html) and every page of the app 500s.
-    "scitex-app>=0.24.0",
-    # >=0.22.0: the app shell template loads scitex-ui's template-tag
-    # libraries `scitex_static` (first shipped in 0.21.2 — it provides
-    # `{% app_static %}`) and `scitex_project_picker`, and adopts the
-    # canonical project selector asset `js/app/project-selector.js`
-    # (0.22.0). A lower floor lets a resolver pick a scitex-ui whose
-    # shell cannot render our template at all: every page returns 500
-    # ("'scitex_static' is not a registered tag library").
-    "scitex-ui>=0.22.0",
+    "scitex-sdk[gui]>=0.3.1",
 ]
 dev = [
     "pytest>=7.0.0",
@@ -136,15 +121,10 @@ dev = [
     # so a fresh `pip install -e .[dev]` runs the full suite (PS-210).
     "scitex-io>=0.2.16",  # [bundle] extra: stats↔bundle I/O round-trip tests
     "figrecipe>=0.28.0",  # [all] extra: stats↔figrecipe annotation tests
-    # [server] extra: Statistics app (Django) boot + mount tests. scitex-app
-    # and scitex-ui are optional upstream (django-app only), but the app
-    # tests import them unguarded, so a fresh `-e .[dev]` must provide them
-    # at the same floors as [server] (PS-210).
+    # [server] extra: shared SDK App/UI contracts and Django boot/mount
+    # tests, at the same released floor as [server] (PS-210).
     "django>=4.2",
-    "scitex-app>=0.24.0",
-    # `scitex_static` / `scitex_project_picker` libraries + the canonical
-    # project-selector asset.
-    "scitex-ui>=0.22.0",
+    "scitex-sdk[gui]>=0.3.1",
     # Note: fastmcp / mcp / scitex-dev / scitex-logging / pingouin come in via [project.dependencies].
     "weasyprint>=60",
 ]

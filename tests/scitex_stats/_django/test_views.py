@@ -2,12 +2,12 @@
 # File: tests/scitex_stats/_django/test_views.py
 """Route tests for the scitex-stats Django app (Statistics calculator UI).
 
-Boots the app via its own app-config + scitex-ui and exercises every view
+Boots the app via its own app-config + scitex-sdk UI and exercises every view
 with Django's test client, proving the app is a real, mountable SciTeX
 workspace app (compass §12 / Stats Calculator #207-#209): the thin UI shells
 out to the ``scitex_stats`` common package and returns real results.
 
-Requires the [server] extra (django + scitex-ui + scitex-app); skipped
+Requires the [server] extra (django + scitex-sdk UI + scitex-sdk); skipped
 cleanly when absent so a base install's suite still runs.
 
 Test-style notes: each test asserts a SINGLE property and carries
@@ -16,17 +16,19 @@ Arrange/Act/Assert markers (the repo's STX-TQ convention, per test_api.py).
 
 from __future__ import annotations
 
+import importlib
 import json
 import pathlib
 
 import pytest
 
 # ---------------------------------------------------------------------------
-# Django bootstrap (once), from the app's own app-config + scitex-ui.
+# Django bootstrap (once), from the app's own app-config + scitex-sdk UI.
 # ---------------------------------------------------------------------------
 django = pytest.importorskip("django")
-pytest.importorskip("scitex_app")
-pytest.importorskip("scitex_ui")
+pytest.importorskip("scitex_sdk")
+importlib.import_module("scitex_sdk.app")
+importlib.import_module("scitex_sdk.ui")
 
 import numpy as np  # noqa: E402
 from django.conf import settings  # noqa: E402
@@ -39,9 +41,9 @@ if not settings.configured:
         INSTALLED_APPS=[
             "django.contrib.contenttypes",
             "django.contrib.staticfiles",
-            "scitex_app",
+            "scitex_sdk.app",
             "scitex_stats._django.apps.StatsCalculatorConfig",
-            "scitex_ui",
+            "scitex_sdk.ui",
         ],
         MIDDLEWARE=[
             "django.middleware.common.CommonMiddleware",
@@ -136,6 +138,55 @@ def test_index_links_app_stylesheet(client):
     html = client.get("/").content.decode()
     # Assert
     assert "stats/css/stats.css" in html
+
+
+# ---------------------------------------------------------------------------
+# Wizard tabs (Data / Test / Results): Writer underline-tab style.
+# The switcher renders via scitex-sdk UI panes, whose stock phone tabs are boxed
+# pills; the leaf override in stats.css restyles them to a flat bar where the
+# active tab carries only a bottom border. Pinned here (this module mirrors
+# views.py, so the PS-204 mirror rule keeps holding).
+# ---------------------------------------------------------------------------
+def _stats_css():
+    # Arrange/Act helper, not a test: the shipped leaf stylesheet.
+    return pathlib.Path(
+        "src/scitex_stats/_django/static/stats/css/stats.css"
+    ).read_text(encoding="utf-8")
+
+
+def _wizard_tab_rule(css, selector):
+    # Arrange/Act helper, not a test: one rule block from the stylesheet.
+    import re as _re
+
+    match = _re.search(_re.escape(selector) + r"\s*\{(.*?)\}", css, _re.S)
+    return match.group(1) if match else ""
+
+
+def test_wizard_active_tab_carries_underline():
+    # Arrange
+    css = _stats_css()
+    # Act
+    block = _wizard_tab_rule(css, '.stats-app .stx-panes__tab[aria-selected="true"]')
+    # Assert
+    assert "border-bottom: 2px solid var(--stats-accent)" in block
+
+
+def test_wizard_tab_has_no_pill_fill():
+    # Arrange
+    css = _stats_css()
+    # Act
+    block = _wizard_tab_rule(css, ".stats-app .stx-panes__tab")
+    # Assert
+    assert "background: transparent" in block
+
+
+def test_wizard_tab_bar_is_flat():
+    # Arrange
+    css = _stats_css()
+    # Act
+    block = _wizard_tab_rule(css, ".stats-app .stx-panes--single > .stx-panes__tabs")
+    # Assert
+    assert "gap: 0" in block
 
 
 def test_index_stx_mount_is_root_prefix(client):

@@ -1,5 +1,5 @@
 // SciTeX Statistics: bundled report (PDF download, Save to Files).
-// Reads the Data pane from the DOM so app.js stays untouched.
+// Reads the Data pane and consults app.js's source-row alignment guard.
 
 (function () {
   "use strict";
@@ -62,21 +62,30 @@
     }
   }
 
-  async function post(path, body, busyButton) {
-    var buttons = [$("statsReportPdf"), $("statsReportSave")];
-    buttons.forEach(function (b) { if (b) b.disabled = true; });
-    busyButton.setAttribute("aria-busy", "true");
-    try {
-      return await fetch(STX_MOUNT + path, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken() },
-        credentials: "same-origin",
-        body: JSON.stringify(body),
-      });
-    } finally {
-      buttons.forEach(function (b) { if (b) b.disabled = false; });
-      busyButton.removeAttribute("aria-busy");
+  function begin() {
+    var app = window.stxStatsApp;
+    if (!app || !app.beginRequest || !app.requestCurrent || !app.requestLatest) {
+      status(_("Could not verify the current report inputs. Reload the Statistics page."), true);
+      return null;
     }
+    return app.beginRequest("report");
+  }
+
+  function current(request) { return window.stxStatsApp.requestCurrent(request); }
+
+  function busy(button, value) {
+    var buttons = [$("statsReportPdf"), $("statsReportSave")];
+    buttons.forEach(function (b) { if (b) { b.disabled = value; b.removeAttribute("aria-busy"); } });
+    if (value) button.setAttribute("aria-busy", "true");
+  }
+
+  function post(path, body) {
+    return fetch(STX_MOUNT + path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken() },
+      credentials: "same-origin",
+      body: JSON.stringify(body),
+    });
   }
 
   async function errorText(res) {
@@ -85,6 +94,16 @@
 
   function ready() {
     var body = payload();
+    if (body.design === "within") {
+      var app = window.stxStatsApp;
+      var alignmentError = app && typeof app.rowIntegrityError === "function"
+        ? app.rowIntegrityError(null, body.design)
+        : _("Source row alignment is unavailable. Reload the Statistics page and import a complete CSV or TSV file.");
+      if (alignmentError) {
+        status(alignmentError, true);
+        return null;
+      }
+    }
     if (body.groups.length < 2) {
       status(_("A report needs at least two groups of numbers."), true);
       return null;
@@ -95,11 +114,20 @@
   async function downloadPdf() {
     var body = ready();
     if (!body) return;
+    var request = begin();
+    if (!request) return;
+    busy($("statsReportPdf"), true);
     status(_("Building report…"));
     try {
-      var res = await post("/api/report/pdf", body, $("statsReportPdf"));
-      if (!res.ok) return status((await errorText(res)) || _("Could not build the report."), true);
+      var res = await post("/api/report/pdf", body);
+      if (!current(request)) return;
+      if (!res.ok) {
+        var error = await errorText(res);
+        if (current(request)) status(error || _("Could not build the report."), true);
+        return;
+      }
       var blob = await res.blob();
+      if (!current(request)) return;
       var match = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") || "");
       var a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
@@ -109,27 +137,42 @@
       setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
       status(_("Report downloaded."));
     } catch (e) {
-      status(_("Could not reach the Statistics service."), true);
+      if (current(request)) status(_("Could not reach the Statistics service."), true);
+    } finally {
+      if (window.stxStatsApp.requestLatest(request)) busy($("statsReportPdf"), false);
     }
   }
 
   async function saveToFiles() {
     var body = ready();
     if (!body) return;
+    var request = begin();
+    if (!request) return;
+    busy($("statsReportSave"), true);
     status(_("Saving report to Files…"));
     try {
-      var res = await post("/api/report/save", body, $("statsReportSave"));
-      if (!res.ok) return status((await errorText(res)) || _("Could not save the report."), true);
+      var res = await post("/api/report/save", body);
+      if (!current(request)) return;
+      if (!res.ok) {
+        var error = await errorText(res);
+        if (current(request)) status(error || _("Could not save the report."), true);
+        return;
+      }
       var out = await res.json();
-      status(_("Saved to Files:") + " " + out.saved, false, { href: out.files_url || "/apps/files/", text: _("Open Files") });
+      if (!current(request)) return;
+      var link = out.files_url ? { href: out.files_url, text: _("Open Files") } : null;
+      status(_("Saved to Files:") + " " + out.saved, false, link);
     } catch (e) {
-      status(_("Could not reach the Statistics service."), true);
+      if (current(request)) status(_("Could not reach the Statistics service."), true);
+    } finally {
+      if (window.stxStatsApp.requestLatest(request)) busy($("statsReportSave"), false);
     }
   }
 
   async function init() {
     var pdfBtn = $("statsReportPdf");
     if (!pdfBtn) return;
+    document.addEventListener("stats:analysis-change", function () { status(""); });
     pdfBtn.addEventListener("click", downloadPdf);
     $("statsReportSave").addEventListener("click", saveToFiles);
     try {

@@ -7,7 +7,36 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.30] — 2026-10-04
+
+### Added
+- Add a leaf-owned public recommendation compatibility callable with the
+  existing request defaults and response envelopes.
+
+### Changed
+- Separate the recommendation executor from its Django HTTP adapter while
+  preserving its parameters and response contract.
+
 ### Fixed
+- Guard optional Django imports and retain the optional umbrella backend in
+  the cross-package import checks.
+- Use the standard Linux runner for GitHub Release asset uploads after the
+  existing test, build and PyPI publication jobs.
+
+## [0.2.29] — 2026-10-03
+
+### Changed
+- The Statistics Django app uses `scitex-sdk[gui]>=0.3.1` for the shared
+  standalone and mounted application contracts, templates, static assets,
+  workspace shell, and project picker.
+
+### Fixed
+- Remove duplicate visible step headings from the data and test panes while
+  preserving their accessible labels.
+- Keep the Add group and Clear controls at least 44px tall on phones when the
+  app uses the shared SDK shell.
+- Treat non-callable report host services as unavailable in capability checks
+  and Save to Files.
 - The report's determinism contract is now stated accurately where it ships. The
   comment in `reporting/_pdf/_html.py` claimed two runs over the same input were
   **byte-identical**; the artifacts contradict that (measured: two renders with the

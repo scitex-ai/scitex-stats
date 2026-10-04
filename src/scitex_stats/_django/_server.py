@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 """Standalone local-dev launcher for the Statistics GUI.
 
-Delegates to `scitex_app.embed.run_standalone`, which pre-wires scitex-ui
+Delegates to `scitex_sdk.app.embed.run_standalone`, which pre-wires scitex-sdk UI
 static assets + the workspace shell so the standalone server looks like
-scitex.ai/apps/stats. scitex-app is a HARD dependency of the `server`
+scitex.ai/apps/stats. scitex-sdk is a HARD dependency of the `server`
 extra: there is no bare-Django fallback (a fallback that silently drops
 the shell AND the ALLOWED_HOSTS derivation is a second, quieter way to
 break).
@@ -28,7 +28,7 @@ import click
 # The single source of truth for the stats GUI port; the CLI imports it from
 # here rather than restating the literal (so the launcher and the CLI cannot
 # drift apart). DEFAULT_PORT is a bare constant on purpose: importing it must
-# NOT require scitex-app, so the base CLI (which reads it to register the
+# NOT require scitex-sdk, so the base CLI (which reads it to register the
 # `gui` group) works without the [server] extra.
 #
 # 31299 -- the fixed scitex-stats slot in the ecosystem 3129X standalone-GUI
@@ -39,22 +39,22 @@ DEFAULT_PORT = 31299
 
 
 def _require_sdk() -> Any:
-    """Import django and the scitex-app SDK, or exit with the install hint.
+    """Import django and the scitex-sdk SDK, or exit with the install hint.
 
     Only `serve`/`open` actually need them; the imports are deferred so a
     base install (no [server]) can still import this module and register the
     `gui` CLI group without them. Every import is guarded (PS-233): django
-    and scitex-app are `[server]`-only distributions.
+    and scitex-sdk are `[server]`-only distributions.
     """
     try:
         import django
 
-        from scitex_app import hosts_to_allow
-        from scitex_app.embed import run_standalone
+        from scitex_sdk.app import hosts_to_allow
+        from scitex_sdk.app.embed import run_standalone
     except ImportError:
         click.echo(
-            "The Statistics GUI requires the [server] extra (scitex-app, "
-            "scitex-ui, django). Install it with:\n"
+            "The Statistics GUI requires the [server] extra (scitex-sdk[gui], "
+            "django). Install it with:\n"
             "  pip install 'scitex-stats[server]'",
             err=True,
         )
@@ -72,8 +72,8 @@ def run(
 ) -> None:
     """Launch the Django Statistics GUI server locally on exactly ``port``.
 
-    Runs through `scitex_app.embed.run_standalone` (the full workspace shell
-    from scitex-ui). No fallback: scitex-app is required. The requested port
+    Runs through `scitex_sdk.app.embed.run_standalone` (the full workspace shell
+    from scitex-sdk UI). No fallback: scitex-sdk is required. The requested port
     is bound as given: when it is already in use the server fails instead of
     drifting to the next free port.
     """

@@ -178,7 +178,7 @@ def test_pearson(  # noqa: C901
     if data is not None:
         from scitex_stats._utils._csv_support import resolve_columns
 
-        resolved = resolve_columns(data, x=x, y=y)
+        resolved = resolve_columns(data, preserve_rows=True, x=x, y=y)
         x, y = resolved["x"], resolved["y"]
 
     from scitex_stats._utils._formatters import p2stars

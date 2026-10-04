@@ -17,6 +17,8 @@ def _load_file(path: str) -> pd.DataFrame:
 
 def resolve_columns(
     data: Union[pd.DataFrame, str, Path],
+    *,
+    preserve_rows: bool = False,
     **col_map: Any,
 ) -> Dict[str, np.ndarray]:
     """Resolve string column names from a DataFrame or CSV to arrays.
@@ -25,6 +27,10 @@ def resolve_columns(
     ----------
     data : DataFrame, str, or Path
         DataFrame or path to CSV file.
+    preserve_rows : bool, default False
+        Keep missing values at their original positions so paired callers
+        can apply their existing joint mask. The default drops missing
+        values independently in each resolved column.
     **col_map
         Keyword arguments mapping param names to values.
         String values are treated as column names and resolved.
@@ -58,7 +64,8 @@ def resolve_columns(
                     f"Column '{val}' not found in data. "
                     f"Available columns: {list(data.columns)}"
                 )
-            result[key] = data[val].dropna().values
+            column = data[val] if preserve_rows else data[val].dropna()
+            result[key] = column.values
         else:
             result[key] = val
     return result

@@ -14,7 +14,7 @@ import os
 import pathlib
 
 import pytest
-from scitex_ui.project_scope import ProjectEntry  # noqa: E402
+from scitex_sdk.ui.project_scope import ProjectEntry  # noqa: E402
 
 from scitex_stats._django import _projects
 
@@ -89,7 +89,7 @@ def test_project_scope_endpoint_remembers_an_accessible_project(tmp_path, client
 
 def test_picker_guard_treats_a_user_scope_as_no_picker():
     # Arrange
-    from scitex_ui.templatetags.scitex_project_picker import is_project_scope
+    from scitex_sdk.ui.templatetags.scitex_project_picker import is_project_scope
     # Act
     user_scoped = is_project_scope("user")
     # Assert
@@ -98,7 +98,7 @@ def test_picker_guard_treats_a_user_scope_as_no_picker():
 
 def test_picker_tag_renders_nothing_for_a_user_scoped_app():
     # Arrange
-    from scitex_ui.templatetags.scitex_project_picker import scitex_project_picker
+    from scitex_sdk.ui.templatetags.scitex_project_picker import scitex_project_picker
     # Act
     rendered = scitex_project_picker({}, scope="user")
     # Assert
@@ -420,7 +420,13 @@ def test_plot_save_prefers_the_rendered_figure_then_the_spec():
     # Act
     save_plot = js.split("async function savePlot()", 1)[1].split("\n  }", 1)[0]
     # Assert
-    assert "saveRenderedPlot()" in save_plot and "plot-spec.json" in save_plot
+    rendered_call = "saveRenderedPlot(owner, request)"
+    spec_name = "plot-spec.json"
+    assert (
+        rendered_call in save_plot
+        and spec_name in save_plot
+        and save_plot.index(rendered_call) < save_plot.index(spec_name)
+    )
 
 
 # ---------------------------------------------------------------------------
