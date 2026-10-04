@@ -128,6 +128,30 @@ const changes = {
   "observed config ABA": (ui) => { ui.change("statsAlt", "less"); ui.change("statsAlt", "two-sided"); },
 };
 
+test("report save uses the explicitly supplied host Files URL", async (t) => {
+  // Arrange
+  const ui = await page(t);
+  ui.routes.set("/api/report/save", () => response({ saved: "Downloads/fixture.pdf", files_url: "/portable/user-files/" }));
+  // Act
+  ui.click("statsReportSave"); await tick();
+  // Assert
+  const status = ui.el("statsReportStatus"), link = status.querySelector("a");
+  assert.deepEqual([status.textContent, link?.getAttribute("href")], ["Saved to Files: Downloads/fixture.pdf Open Files", "/portable/user-files/"]);
+});
+
+for (const filesUrl of [undefined, null, ""]) {
+  test(`report save omits navigation without a host Files URL (${String(filesUrl)})`, async (t) => {
+    // Arrange
+    const ui = await page(t);
+    ui.routes.set("/api/report/save", () => response({ saved: "fixture.pdf", files_url: filesUrl }));
+    // Act
+    ui.click("statsReportSave"); await tick();
+    // Assert
+    const status = ui.el("statsReportStatus");
+    assert.deepEqual([status.textContent, status.querySelector("a")], ["Saved to Files: fixture.pdf", null]);
+  });
+}
+
 // Real template anchors and shipped scripts; availability/preventDefault are
 // DOM observations, not a claim that JSDOM performs a native browser download.
 const downloadActions = [

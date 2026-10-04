@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import importlib
 import json
+import sys
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 
@@ -142,6 +144,109 @@ def test_non_callable_host_service_is_unavailable():
         "save_to_files": capabilities["save_to_files"],
         "save_status": response.status_code,
     } == {"callable_service_retained": True, "save_to_files": False, "save_status": 501}
+
+
+def test_unconfigured_host_does_not_discover_hub_files_service(monkeypatch):
+    # Arrange
+    module_path = "apps.workspace.files_app.services"
+    service = ModuleType(module_path)
+    service.save_to_downloads = fake_save
+    monkeypatch.setitem(sys.modules, module_path, service)
+    monkeypatch.setattr(_report_views, "_pdf_available", lambda: False)
+    request = _save_request({"groups": []})
+    capabilities_request = RequestFactory().get("/api/report/capabilities")
+    capabilities_request.user = request.user
+    # Act
+    with override_settings(SCITEX_APP_SAVE_TO_FILES=None):
+        discoverable = _report_views._import(f"{module_path}.save_to_downloads")
+        capabilities = json.loads(_report_views.report_capabilities(capabilities_request).content)
+        response = _report_views.report_save(request)
+    # Assert
+    assert {
+        "hub_service_importable": discoverable is fake_save,
+        "capabilities": capabilities,
+        "save_status": response.status_code,
+    } == {
+        "hub_service_importable": True,
+        "capabilities": {"pdf": False, "save_to_files": False},
+        "save_status": 501,
+    }
+
+
+def test_explicit_host_binding_preserves_user_downloads_and_navigation(monkeypatch, tmp_path):
+    # Arrange
+    request = _save_request(SAMPLE)
+    data = b"synthetic report bytes; no PDF renderer or scientific computation"
+    calls = {}
+
+    def save(user, filename, contents):
+        calls["save"] = (user, filename, contents)
+        target = tmp_path / "Downloads" / filename
+        target.parent.mkdir()
+        target.write_bytes(contents)
+        return target
+
+    def root(user):
+        calls["root"] = user
+        return tmp_path
+
+    monkeypatch.setattr(sys.modules[__name__], "fake_save", save)
+    monkeypatch.setattr(sys.modules[__name__], "fake_root", root)
+    monkeypatch.setattr(_report_views, "_build_pdf", lambda body: (data, {}))
+    monkeypatch.setattr(_report_views, "_filename", lambda: "fixture.pdf")
+    # Act
+    with override_settings(
+        SCITEX_APP_SAVE_TO_FILES=f"{__name__}.fake_save",
+        SCITEX_APP_FILES_USER_ROOT=f"{__name__}.fake_root",
+        SCITEX_APP_FILES_URL="/portable/user-files/",
+    ):
+        response = _report_views.report_save(request)
+    # Assert
+    assert {
+        "status": response.status_code,
+        "body": json.loads(response.content),
+        "calls": calls,
+        "saved_bytes": (tmp_path / "Downloads" / "fixture.pdf").read_bytes(),
+    } == {
+        "status": 200,
+        "body": {"saved": "Downloads/fixture.pdf", "files_url": "/portable/user-files/"},
+        "calls": {"save": (request.user, "fixture.pdf", data), "root": request.user},
+        "saved_bytes": data,
+    }
+
+
+@pytest.mark.parametrize("files_url", [None, ""])
+def test_host_without_root_or_url_does_not_discover_hub_defaults(monkeypatch, tmp_path, files_url):
+    # Arrange
+    SAVED["root"] = str(tmp_path)
+    request = _save_request(SAMPLE)
+    data = b"synthetic report bytes; no PDF renderer or scientific computation"
+    module_path = "apps.workspace.files_app.services"
+    service = ModuleType(module_path)
+    service.user_root = fake_root
+    monkeypatch.setitem(sys.modules, module_path, service)
+    monkeypatch.setattr(_report_views, "_build_pdf", lambda body: (data, {}))
+    monkeypatch.setattr(_report_views, "_filename", lambda: "fixture.pdf")
+    # Act
+    with override_settings(
+        SCITEX_APP_SAVE_TO_FILES=f"{__name__}.fake_save",
+        SCITEX_APP_FILES_USER_ROOT=None,
+        SCITEX_APP_FILES_URL=files_url,
+    ):
+        discoverable = _report_views._import(f"{module_path}.user_root")
+        response = _report_views.report_save(request)
+    # Assert
+    assert {
+        "hub_root_importable": discoverable is fake_root,
+        "status": response.status_code,
+        "body": json.loads(response.content),
+        "saved_bytes": (tmp_path / "Downloads" / "fixture.pdf").read_bytes(),
+    } == {
+        "hub_root_importable": True,
+        "status": 200,
+        "body": {"saved": "fixture.pdf", "files_url": ""},
+        "saved_bytes": data,
+    }
 
 
 # EOF
