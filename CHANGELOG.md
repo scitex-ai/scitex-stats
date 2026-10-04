@@ -7,6 +7,22 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.30] — 2026-10-04
+
+### Added
+- Add a leaf-owned public recommendation compatibility callable with the
+  existing request defaults and response envelopes.
+
+### Changed
+- Separate the recommendation executor from its Django HTTP adapter while
+  preserving its parameters and response contract.
+
+### Fixed
+- Guard optional Django imports and retain the optional umbrella backend in
+  the cross-package import checks.
+- Use the standard Linux runner for GitHub Release asset uploads after the
+  existing test, build and PyPI publication jobs.
+
 ## [0.2.29] — 2026-10-03
 
 ### Changed
