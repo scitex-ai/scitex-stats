@@ -160,7 +160,8 @@
       }
       var out = await res.json();
       if (!current(request)) return;
-      status(_("Saved to Files:") + " " + out.saved, false, { href: out.files_url || "/apps/files/", text: _("Open Files") });
+      var link = out.files_url ? { href: out.files_url, text: _("Open Files") } : null;
+      status(_("Saved to Files:") + " " + out.saved, false, link);
     } catch (e) {
       if (current(request)) status(_("Could not reach the Statistics service."), true);
     } finally {

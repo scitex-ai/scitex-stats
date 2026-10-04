@@ -2,10 +2,12 @@
 # -*- coding: utf-8 -*-
 """Report endpoints: build the bundled PDF, download it, or save it to the host's Files.
 
-Saving goes through a host service: ``settings.SCITEX_APP_SAVE_TO_FILES`` (a
-dotted path to ``save(user, filename, data) -> Path``), defaulting to the
-hub's Files ``save_to_downloads``. Standalone (no such service) the Save
-button stays hidden and the endpoint answers 501.
+Saving requires an explicit host service: ``settings.SCITEX_APP_SAVE_TO_FILES``
+(a dotted path to ``save(user, filename, data) -> Path``). The optional
+``SCITEX_APP_FILES_USER_ROOT`` callback makes the saved path relative to the
+user's root; ``SCITEX_APP_FILES_URL`` supplies the Files navigation link.
+Without a configured saver, the Save button stays hidden and the endpoint
+answers 501. The host service owns the Downloads destination.
 """
 
 from __future__ import annotations
@@ -30,8 +32,6 @@ except ImportError as exc:
         "Install the optional stack: pip install 'scitex-stats[server]'"
     ) from exc
 
-HUB_SAVE_TO_FILES = "apps.workspace.files_app.services.save_to_downloads"
-HUB_USER_ROOT = "apps.workspace.files_app.services.user_root"
 MAX_VALUES = 100_000
 
 
@@ -46,7 +46,7 @@ def _import(path: Optional[str]) -> Optional[Callable]:
 
 
 def files_saver() -> Optional[Callable]:
-    return _import(getattr(settings, "SCITEX_APP_SAVE_TO_FILES", None) or HUB_SAVE_TO_FILES)
+    return _import(getattr(settings, "SCITEX_APP_SAVE_TO_FILES", None))
 
 
 def _pdf_available() -> bool:
@@ -128,13 +128,18 @@ def report_save(request):
         return JsonResponse({"error": str(exc)}, status=400)
     except RuntimeError as exc:
         return JsonResponse({"error": str(exc)}, status=503)
-    saved = save(user, _filename(), data)
-    user_root = _import(getattr(settings, "SCITEX_APP_FILES_USER_ROOT", None) or HUB_USER_ROOT)
+    return _save_to_files(user, save, _filename(), data)
+
+
+def _save_to_files(user, save: Callable, filename: str, data: bytes) -> JsonResponse:
+    """Deliver already-built report bytes through the configured host service."""
+    saved = save(user, filename, data)
+    user_root = _import(getattr(settings, "SCITEX_APP_FILES_USER_ROOT", None))
     try:
         rel = saved.relative_to(user_root(user)).as_posix() if user_root else saved.name
     except (ValueError, AttributeError):
         rel = getattr(saved, "name", str(saved))
-    return JsonResponse({"saved": rel, "files_url": getattr(settings, "SCITEX_APP_FILES_URL", "/apps/files/")})
+    return JsonResponse({"saved": rel, "files_url": getattr(settings, "SCITEX_APP_FILES_URL", "") or ""})
 
 
 # EOF
