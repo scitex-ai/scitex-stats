@@ -128,7 +128,12 @@ def report_save(request):
         return JsonResponse({"error": str(exc)}, status=400)
     except RuntimeError as exc:
         return JsonResponse({"error": str(exc)}, status=503)
-    saved = save(user, _filename(), data)
+    return _save_to_files(user, save, _filename(), data)
+
+
+def _save_to_files(user, save: Callable, filename: str, data: bytes) -> JsonResponse:
+    """Deliver already-built report bytes through the configured host service."""
+    saved = save(user, filename, data)
     user_root = _import(getattr(settings, "SCITEX_APP_FILES_USER_ROOT", None))
     try:
         rel = saved.relative_to(user_root(user)).as_posix() if user_root else saved.name
