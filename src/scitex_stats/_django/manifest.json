@@ -31,5 +31,14 @@
   "embedded_package": true,
   "dependencies": {
     "python": ["scitex-stats", "scitex-sdk", "django"]
+  },
+  "mount_policy": {
+    "login_required": true,
+    "touches_files": true,
+    "jail": {
+      "scope": "project",
+      "working_dir_param": "project",
+      "path_params": ["name"]
+    }
   }
 }
