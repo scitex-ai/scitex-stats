@@ -325,7 +325,7 @@ def test_index_has_exactly_one_header_picker_and_mode_toggle(client):  # noqa: F
     html = client.get("/").content.decode()
     # Assert
     assert (
-        html.count('<header class="stats-app-header"') == 1
+        html.count('<header class="stx-app-header stats-app-header"') == 1
         and html.count('class="stx-app-header__slot--project-selector"') == 1
         and html.count('id="statsModeToggle"') == 1
     )

@@ -101,37 +101,13 @@
   padding-bottom: calc(var(--site-dock-height, 0px) + 24px);
 }
 
-/* Canonical app header: leaf identity + the shared project-picker slot.
-   The slot keeps its own scitex-ui positioning rules (order 1, left). */
-.stats-app-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--border-muted);
-  background: var(--bg-surface);
-}
-
-.stats-app-header__title {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.stats-app-header__version {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.stats-app-header__actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-left: auto;
-}
+/* Canonical app header: the row chrome lives in scitex_sdk app-header.css
+   (linked by stats.html), the single source of truth shared by every
+   project-scoped app: 40px row, title 0.85rem, version 0.78rem, actions
+   order 2, 600px phone wrap. This leaf owns only identity values, never the
+   row — so no .stats-app-header row/typography/actions fork lives here.
+   `.stats-app-header` remains as a compat hook on the header element (the
+   canonical class is `.stx-app-header`); it carries no box properties. */
 
 .stats-dropzone {
   transition: background-color 120ms ease, box-shadow 120ms ease;
@@ -571,15 +547,14 @@
   display: none !important;
 }
 
-/* Phones (390px reference width): one column, and every actionable control
-   keeps a >=44px touch target. The pane header wraps instead of clipping. */
-@media (max-width: 480px) {
+/* Phones (600px SDK contract boundary, plus coarse pointers): one column,
+   and every actionable control keeps a >=44px touch target. The pane header
+   wraps instead of clipping. The app-header row wrap itself is owned by the
+   SDK canonical app-header.css (same 600px boundary) — this leaf only wraps
+   its own pane rows here. */
+@media (max-width: 600px), (pointer: coarse) {
   .stats-options {
     grid-template-columns: 1fr;
-  }
-
-  .stats-app-header {
-    flex-wrap: wrap;
   }
 
   .stats-pane__header {
