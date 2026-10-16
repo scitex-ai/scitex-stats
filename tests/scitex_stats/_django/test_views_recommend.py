@@ -177,7 +177,7 @@ def test_phone_layout_keeps_every_touch_target_at_least_44px():
     # Arrange
     css = _stats_css()
     # Act
-    phone = css.split("@media (max-width: 480px) {", 1)[1]
+    phone = css.split("@media (max-width: 600px), (pointer: coarse) {", 1)[1]
     # Assert
     assert "min-height: 44px;" in phone and "grid-template-columns: 1fr;" in phone
 

@@ -140,6 +140,28 @@ def test_index_links_app_stylesheet(client):
     assert "stats/css/stats.css" in html
 
 
+def test_index_links_sdk_canonical_app_header(client):
+    # Arrange — the header row chrome is the SDK single source of truth.
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
+    assert "scitex_sdk/ui/css/app/app-header.css" in html
+
+
+def test_header_row_has_no_leaf_fork():
+    # Arrange — stats.css must not redefine the SDK row/typography/actions.
+    # Act
+    css = _stats_css()
+    # Assert
+    assert (
+        ".stats-app-header__title {" not in css
+        and ".stats-app-header__version {" not in css
+        and ".stats-app-header__actions {" not in css
+        and "@media (max-width: 480px)" not in css
+        and "@media (max-width: 600px), (pointer: coarse)" in css
+    )
+
+
 # ---------------------------------------------------------------------------
 # Wizard tabs (Data / Test / Results): Writer underline-tab style.
 # The switcher renders via scitex-sdk UI panes, whose stock phone tabs are boxed
@@ -451,9 +473,10 @@ def test_index_shows_the_leaf_title_and_package_version_once(client):
     html = client.get("/").content.decode()
     # Assert
     assert (
-        html.count('<header class="stats-app-header"') == 1
-        and html.count('<h1 class="stats-app-header__title">Stats</h1>') == 1
-        and html.count('class="stats-app-header__version"') == 1
+        html.count('<header class="stx-app-header stats-app-header"') == 1
+        and html.count('<h1 class="stx-app-header__title">Stats</h1>') == 1
+        and html.count('class="stx-app-header__version"') == 1
+        and html.count('class="stx-app-header__actions"') == 1
         and f"v{scitex_stats.__version__}" in html
     )
 

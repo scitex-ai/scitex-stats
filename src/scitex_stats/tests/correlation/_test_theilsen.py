@@ -16,6 +16,10 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
+from scitex_stats._logging import getLogger
+
+logger = getLogger(__name__)
+
 
 def test_theilsen(
     x: Union[np.ndarray, pd.Series, list, str],
@@ -145,21 +149,21 @@ def test_theilsen(
         "H0": f"No linear association between {var_x} and {var_y} (slope = 0)",
     }
 
-    # Print results if verbose
+    # Log results if verbose
     if verbose:
-        print("\n" + "=" * 70)
-        print("Theil-Sen Robust Regression")
-        print("=" * 70)
-        print(f"Variables: {var_y} ~ {var_x}")
-        print(f"Sample size: n = {len(x)}")
-        print("\nResults:")
-        print(f"  Slope:     {output['slope']:.6f}")
-        print(f"  Intercept: {output['intercept']:.6f}")
-        print(f"  95% CI:    [{output['low_slope']:.6f}, {output['high_slope']:.6f}]")
-        print("\nInterpretation:")
-        print(f"  For each unit increase in {var_x},")
-        print(f"  {var_y} changes by {output['slope']:.6f} units (median slope)")
-        print("=" * 70 + "\n")
+        logger.info("\n" + "=" * 70)
+        logger.info("Theil-Sen Robust Regression")
+        logger.info("=" * 70)
+        logger.info(f"Variables: {var_y} ~ {var_x}")
+        logger.info(f"Sample size: n = {len(x)}")
+        logger.info("\nResults:")
+        logger.info(f"  Slope:     {output['slope']:.6f}")
+        logger.info(f"  Intercept: {output['intercept']:.6f}")
+        logger.info(f"  95% CI:    [{output['low_slope']:.6f}, {output['high_slope']:.6f}]")
+        logger.info("\nInterpretation:")
+        logger.info(f"  For each unit increase in {var_x},")
+        logger.info(f"  {var_y} changes by {output['slope']:.6f} units (median slope)")
+        logger.info("=" * 70 + "\n")
 
     # Return as requested format
     if return_as == "dataframe":
@@ -175,14 +179,14 @@ if __name__ == "__main__":
     rng = np.random.default_rng(42)
 
     # Clean data
-    print("Example 1: Clean linear data")
+    logger.info("Example 1: Clean linear data")
     x = np.linspace(0, 10, 50)
     y = 2 * x + 1 + rng.normal(0, 1, 50)
     result = test_theilsen(x, y, var_x="x", var_y="y")
 
     # Data with outliers
-    print("\n" + "=" * 70)
-    print("Example 2: Data with outliers")
+    logger.info("\n" + "=" * 70)
+    logger.info("Example 2: Data with outliers")
     x_out = np.linspace(0, 10, 50)
     y_out = 2 * x_out + 1 + rng.normal(0, 1, 50)
     # Add outliers
@@ -193,10 +197,10 @@ if __name__ == "__main__":
     from scipy.stats import linregress
 
     ols = linregress(x_out, y_out)
-    print("\nComparison:")
-    print(f"  Theil-Sen slope: {result_out['slope']:.6f}")
-    print(f"  OLS slope:       {ols.slope:.6f}")
-    print("  True slope:      2.000000")
-    print(
+    logger.info("\nComparison:")
+    logger.info(f"  Theil-Sen slope: {result_out['slope']:.6f}")
+    logger.info(f"  OLS slope:       {ols.slope:.6f}")
+    logger.info("  True slope:      2.000000")
+    logger.info(
         f"\nTheil-Sen is more robust to the {((y_out[[10, 20, 30]] - (2 * x_out[[10, 20, 30]] + 1)) != 0).sum()} outliers!"
     )

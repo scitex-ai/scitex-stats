@@ -9,6 +9,7 @@ base page (site header + dock), standalone uses the SDK UI shell.
     <meta name="csrf-token" content="{{ csrf_token }}">
     {% scitex_project_provider_meta %}
     <link rel="stylesheet" href="{% app_static 'scitex_sdk/ui/css/app/form-controls.css' %}">
+    <link rel="stylesheet" href="{% app_static 'scitex_sdk/ui/css/app/app-header.css' %}">
     <link rel="stylesheet" href="{% app_static 'stats/css/stats.css' %}">
     <link rel="stylesheet" href="{% app_static 'stats/css/recommend.css' %}">
     <link rel="stylesheet" href="{% app_static 'stats/css/report.css' %}">
@@ -18,16 +19,19 @@ base page (site header + dock), standalone uses the SDK UI shell.
 <div class="stats-app" data-stats-app>
   {% comment %}
   Canonical app header: leaf title, the LEAF package version, then the shared
-  project picker in the slot the scitex-ui stylesheet pins (order 1, left,
-  never right-aligned) and finally the app's own actions.
+  project picker in the slot the scitex_sdk stylesheet pins (order 1, left,
+  never right-aligned) and finally the app's own actions. The row chrome
+  (40px min-height, title/version typography, actions order 2, 600px phone
+  wrap) is the SDK canonical app-header.css linked above — this leaf owns
+  only identity values, never the row.
   {% endcomment %}
-  <header class="stats-app-header" data-stats-header data-stats-project="{{ stats_current_project_id }}">
-    <h1 class="stats-app-header__title">{% translate "Stats" %}</h1>
-    <span class="stats-app-header__version" data-stats-version>v{{ stats_version }}</span>
+  <header class="stx-app-header stats-app-header" data-stats-header data-stats-project="{{ stats_current_project_id }}">
+    <h1 class="stx-app-header__title">{% translate "Stats" %}</h1>
+    <span class="stx-app-header__version" data-stats-version>v{{ stats_version }}</span>
     <div class="stx-app-header__slot--project-selector">
       {% scitex_project_picker scope="project" current=stats_current_project_id %}
     </div>
-    <div class="stats-app-header__actions" data-stats-header-actions>
+    <div class="stx-app-header__actions" data-stats-header-actions>
       <button type="button" class="stats-btn stats-btn--ghost" id="statsModeToggle" data-stats-mode-toggle hidden>{% translate "Quick analysis" %}</button>
     </div>
   </header>
