@@ -570,7 +570,7 @@
     if (window.stxStatsPlot && window.stxStatsPlot.invalidate) window.stxStatsPlot.invalidate();
     showError("");
     var btn = $("statsCalculate");
-    btn.disabled = true;
+    if (btn) btn.disabled = true;
     try {
       var r = await api("/api/run", payload);
       if (!requestCurrent(request)) return;
@@ -581,7 +581,7 @@
     } catch (e) {
       if (requestCurrent(request)) showError(_("Could not reach the Statistics service."));
     } finally {
-      if (requestLatest(request)) btn.disabled = false;
+      if (btn && requestLatest(request)) btn.disabled = false;
     }
   }
 
@@ -789,17 +789,35 @@
 
   // Shared with recommend.js (loaded next).
   window.stxStatsApp = { _: _, fmt: fmt, api: api, readGroups: readGroups, groupName: groupName, setSegments: setSegments,
-    rowIntegrityError: rowIntegrityError, beginRequest: beginRequest, requestCurrent: requestCurrent, requestLatest: requestLatest };
+    rowIntegrityError: rowIntegrityError, beginRequest: beginRequest, requestCurrent: requestCurrent, requestLatest: requestLatest,
+    manualTestPick: false };
+
+  // Auto-calculate lane: recommend.js dispatches this once it has checked the
+  // test to run (primary, or the user's still-applicable manual pick).
+  document.addEventListener("stats:auto-calculate", function () {
+    syncOptions();
+    calculate();
+  });
 
   async function init() {
     setGroups([[], []]);
     renderTests(null);
     document.addEventListener("stats:data-change", invalidateAnalysis);
+    // A manual pick runs immediately; option changes re-derive the
+    // recommendation (debounced) which auto-calculates on arrival.
     document.addEventListener("change", function (event) {
-      if (event.target.name === "statsTest" || ["statsDesign", "statsScale", "statsAlt", "statsPopmean", "statsCorrP", "statsCorrMethod", "statsPhMethod"].indexOf(event.target.id) !== -1) invalidateAnalysis();
+      if (event.target.name === "statsTest") {
+        syncOptions();
+        invalidateAnalysis();
+        window.stxStatsApp.manualTestPick = true;
+        calculate();
+        return;
+      }
+      if (["statsDesign", "statsScale", "statsAlt", "statsPopmean", "statsCorrP", "statsCorrMethod", "statsPhMethod"].indexOf(event.target.id) !== -1) document.dispatchEvent(new CustomEvent("stats:data-change"));
     });
     document.addEventListener("input", function (event) {
-      if (["statsPopmean", "statsCorrP"].indexOf(event.target.id) !== -1) invalidateAnalysis();
+      if (event.target.id === "statsPopmean") document.dispatchEvent(new CustomEvent("stats:data-change"));
+      else if (event.target.id === "statsCorrP") invalidateAnalysis();
     });
     $("statsAddGroup").addEventListener("click", function () {
       invalidateImportedRows();
@@ -851,7 +869,6 @@
       }
       loadCsv(file);
     });
-    $("statsCalculate").addEventListener("click", calculate);
     $("statsCorrect").addEventListener("click", correct);
     $("statsPosthoc").addEventListener("click", posthoc);
     $("statsCopy").addEventListener("click", copyResult);
