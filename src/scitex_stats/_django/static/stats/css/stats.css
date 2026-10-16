@@ -342,6 +342,17 @@
   accent-color: var(--stats-accent);
 }
 
+/* Inapplicable tests dim in place with the failing reason on hover (title);
+   the radio is disabled so the choice cannot be made by mistake. */
+.stats-test.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.stats-test.is-disabled:hover {
+  background: none;
+}
+
 .stats-options {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));

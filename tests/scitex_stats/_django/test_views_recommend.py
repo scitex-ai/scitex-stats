@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stats app: /api/recommend-test, /api/run-all and the enabled Recommend button."""
+"""Stats app: /api/recommend-test, /api/run-all and the button-free auto UX."""
 
 from __future__ import annotations
 
@@ -76,15 +76,35 @@ def test_run_all_carries_p_hacking_warning(client):  # noqa: F811
     assert "p-hacking" in body["warning"]
 
 
-def test_index_recommend_button_is_enabled(client):  # noqa: F811
-    # Arrange
+def test_recommend_test_single_group_reports_applicability_with_reasons(client):  # noqa: F811
+    # Arrange: one group of numbers — the picker dims from this payload.
+    # Act
+    body = _post(
+        client,
+        "/api/recommend-test",
+        {"groups": [[5.1, 4.9, 5.6, 5.8, 6.0]], "group_names": ["Group 1"], "design": "independent", "scale": "continuous"},
+    ).json()
+    # Assert: at least one inapplicable test carries hover reasons.
+    assert [r for r in body["applicability"] if not r["applicable"] and r["reason_items"]]
+
+
+def test_index_has_no_recommend_button(client):  # noqa: F811
+    # Arrange: auto-calculate removed the button (CCT 3896/3897).
     # Act
     html = client.get("/").content.decode()
     # Assert
-    assert 'id="statsRecommend" disabled' not in html and 'id="statsRecommend"' in html
+    assert 'id="statsRecommend"' not in html
 
 
-def test_index_places_recommend_action_in_test_header(client):  # noqa: F811
+def test_index_has_no_calculate_button(client):  # noqa: F811
+    # Arrange: auto-calculate removed the button (CCT 3896/3897).
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
+    assert 'id="statsCalculate"' not in html
+
+
+def test_index_test_header_carries_no_action_buttons(client):  # noqa: F811
     # Arrange
     template = (
         Path(__file__).resolve().parents[3]
@@ -95,7 +115,15 @@ def test_index_places_recommend_action_in_test_header(client):  # noqa: F811
     # Act
     header = template[test_pane:header_end]
     # Assert
-    assert 'id="statsRecommend">{% translate "Select recommended test" %}</button>' in header
+    assert "<button" not in header
+
+
+def test_index_empty_state_describes_auto_calculate(client):  # noqa: F811
+    # Arrange
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
+    assert "runs automatically" in html
 
 
 def test_three_pane_headers_have_one_fixed_height():
