@@ -135,11 +135,17 @@
       name.appendChild(labelNode("span", row.label));
       if (row.test_id === primaryId) name.appendChild(el("span", "stats-badge stats-badge--primary", _("Recommended")));
       var reasons = el("td", "stats-applic__reasons");
+      // Operator 2026-10-18 (CCT4288/4292): no long-form reasons rail.
+      // Reasons collapse into a closed details expander; the picker
+      // tooltips (applyPickerStates) carry the same text on hover.
+      var why = el("details", "stats-reasons-acc");
+      why.appendChild(el("summary", "", _("Why")));
       var ul = el("ul", "stats-reasons");
       row.reason_items
         .filter(function (i) { return row.applicable ? i.status !== "fail" : i.status !== "ok"; })
         .forEach(function (i) { ul.appendChild(itemNode("li", i, "is-" + i.status)); });
-      reasons.appendChild(ul);
+      why.appendChild(ul);
+      reasons.appendChild(why);
       tr.append(mark, name, reasons);
       body.appendChild(tr);
     });
