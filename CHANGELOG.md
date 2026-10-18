@@ -7,6 +7,13 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.37] — 2026-10-18
+
+### Fixed
+- Remove the Applicable-tests rail from the results pane (operator order):
+  applicability survives as picker dim/disable plus hover tooltips only.
+- Collapse right-rail reasons behind closed details (prior slice).
+
 ## [0.2.30] — 2026-10-04
 
 ### Added
