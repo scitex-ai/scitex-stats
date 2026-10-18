@@ -123,14 +123,10 @@ base page (site header + dock), standalone uses the SDK UI shell.
     </header>
     <div class="stats-pane__body">
       <section id="statsSummary" class="stats-summary" aria-live="polite" hidden>
-        <h3 class="stats-summary__title">{% translate "Applicable tests" %}</h3>
+        <!-- Operator 2026-10-18 (CCT4437): the Applicable-tests rail is
+            removed entirely. Applicability survives only as picker
+            dim/disable + hover tooltips (applyPickerStates). -->
         <ul id="statsRecNotes" class="stats-notes" hidden></ul>
-        <div class="stats-applic-wrap">
-          <table class="stats-applic">
-            <thead><tr><th scope="col"><span class="stats-visually-hidden">{% translate "Applicable" %}</span></th><th scope="col">{% translate "Test" %}</th><th scope="col">{% translate "Reasons" %}</th></tr></thead>
-            <tbody id="statsApplicRows"></tbody>
-          </table>
-        </div>
         <div id="statsRecCard" class="stats-rec"></div>
         <div id="statsAssumptions" class="stats-assumptions"></div>
         <figure id="statsPlotSlot" class="stats-plot-slot" data-stats-plot-slot hidden></figure>
