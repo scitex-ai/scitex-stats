@@ -119,7 +119,11 @@
   }
 
   function renderApplicability(rec) {
+    // Operator 2026-10-18 (CCT4437): the rail is removed from the template.
+    // Keep the function harmless for any lingering callers; the picker
+    // states below remain the live surface.
     var body = $("statsApplicRows");
+    if (!body) return;
     body.textContent = "";
     var primaryId = rec.primary && rec.primary.test_id;
     var rows = rec.applicability.slice().sort(function (a, b) {
