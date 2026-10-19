@@ -321,6 +321,8 @@ def test_index_hides_the_project_panel_without_an_active_project(client):  # noq
 
 def test_index_has_exactly_one_header_picker_and_no_mode_toggle(client):  # noqa: F811
     # Arrange: the canonical mount root carries one picker and no mode button.
+    # (The Quick analysis header toggle was dropped per operator report
+    # 2026-10-19 / #153 — no mode button remains.)
     # Act
     html = client.get("/").content.decode()
     # Assert
@@ -332,7 +334,9 @@ def test_index_has_exactly_one_header_picker_and_no_mode_toggle(client):  # noqa
 
 
 def test_index_offers_no_quick_analysis_header_button(client):  # noqa: F811
-    # Arrange
+    # Arrange: no element in the served page may still be labelled Quick
+    # analysis in the header — the toggle and its label are gone, while the
+    # stateless page itself (save row present) keeps working.
     # Act
     html = client.get("/").content.decode()
     # Assert
