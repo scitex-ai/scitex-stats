@@ -294,6 +294,25 @@
   // stateless mode, where every write is refused server-side as well as hidden
   // here. Nothing about the mode depends on client-only state the server cannot
   // see.
+  // The canonical SDK AppHeader renders its own row (title span, version
+  // badge, project slot, actions) from the [data-stx-app-header] mount root.
+  // The server-rendered project picker starts life INSIDE that root; mount the
+  // header explicitly (the prebuilt bundle is an ES module, so it executes
+  // before DOMContentLoaded while this file's init runs on it — calling
+  // mount() here is deterministic and idempotent: already-mounted roots are
+  // skipped) and move the picker into the canonical slot so the row matches
+  // every other project-scoped app. When the module failed to load, the
+  // picker stays where the server put it rather than vanishing.
+  function adoptCanonicalHeaderSlot() {
+    var picker = document.querySelector("[data-stx-project-picker]");
+    if (!picker) return;
+    var api = window.stxAppHeader;
+    if (!api) return;
+    if (typeof api.mount === "function") api.mount();
+    var header = typeof api.get === "function" ? api.get() : null;
+    if (header && header.projectSlot) header.projectSlot.appendChild(picker);
+  }
+
   function projectId() {
     var root = document.querySelector("[data-stats-project]");
     var id = root ? root.getAttribute("data-stats-project") : "";
@@ -798,6 +817,7 @@
   });
 
   async function init() {
+    adoptCanonicalHeaderSlot();
     setGroups([[], []]);
     renderTests(null);
     document.addEventListener("stats:data-change", invalidateAnalysis);
