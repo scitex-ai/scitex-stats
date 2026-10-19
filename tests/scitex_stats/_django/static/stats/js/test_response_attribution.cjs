@@ -66,6 +66,14 @@ async function page(t) {
     el: (id) => document.getElementById(id),
     sent: (suffix) => requests.filter((r) => r.url.includes(suffix)),
     click(id) { this.el(id).dispatchEvent(new win.Event("click", { bubbles: true })); },
+    recalc() {
+      // No Calculate button: a manual pick runs immediately, so re-dispatch
+      // change on the checked test.
+      const checked = document.querySelector('input[name="statsTest"]:checked');
+      assert.ok(checked, "a test is checked before recalculation");
+      checked.dispatchEvent(new win.Event("change", { bubbles: true }));
+    },
+    fire(button) { if (button === "statsCalculate") this.recalc(); else this.click(button); },
     change(id, value, event = true) { this.el(id).value = value; if (event) this.el(id).dispatchEvent(new win.Event("change", { bubbles: true })); },
     select(name, event = true) {
       const radio = document.querySelector(`input[name="statsTest"][value="${name}"]`);
@@ -98,11 +106,16 @@ async function page(t) {
     },
     async prepared() {
       await this.file(complete); this.change("statsDesign", "paired"); this.select("ttest_rel");
-      this.click("statsRecommend"); await tick();
+      // No buttons: input re-derives the recommendation (debounced 500ms),
+      // so wait past the debounce instead of clicking a removed button.
+      await new Promise((r) => setTimeout(r, 800)); await tick();
       assert.equal(this.el("statsRunAll").hidden, false);
     },
   };
   await ui.prepared();
+  // t=0 for request-count assertions: the auto-calculate traffic from the
+  // button-free setup above is the product working, not the act under test.
+  requests.length = 0;
   return ui;
 }
 
@@ -168,7 +181,7 @@ async function renderedDownload(t) {
   const ui = await page(t);
   ui.routes.set("/api/run", () => response(result("CURRENT_DOWNLOAD")));
   ui.routes.set("/api/plot", () => response(plotResult("CURRENT_DOWNLOAD")));
-  ui.click("statsCalculate"); await tick();
+  ui.recalc(); await tick();
   assert.ok(ui.el("statsPlotSvg").getAttribute("href"));
   return ui;
 }
@@ -214,7 +227,7 @@ for (const id of ["statsPlotSvg", "statsPlotPng"]) {
     // Arrange
     const ui = await renderedDownload(t), pending = deferred();
     ui.routes.set("/api/plot", () => pending.promise);
-    ui.click("statsCalculate"); await tick();
+    ui.recalc(); await tick();
     // Act
     const event = activateDownload(ui, id, "click", { button: 0 });
     // Assert
@@ -231,7 +244,7 @@ for (const id of ["statsPlotSvg", "statsPlotPng"]) {
   test(`${id} rejects a superseded Calculate owner before its successor responds`, async (t) => {
     // Arrange
     const ui = await renderedDownload(t), pending = deferred();
-    ui.routes.set("/api/run", () => pending.promise); ui.click("statsCalculate"); await tick();
+    ui.routes.set("/api/run", () => pending.promise); ui.recalc(); await tick();
     // Act
     const event = activateDownload(ui, id, "click", { button: 0 });
     // Assert
@@ -264,7 +277,7 @@ for (const id of ["statsPlotSvg", "statsPlotPng"]) {
     const ui = await renderedDownload(t); ui.edit(false);
     activateDownload(ui, id, "click", { button: 0 });
     await ui.file(complete);
-    ui.click("statsCalculate"); await tick();
+    ui.recalc(); await tick();
     // Act
     const event = activateDownload(ui, id, "click", { button: 0 });
     // Assert
@@ -278,9 +291,23 @@ for (const [lane, button, route, sink, body] of [
 ]) {
   for (const [name, change] of Object.entries(changes)) {
     test(`${lane} discards late success after ${name}`, async (t) => {
+      if (lane === "Calculate" && name === "test change") {
+        // A manual pick runs immediately, so the change itself opens a newer
+        // request: the late first response is still discarded, the newer wins.
+        const ui = await page(t), first = deferred(), second = deferred(); let count = 0;
+        ui.routes.set(route, () => (++count === 1 ? first : second).promise);
+        ui.fire(button); await tick(); assert.equal(count, 1);
+        await change(ui); await tick(); assert.equal(count, 2, "manual pick recalculates immediately");
+        first.resolve(response(body("OLD_SYNTHETIC_RESULT"))); await tick();
+        assert.equal(ui.el(sink).textContent, "", "old result must never repopulate the current sink");
+        assert.equal(ui.el("statsResult").hidden, true);
+        second.resolve(response(body("CURRENT_SYNTHETIC_RESULT"))); await tick();
+        assert.match(ui.el(sink).textContent, /CURRENT_SYNTHETIC_RESULT/);
+        return;
+      }
       const ui = await page(t), pending = deferred();
       ui.routes.set(route, () => pending.promise);
-      ui.click(button); await tick(); assert.equal(ui.sent(route).length, 1);
+      ui.fire(button); await tick(); assert.equal(ui.sent(route).length, 1);
       await change(ui); pending.resolve(response(body("OLD_SYNTHETIC_RESULT"))); await tick();
       assert.equal(ui.el(sink).textContent, "", "old result must never repopulate the current sink");
       if (lane === "Calculate") assert.equal(ui.el("statsResult").hidden, true);
@@ -290,7 +317,7 @@ for (const [lane, button, route, sink, body] of [
   for (const failure of ["http", "network"]) {
     test(`${lane} discards late ${failure} error after edit`, async (t) => {
       const ui = await page(t), pending = deferred(); ui.routes.set(route, () => pending.promise);
-      ui.click(button); await tick(); ui.edit();
+      ui.fire(button); await tick(); ui.edit();
       if (failure === "http") pending.resolve(response({ error: "OLD_ERROR" }, false));
       else pending.reject(new Error("synthetic failure"));
       await tick(); assert.equal(ui.el(lane === "Calculate" ? "statsError" : sink).textContent, "");
@@ -298,29 +325,36 @@ for (const [lane, button, route, sink, body] of [
   }
   test(`${lane} accepts unchanged response`, async (t) => {
     const ui = await page(t); ui.routes.set(route, () => response(body("CURRENT_SYNTHETIC_RESULT")));
-    ui.click(button); await tick(); assert.match(ui.el(sink).textContent, /CURRENT_SYNTHETIC_RESULT/);
+    ui.fire(button); await tick(); assert.match(ui.el(sink).textContent, /CURRENT_SYNTHETIC_RESULT/);
   });
   test(`${lane} discards stale deferred JSON body`, async (t) => {
     const ui = await page(t), pending = deferred(), res = response({});
     res.json = () => pending.promise; ui.routes.set(route, () => res);
-    ui.click(button); await tick(); ui.change("statsAlt", "greater");
+    ui.fire(button); await tick(); ui.change("statsAlt", "greater");
     pending.resolve(body("OLD_BODY")); await tick(); assert.equal(ui.el(sink).textContent, "");
-    assert.equal(ui.el(button).disabled, false, "context invalidation must not leave the sole request busy");
+    if (lane === "Run all") assert.equal(ui.el(button).disabled, false, "context invalidation must not leave the sole request busy");
+    else {
+      // No Calculate button remains, so no busy control can leak; prove the
+      // lane is not wedged instead: a fresh request still renders.
+      ui.routes.set(route, () => response(body("CURRENT_SYNTHETIC_RESULT")));
+      ui.recalc(); await tick();
+      assert.match(ui.el(sink).textContent, /CURRENT_SYNTHETIC_RESULT/);
+    }
   });
   test(`${lane} competing requests retain newest response and busy ownership`, async (t) => {
     const ui = await page(t), first = deferred(), second = deferred(); let count = 0;
     ui.routes.set(route, () => (++count === 1 ? first : second).promise);
-    ui.click(button); ui.click(button); await tick(); assert.equal(count, 2);
+    ui.fire(button); ui.fire(button); await tick(); assert.equal(count, 2);
     first.resolve(response(body("OLD_RESULT"))); await tick();
-    assert.equal(ui.el(button).disabled, true, "older request cannot release newer busy controls");
+    if (lane === "Run all") assert.equal(ui.el(button).disabled, true, "older request cannot release newer busy controls");
     assert.equal(ui.el(sink).textContent, "");
     second.resolve(response(body("NEW_RESULT"))); await tick(); assert.match(ui.el(sink).textContent, /NEW_RESULT/);
-    assert.equal(ui.el(button).disabled, false);
+    if (lane === "Run all") assert.equal(ui.el(button).disabled, false);
   });
   test(`${lane} late older error cannot replace newest success`, async (t) => {
     const ui = await page(t), first = deferred(), second = deferred(); let count = 0;
     ui.routes.set(route, () => (++count === 1 ? first : second).promise);
-    ui.click(button); ui.click(button); await tick(); second.resolve(response(body("NEW_RESULT"))); await tick();
+    ui.fire(button); ui.fire(button); await tick(); second.resolve(response(body("NEW_RESULT"))); await tick();
     first.resolve(response({ error: "OLD_ERROR" }, false)); await tick();
     assert.match(ui.el(sink).textContent, /NEW_RESULT/);
     if (lane === "Calculate") assert.equal(ui.el("statsError").textContent, "");
@@ -331,7 +365,7 @@ for (const action of ["statsSaveResults", "statsSaveProvenance", "statsCopy"]) {
   for (const silent of [false, true]) {
     test(`${action} refuses rendered old result after ${silent ? "silent" : "observed"} edit`, async (t) => {
       const ui = await page(t); ui.routes.set("/api/run", () => response(result("OLD_RESULT")));
-      ui.click("statsCalculate"); await tick(); assert.match(ui.el("statsJson").textContent, /OLD_RESULT/);
+      ui.recalc(); await tick(); assert.match(ui.el("statsJson").textContent, /OLD_RESULT/);
       ui.edit(!silent); ui.click(action); await tick();
       assert.equal(ui.sent("/api/project-save?").length, 0); assert.equal(ui.copies.length, 0);
       assert.equal(ui.el("statsJson").textContent, "");
@@ -391,7 +425,7 @@ for (const [button, route, sink, option, body] of [
   for (const failure of [false, true]) {
     test(`${button} discards stale ${failure ? "error" : "success"} after method change`, async (t) => {
       const ui = await page(t), pending = deferred(); ui.change("statsCorrP", "0.01 0.2");
-      ui.routes.set(route, () => pending.promise); ui.click(button); await tick(); assert.equal(ui.sent(route).length, 1);
+      ui.routes.set(route, () => pending.promise); ui.fire(button); await tick(); assert.equal(ui.sent(route).length, 1);
       ui.change(option, option === "statsCorrMethod" ? "holm" : "games_howell");
       if (failure) pending.reject(new Error("synthetic")); else pending.resolve(response(body));
       await tick(); assert.equal(ui.el(sink).textContent, "");
@@ -403,7 +437,7 @@ for (const action of ["statsSaveResults", "statsSaveProvenance", "statsSaveConfi
   for (const failure of [false, true]) {
     test(`${action} suppresses delayed ${failure ? "error" : "acknowledgement"} after project change`, async (t) => {
       const ui = await page(t), pending = deferred(); ui.routes.set("/api/run", () => response(result("CURRENT_RESULT")));
-      ui.click("statsCalculate"); await tick();
+      ui.recalc(); await tick();
       ui.routes.set("/api/project-save?project=synthetic-project", () => pending.promise);
       ui.click(action); await tick(); assert.equal(ui.sent("/api/project-save?").length, 1, "valid source save was already dispatched");
       ui.document.querySelector("[data-stats-project]").setAttribute("data-stats-project", "other-project");
@@ -419,7 +453,7 @@ test("copy fallback cannot copy old output after deferred clipboard failure and 
   Object.defineProperty(ui.win, "isSecureContext", { value: true });
   ui.win.ClipboardItem = class { constructor(value) { this.value = value; } };
   Object.defineProperty(ui.win.navigator, "clipboard", { value: { write: () => pending.promise } });
-  ui.routes.set("/api/run", () => response(result("OLD_RESULT"))); ui.click("statsCalculate"); await tick();
+  ui.routes.set("/api/run", () => response(result("OLD_RESULT"))); ui.recalc(); await tick();
   ui.click("statsCopy"); await tick(); ui.edit(); pending.reject(new Error("synthetic clipboard failure")); await tick();
   assert.equal(ui.copies.length, 0); assert.equal(ui.el("statsCopyStatus").textContent, "");
 });
@@ -428,7 +462,7 @@ test("late plot response cannot create savable old plot after edit", async (t) =
   const ui = await page(t), pending = deferred();
   ui.routes.set("/api/run", () => response(result("OLD_RESULT")));
   ui.routes.set("/api/plot", () => pending.promise);
-  ui.click("statsCalculate"); await tick(); assert.equal(ui.sent("/api/plot").length, 1);
+  ui.recalc(); await tick(); assert.equal(ui.sent("/api/plot").length, 1);
   ui.edit(); pending.resolve(response(plotResult("OLD_PLOT"))); await tick();
   assert.equal(ui.el("statsPlotImg").hidden, true); assert.equal(ui.win.stxStatsPlot.spec(), null);
   ui.click("statsSavePlot"); await tick(); assert.equal(ui.sent("/api/project-save?").length, 0);
@@ -449,10 +483,10 @@ for (const failure of [false, true]) {
     ui.routes.set("/api/plot", () => response({ ...plotResult(++count === 1 ? "PLOT_A" : "PLOT_B"),
       figrecipe: { available: true, import_url: "/synthetic-figrecipe-import", open_url: "/synthetic-figrecipe-open" } }));
     ui.routes.set("/synthetic-figrecipe-import", () => pending.promise);
-    ui.click("statsCalculate"); await tick(); assert.equal(ui.win.stxStatsPlot.spec().synthetic, "PLOT_A");
+    ui.recalc(); await tick(); assert.equal(ui.win.stxStatsPlot.spec().synthetic, "PLOT_A");
     ui.click("statsOpenFigrecipe"); await tick();
     assert.equal(JSON.parse(ui.sent("synthetic-figrecipe-import")[0].options.body).spec.synthetic, "PLOT_A");
-    ui.click("statsCalculate"); await tick(); assert.equal(ui.win.stxStatsPlot.spec().synthetic, "PLOT_B");
+    ui.recalc(); await tick(); assert.equal(ui.win.stxStatsPlot.spec().synthetic, "PLOT_B");
     if (failure) pending.reject(new Error("synthetic old import failure"));
     else pending.resolve(response({ recipe_path: "old-plot-a.yaml" }));
     await tick(); assert.equal(ui.navigationAttempts.length, 0, "old import cannot navigate using a newer plot's ownership");
@@ -467,25 +501,25 @@ test("FigRecipe unchanged current plot import can navigate", async (t) => {
   ui.routes.set("/api/plot", () => response({ ...plotResult("CURRENT_PLOT"),
     figrecipe: { available: true, import_url: "/synthetic-figrecipe-import", open_url: "/synthetic-figrecipe-open" } }));
   ui.routes.set("/synthetic-figrecipe-import", () => response({ recipe_path: "current.yaml" }));
-  ui.click("statsCalculate"); await tick(); ui.click("statsOpenFigrecipe"); await tick();
+  ui.recalc(); await tick(); ui.click("statsOpenFigrecipe"); await tick();
   assert.equal(ui.navigationAttempts.length, 1, "JSDOM observes the actual current navigation attempt");
 });
 
 test("old image save cannot fall back to a newer plot after data/context replacement", async (t) => {
   const ui = await page(t), pending = deferred();
   ui.routes.set("/api/run", () => response(result("OLD_RESULT"))); ui.routes.set("/api/plot", () => response(plotResult("OLD_PLOT")));
-  ui.click("statsCalculate"); await tick();
+  ui.recalc(); await tick();
   ui.routes.set("data:image/png,OLD_PLOT", () => pending.promise); ui.click("statsSavePlot"); await tick();
   await ui.file(complete);
   ui.routes.set("/api/run", () => response(result("NEW_RESULT"))); ui.routes.set("/api/plot", () => response(plotResult("NEW_PLOT")));
-  ui.click("statsCalculate"); await tick(); assert.equal(ui.win.stxStatsPlot.spec().synthetic, "NEW_PLOT");
+  ui.recalc(); await tick(); assert.equal(ui.win.stxStatsPlot.spec().synthetic, "NEW_PLOT");
   pending.resolve(response({})); await tick(); assert.equal(ui.sent("/api/project-save?").length, 0);
 });
 
 test("newer Save plot request prevents older image await dispatch", async (t) => {
   const ui = await page(t), first = deferred(), second = deferred(); let count = 0;
   ui.routes.set("/api/run", () => response(result("CURRENT_RESULT"))); ui.routes.set("/api/plot", () => response(plotResult("CURRENT_PLOT")));
-  ui.click("statsCalculate"); await tick();
+  ui.recalc(); await tick();
   ui.routes.set("data:image/png,CURRENT_PLOT", () => (++count === 1 ? first : second).promise);
   ui.click("statsSavePlot"); ui.click("statsSavePlot"); await tick();
   second.resolve(response({})); await tick(); assert.equal(ui.sent("/api/project-save?").length, 1);
@@ -497,7 +531,7 @@ for (const stage of ["fetch", "body"]) {
     const ui = await page(t), pending = deferred();
     ui.routes.set("/api/run", () => response(result("CURRENT_RESULT")));
     ui.routes.set("/api/plot", () => response(plotResult("CURRENT_PLOT")));
-    ui.click("statsCalculate"); await tick(); assert.equal(ui.el("statsPlotPng").hidden, false);
+    ui.recalc(); await tick(); assert.equal(ui.el("statsPlotPng").hidden, false);
     const res = response({}); if (stage === "body") res.arrayBuffer = () => pending.promise;
     ui.routes.set("data:image/png,CURRENT_PLOT", () => stage === "fetch" ? pending.promise : res);
     ui.click("statsSavePlot"); await tick();
