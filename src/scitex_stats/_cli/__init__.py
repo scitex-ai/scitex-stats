@@ -322,8 +322,9 @@ main.add_command(_report_cmd, name="generate-report")
 deprecated_alias(main, "report", target="generate-report", remove_in="0.3.0")
 
 
-# §1a install-shell-completion/print-shell-completion + optional scitex-dev
-# docs/skills subcommands — both best-effort, see _integrations.py.
+# Fleet standard completion drop-in v1 (`completion install` / `status`,
+# plus §1a `install-shell-completion` / `print-shell-completion` shims) +
+# optional scitex-dev docs/skills subcommands — see _integrations.py.
 attach_scitex_dev_integrations(main)
 
 

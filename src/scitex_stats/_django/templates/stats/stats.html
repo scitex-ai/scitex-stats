@@ -18,23 +18,21 @@ base page (site header + dock), standalone uses the SDK UI shell.
 {% block scitex_app_content %}
 <div class="stats-app" data-stats-app>
   {% comment %}
-  Canonical app header: leaf title, the LEAF package version, then the shared
-  project picker in the slot the scitex_sdk stylesheet pins (order 1, left,
-  never right-aligned) and finally the app's own actions. The row chrome
-  (40px min-height, title/version typography, actions order 2, 600px phone
-  wrap) is the SDK canonical app-header.css linked above — this leaf owns
-  only identity values, never the row.
+  Canonical SDK AppHeader (scitex-sdk ui, latest): the component renders the
+  row — title span (never an h1: a mounted leaf must not add a second H1, and
+  the h1 UA margin is what made this title differ from sibling apps),
+  version badge from mount metadata, project slot, actions — from the mount
+  root below. The leaf owns only identity: the product name, its package
+  version, and its project picker element, which leaf JS moves into the
+  canonical slot after the prebuilt module mounts (see extra_js + app.js).
   {% endcomment %}
-  <header class="stx-app-header stats-app-header" data-stats-header data-stats-project="{{ stats_current_project_id }}">
-    <h1 class="stx-app-header__title">{% translate "Stats" %}</h1>
-    <span class="stx-app-header__version" data-stats-version>v{{ stats_version }}</span>
-    <div class="stx-app-header__slot--project-selector">
-      {% scitex_project_picker scope="project" current=stats_current_project_id %}
-    </div>
-    <div class="stx-app-header__actions" data-stats-header-actions>
-      <button type="button" class="stats-btn stats-btn--ghost" id="statsModeToggle" data-stats-mode-toggle hidden>{% translate "Quick analysis" %}</button>
-    </div>
-  </header>
+  <div data-stx-app-header
+       data-app-title="SciTeX Stats"
+       data-app-version="{{ stats_version }}"
+       data-stats-project="{{ stats_current_project_id }}"
+       data-stats-header>
+    {% scitex_project_picker scope="project" current=stats_current_project_id %}
+  </div>
 {% translate "1. Data Input" as label_data %}{% translate "2. Test Selection" as label_test %}{% translate "3. Results" as label_results %}
 {% scitex_panes "stats" columns="minmax(0,1.1fr) minmax(0,0.9fr) minmax(0,1.2fr)" active="data" %}
   {% scitex_pane "data" label=label_data order=1 css_class="stats-pane" %}
@@ -94,10 +92,6 @@ base page (site header + dock), standalone uses the SDK UI shell.
   {% scitex_pane "test" label=label_test order=2 css_class="stats-pane" %}
     <header class="stats-pane__header" data-stx-pane-header>
       <h2 class="stats-visually-hidden">{% translate "2. Test Selection" %}</h2>
-      <div class="stats-pane__actions">
-        <button type="button" class="stats-btn" id="statsRecommend">{% translate "Select recommended test" %}</button>
-        <button type="button" class="stats-btn stats-btn--primary" id="statsCalculate">{% translate "Calculate" %}</button>
-      </div>
     </header>
     <div class="stats-pane__body">
       <p id="statsError" class="stats-error" role="alert" hidden></p>
@@ -127,14 +121,10 @@ base page (site header + dock), standalone uses the SDK UI shell.
     </header>
     <div class="stats-pane__body">
       <section id="statsSummary" class="stats-summary" aria-live="polite" hidden>
-        <h3 class="stats-summary__title">{% translate "Applicable tests" %}</h3>
+        <!-- Operator 2026-10-18 (CCT4437): the Applicable-tests rail is
+            removed entirely. Applicability survives only as picker
+            dim/disable + hover tooltips (applyPickerStates). -->
         <ul id="statsRecNotes" class="stats-notes" hidden></ul>
-        <div class="stats-applic-wrap">
-          <table class="stats-applic">
-            <thead><tr><th scope="col"><span class="stats-visually-hidden">{% translate "Applicable" %}</span></th><th scope="col">{% translate "Test" %}</th><th scope="col">{% translate "Reasons" %}</th></tr></thead>
-            <tbody id="statsApplicRows"></tbody>
-          </table>
-        </div>
         <div id="statsRecCard" class="stats-rec"></div>
         <div id="statsAssumptions" class="stats-assumptions"></div>
         <figure id="statsPlotSlot" class="stats-plot-slot" data-stats-plot-slot hidden></figure>
@@ -145,7 +135,7 @@ base page (site header + dock), standalone uses the SDK UI shell.
       </section>
       <div id="statsEmpty" class="stats-empty">
         <div class="stats-empty__icon" aria-hidden="true">&sigma;</div>
-        <p>{% translate "Enter data, pick a test, then press Calculate." %}</p>
+        <p>{% translate "Enter data — inapplicable tests dim, and the recommended test runs automatically." %}</p>
       </div>
       <div id="statsResult" class="stats-result" hidden>
         <p id="statsResultTitle" class="stats-result__title"></p>
@@ -229,6 +219,7 @@ base page (site header + dock), standalone uses the SDK UI shell.
 
 {% block extra_js %}
     {% scitex_js_catalog "scitex_stats._django" %}
+    <script type="module" src="{% app_static 'scitex_sdk/ui/js/app/app-header.js' %}"></script>
     <script src="{% app_static 'stats/js/stx-mount.js' %}"></script>
     <script src="{% app_static 'stats/js/plot.js' %}"></script>
     <script src="{% app_static 'stats/js/app.js' %}"></script>

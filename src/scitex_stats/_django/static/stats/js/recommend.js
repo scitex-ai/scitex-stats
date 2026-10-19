@@ -59,7 +59,7 @@
     raw.forEach(function (g, i) {
       if (g.length) { groups.push(g); names.push(app.groupName(i)); }
     });
-    if (groups.length < 2) return null;
+    if (groups.length < 1) return null;
     return { groups: groups, group_names: names, design: $("statsDesign").value, scale: $("statsScale").value };
   }
 
@@ -72,12 +72,28 @@
     return app.rowIntegrityError(testName, payload.design === "paired" ? "within" : payload.design);
   }
 
+  function resetPickerStates() {
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="statsTest"]'), function (radio) {
+      var label = radio.closest("label.stats-test");
+      radio.disabled = false;
+      radio.setAttribute("aria-disabled", "false");
+      if (label) {
+        label.classList.remove("is-disabled");
+        label.removeAttribute("title");
+      }
+    });
+  }
+
   function invalidateRecommendation() {
     generation += 1;
     lastPayload = null;
     lastRec = null;
+    resetPickerStates();
     renderNotes([]);
-    $("statsApplicRows").textContent = "";
+    // statsApplicRows was removed with the Applicable-tests rail (#147);
+    // applicability survives only as picker dim/disable + hover tooltips.
+    var applicRows = $("statsApplicRows");
+    if (applicRows) applicRows.textContent = "";
     $("statsRecCard").textContent = "";
     $("statsAssumptions").textContent = "";
     $("statsRunAll").hidden = true;
@@ -106,7 +122,11 @@
   }
 
   function renderApplicability(rec) {
+    // Operator 2026-10-18 (CCT4437): the rail is removed from the template.
+    // Keep the function harmless for any lingering callers; the picker
+    // states below remain the live surface.
     var body = $("statsApplicRows");
+    if (!body) return;
     body.textContent = "";
     var primaryId = rec.primary && rec.primary.test_id;
     var rows = rec.applicability.slice().sort(function (a, b) {
@@ -122,11 +142,17 @@
       name.appendChild(labelNode("span", row.label));
       if (row.test_id === primaryId) name.appendChild(el("span", "stats-badge stats-badge--primary", _("Recommended")));
       var reasons = el("td", "stats-applic__reasons");
+      // Operator 2026-10-18 (CCT4288/4292): no long-form reasons rail.
+      // Reasons collapse into a closed details expander; the picker
+      // tooltips (applyPickerStates) carry the same text on hover.
+      var why = el("details", "stats-reasons-acc");
+      why.appendChild(el("summary", "", _("Why")));
       var ul = el("ul", "stats-reasons");
       row.reason_items
         .filter(function (i) { return row.applicable ? i.status !== "fail" : i.status !== "ok"; })
         .forEach(function (i) { ul.appendChild(itemNode("li", i, "is-" + i.status)); });
-      reasons.appendChild(ul);
+      why.appendChild(ul);
+      reasons.appendChild(why);
       tr.append(mark, name, reasons);
       body.appendChild(tr);
     });
@@ -239,6 +265,37 @@
     box.appendChild(acc);
   }
 
+  // Dim + disable inapplicable tests right in the picker; the failing
+  // reason rides the native hover tooltip, so no panel trip is needed.
+  function applyPickerStates(rec) {
+    var states = {};
+    (rec.applicability || []).forEach(function (a) { states[a.test_id] = a; });
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="statsTest"]'), function (radio) {
+      var a = states[radio.value];
+      var label = radio.closest("label.stats-test");
+      var reasons = a && !a.applicable
+        ? (a.reason_items || []).filter(function (i) { return i.status !== "ok"; })
+        : [];
+      var text = reasons.map(itemText).join(" · ");
+      radio.disabled = !!(a && !a.applicable);
+      radio.setAttribute("aria-disabled", radio.disabled ? "true" : "false");
+      if (label) {
+        label.classList.toggle("is-disabled", radio.disabled);
+        if (text) label.setAttribute("title", text);
+        else label.removeAttribute("title");
+      }
+    });
+    // A manual pick survives while it still applies; otherwise — or until the
+    // user has picked at all — the primary takes over. Either way the
+    // checked, applicable test auto-calculates.
+    var checked = document.querySelector('input[name="statsTest"]:checked');
+    var primaryId = rec.primary && rec.primary.test_id;
+    var primaryRadio = primaryId && document.querySelector('input[name="statsTest"][value="' + primaryId + '"]');
+    if ((!app.manualTestPick || !checked || checked.disabled) && primaryRadio && !primaryRadio.disabled) primaryRadio.checked = true;
+    var sel = document.querySelector('input[name="statsTest"]:checked');
+    if (sel && !sel.disabled) document.dispatchEvent(new CustomEvent("stats:auto-calculate"));
+  }
+
   async function recommend(opts) {
     var payload = currentPayload();
     if (!payload) { invalidateRecommendation(); return; }
@@ -257,7 +314,8 @@
     if (!r.ok) {
       lastRec = null;
       renderNotes([{ msg: (r.body && r.body.error) || "Request failed (HTTP %s).", args: r.body && r.body.error ? [] : [r.status] }]);
-      $("statsApplicRows").textContent = "";
+      var applicRows = $("statsApplicRows");
+      if (applicRows) applicRows.textContent = "";
       $("statsRecCard").textContent = "";
       $("statsAssumptions").textContent = "";
       $("statsRunAll").hidden = true;
@@ -269,18 +327,13 @@
     renderApplicability(lastRec);
     renderCard(lastRec);
     renderAssumptions(lastRec);
+    applyPickerStates(lastRec);
     $("statsRunAll").hidden = !lastRec.applicability.some(function (t) { return t.applicable; });
     $("statsRunAllOut").hidden = true;
     setVisible(true);
     document.dispatchEvent(new CustomEvent("stats:recommendation", {
       detail: { payload: payload, recommendation: lastRec, slot: $("statsPlotSlot") },
     }));
-    if (opts && opts.show) {
-      // Calculate then runs the recommended test, not whatever was checked before.
-      var radio = lastRec.primary && document.querySelector('input[name="statsTest"][value="' + lastRec.primary.test_id + '"]');
-      if (radio) { radio.checked = true; radio.dispatchEvent(new Event("change")); }
-      if (window.stxPanes) window.stxPanes.show("results", "stats");
-    }
   }
 
   function num(v) {
@@ -374,16 +427,14 @@
   }
 
   function init() {
-    $("statsRecommend").addEventListener("click", function () { recommend({ force: true, show: true }); });
+    // No buttons: data and option input re-derives the recommendation
+    // (debounced) and the checked test calculates automatically.
     $("statsRunAll").addEventListener("click", runAll);
     document.addEventListener("stats:data-change", soon);
     $("statsGroups").addEventListener("input", soon);
     new MutationObserver(soon).observe($("statsGroups"), { childList: true });
     $("statsDesign").addEventListener("change", soon);
     $("statsScale").addEventListener("change", soon);
-    $("statsSample").addEventListener("click", function () {
-      setTimeout(function () { recommend({ force: true, show: true }); }, 0);
-    });
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

@@ -7,6 +7,30 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.39] — 2026-10-19
+
+### Fixed
+- Separate picker verdict kicker and tooltip reasons (operator CCT4715,
+  #152).
+- Drop Quick analysis header toggle (operator element report, #153).
+- Adopt SDK canonical AppHeader component (operator standing rule); raise
+  scitex-sdk floor to >=0.3.7 (#154).
+
+## [0.2.38] — 2026-10-19
+
+### Fixed
+- Unbreak stats auto-calculate, guard quick-analysis leave, bound PDF build
+  (#150).
+- Raise mcp-doctor CLI timeout 15s to 60s against xdist cold-start flake
+  (CI-only, #149).
+
+## [0.2.37] — 2026-10-18
+
+### Fixed
+- Remove the Applicable-tests rail from the results pane (operator order):
+  applicability survives as picker dim/disable plus hover tooltips only.
+- Collapse right-rail reasons behind closed details (prior slice).
+
 ## [0.2.30] — 2026-10-04
 
 ### Added

@@ -245,14 +245,19 @@ class TestMCPCLI:
     def test_mcp_doctor_returncode(self):
         # Arrange
         # Act
-        result = _run_cli("mcp", "doctor", timeout=15)
+        # 60s, not 15s: under xdist's 20-way parallel load on self-hosted
+        # runners a cold `mcp doctor` (fresh interpreter + scipy import) can
+        # exceed 15s (CI 2026-10-19: TimeoutExpired on py3.11 while
+        # 3.12/3.13 passed the same assertion; local single-run is ~1.4s).
+        result = _run_cli("mcp", "doctor", timeout=60)
         # Assert
         assert result.returncode in (0, 1)
 
     def test_mcp_doctor_health_check_stdout_fastmcp(self):
         # Arrange
         # Act
-        result = _run_cli("mcp", "doctor", timeout=15)
+        # Same 60s budget as above: cold-start flake guard, not a slow CLI.
+        result = _run_cli("mcp", "doctor", timeout=60)
         # Assert
         assert "Health Check" in result.stdout or "fastmcp" in result.stdout
 

@@ -467,27 +467,31 @@ def test_index_has_data_test_results_panes(client):
 
 
 def test_index_shows_the_leaf_title_and_package_version_once(client):
-    # Arrange
+    # Arrange — the canonical SDK AppHeader renders the row client-side from
+    # the mount root; the server emits identity only (product name, bare
+    # package version — the component prepends the "v" badge itself).
     import scitex_stats
     # Act
     html = client.get("/").content.decode()
     # Assert
     assert (
-        html.count('<header class="stx-app-header stats-app-header"') == 1
-        and html.count('<h1 class="stx-app-header__title">Stats</h1>') == 1
-        and html.count('class="stx-app-header__version"') == 1
-        and html.count('class="stx-app-header__actions"') == 1
-        and f"v{scitex_stats.__version__}" in html
+        html.count("data-stx-app-header") == 1
+        and 'data-app-title="SciTeX Stats"' in html
+        and f'data-app-version="{scitex_stats.__version__}"' in html
+        and "<h1" not in html
+        and 'id="statsModeToggle"' not in html
+        and '<header class="stx-app-header' not in html
     )
 
 
 def test_index_puts_the_shared_picker_in_the_canonical_slot(client):
-    # Arrange
+    # Arrange — the server-rendered picker starts inside the mount root; leaf
+    # JS moves it into the component slot after mount (covered in Chromium).
     # Act
     html = client.get("/").content.decode()
     # Assert
     assert (
-        '<div class="stx-app-header__slot--project-selector">' in html
+        "data-stx-app-header" in html
         and "data-stx-project-picker" in html
         and 'data-provider-url="/api/project-scope"' in html
     )

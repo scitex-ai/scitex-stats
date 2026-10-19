@@ -713,3 +713,6 @@ src/*/_docs/
 # Compiled Django catalogs ship in the wheel (hatch honours .gitignore).
 !src/scitex_stats/_django/locale/*/LC_MESSAGES/*.mo
 .worktrees/
+
+# Frontend test dependencies (installed via npm in the js test dir).
+node_modules/

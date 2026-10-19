@@ -7,7 +7,7 @@ import pytest
 
 import scitex_stats as ss
 from scitex_stats.reporting._pdf import SECTIONS, pdf_renderer
-from scitex_stats.reporting._pdf._fonts import cjk_font_available
+from scitex_stats.reporting._pdf._fonts import cjk_font_available, has_cjk
 
 THREE = {"対照群": [5.1, 4.9, 5.6, 5.8, 6.0, 5.4, 5.2, 5.7], "Drug A": [6.3, 6.8, 6.1, 7.0, 6.6, 6.9, 6.4, 7.2],
          "Drug B": [5.9, 6.2, 6.0, 5.8, 6.4, 6.1]}
@@ -47,13 +47,30 @@ def test_pdf_contains_every_section_heading(pdf_report):
 @needs_pdf
 @needs_cjk
 def test_pdf_embeds_a_japanese_font_for_japanese_group_names(pdf_report):
+    """A font that can actually DRAW the Japanese group name is embedded.
+
+    Asserted by GLYPH COVERAGE, not by the font's name. Font selection is the
+    renderer's business and fontconfig substitutes freely: on a host with
+    fonts-wqy-zenhei installed and no named JP face requested, WeasyPrint embeds
+    "WenQuanYiZenHei", which draws 対照群 correctly yet matches none of the
+    JP/CJK/IPA name patterns. A name assertion there reports a working report as
+    broken - measured on ci run 37230015944 (py3.11, main), where that test failed
+    while test_pdf_text_keeps_japanese_group_names passed on the same artifact.
+    Coverage is the property the name was only ever a proxy for.
+    """
     # Arrange
     fitz = pytest.importorskip("fitz")
+    wanted = {ord(char) for group in THREE for char in group if has_cjk(char)}
     # Act
     with fitz.open(pdf_report["paths"]["pdf"]) as doc:
-        fonts = {f[3] for page in doc for f in page.get_fonts()}
+        drawn = any(
+            fitz.Font(fontbuffer=doc.extract_font(f[0])[3]).has_glyph(codepoint)
+            for page in doc
+            for f in page.get_fonts()
+            for codepoint in wanted
+        )
     # Assert
-    assert any(("JP" in name or "CJK" in name or "IPA" in name) for name in fonts)
+    assert drawn
 
 
 @needs_pdf

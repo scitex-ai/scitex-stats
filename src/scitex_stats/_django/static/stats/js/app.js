@@ -294,6 +294,25 @@
   // stateless mode, where every write is refused server-side as well as hidden
   // here. Nothing about the mode depends on client-only state the server cannot
   // see.
+  // The canonical SDK AppHeader renders its own row (title span, version
+  // badge, project slot, actions) from the [data-stx-app-header] mount root.
+  // The server-rendered project picker starts life INSIDE that root; mount the
+  // header explicitly (the prebuilt bundle is an ES module, so it executes
+  // before DOMContentLoaded while this file's init runs on it — calling
+  // mount() here is deterministic and idempotent: already-mounted roots are
+  // skipped) and move the picker into the canonical slot so the row matches
+  // every other project-scoped app. When the module failed to load, the
+  // picker stays where the server put it rather than vanishing.
+  function adoptCanonicalHeaderSlot() {
+    var picker = document.querySelector("[data-stx-project-picker]");
+    if (!picker) return;
+    var api = window.stxAppHeader;
+    if (!api) return;
+    if (typeof api.mount === "function") api.mount();
+    var header = typeof api.get === "function" ? api.get() : null;
+    if (header && header.projectSlot) header.projectSlot.appendChild(picker);
+  }
+
   function projectId() {
     var root = document.querySelector("[data-stats-project]");
     var id = root ? root.getAttribute("data-stats-project") : "";
@@ -317,8 +336,6 @@
     if (saves) saves.hidden = !hasProject;
     var plotSave = $("statsSavePlot");
     if (plotSave) plotSave.hidden = !hasProject;
-    var toggle = $("statsModeToggle");
-    if (toggle) toggle.hidden = !hasProject;
   }
 
   function setSaveStatus(message) {
@@ -570,7 +587,7 @@
     if (window.stxStatsPlot && window.stxStatsPlot.invalidate) window.stxStatsPlot.invalidate();
     showError("");
     var btn = $("statsCalculate");
-    btn.disabled = true;
+    if (btn) btn.disabled = true;
     try {
       var r = await api("/api/run", payload);
       if (!requestCurrent(request)) return;
@@ -581,7 +598,7 @@
     } catch (e) {
       if (requestCurrent(request)) showError(_("Could not reach the Statistics service."));
     } finally {
-      if (requestLatest(request)) btn.disabled = false;
+      if (btn && requestLatest(request)) btn.disabled = false;
     }
   }
 
@@ -789,17 +806,36 @@
 
   // Shared with recommend.js (loaded next).
   window.stxStatsApp = { _: _, fmt: fmt, api: api, readGroups: readGroups, groupName: groupName, setSegments: setSegments,
-    rowIntegrityError: rowIntegrityError, beginRequest: beginRequest, requestCurrent: requestCurrent, requestLatest: requestLatest };
+    rowIntegrityError: rowIntegrityError, beginRequest: beginRequest, requestCurrent: requestCurrent, requestLatest: requestLatest,
+    manualTestPick: false };
+
+  // Auto-calculate lane: recommend.js dispatches this once it has checked the
+  // test to run (primary, or the user's still-applicable manual pick).
+  document.addEventListener("stats:auto-calculate", function () {
+    syncOptions();
+    calculate();
+  });
 
   async function init() {
+    adoptCanonicalHeaderSlot();
     setGroups([[], []]);
     renderTests(null);
     document.addEventListener("stats:data-change", invalidateAnalysis);
+    // A manual pick runs immediately; option changes re-derive the
+    // recommendation (debounced) which auto-calculates on arrival.
     document.addEventListener("change", function (event) {
-      if (event.target.name === "statsTest" || ["statsDesign", "statsScale", "statsAlt", "statsPopmean", "statsCorrP", "statsCorrMethod", "statsPhMethod"].indexOf(event.target.id) !== -1) invalidateAnalysis();
+      if (event.target.name === "statsTest") {
+        syncOptions();
+        invalidateAnalysis();
+        window.stxStatsApp.manualTestPick = true;
+        calculate();
+        return;
+      }
+      if (["statsDesign", "statsScale", "statsAlt", "statsPopmean", "statsCorrP", "statsCorrMethod", "statsPhMethod"].indexOf(event.target.id) !== -1) document.dispatchEvent(new CustomEvent("stats:data-change"));
     });
     document.addEventListener("input", function (event) {
-      if (["statsPopmean", "statsCorrP"].indexOf(event.target.id) !== -1) invalidateAnalysis();
+      if (event.target.id === "statsPopmean") document.dispatchEvent(new CustomEvent("stats:data-change"));
+      else if (event.target.id === "statsCorrP") invalidateAnalysis();
     });
     $("statsAddGroup").addEventListener("click", function () {
       invalidateImportedRows();
@@ -851,25 +887,10 @@
       }
       loadCsv(file);
     });
-    $("statsCalculate").addEventListener("click", calculate);
     $("statsCorrect").addEventListener("click", correct);
     $("statsPosthoc").addEventListener("click", posthoc);
     $("statsCopy").addEventListener("click", copyResult);
     applyMode();
-    var modeToggle = $("statsModeToggle");
-    if (modeToggle) {
-      modeToggle.addEventListener("click", function () {
-        // Leaving project mode is a NAVIGATION, not a UI flag: the page reloads
-        // without `?project=`, which is the stateless state the server refuses
-        // to persist into.
-        var url = new URL(window.location.href);
-        url.searchParams.delete("project");
-        // Explicit stateless mode: without this the SDK would resume the LAST
-        // VISITED project and the page would keep accepting writes.
-        url.searchParams.set("quick", "1");
-        window.location.href = url.toString();
-      });
-    }
     var filePanel = $("statsProjectFiles");
     if (filePanel) {
       filePanel.addEventListener("click", function (event) {

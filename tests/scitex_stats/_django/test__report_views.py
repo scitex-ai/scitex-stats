@@ -162,9 +162,15 @@ def _host_probe(tmp_path, probe):
         "    return target\n"
     )
     env = dict(os.environ)
-    env["PYTHONPATH"] = os.pathsep.join(
-        [str(tmp_path), str(Path(_report_views.__file__).resolve().parents[2])]
-    )
+    # Preserve the caller's PYTHONPATH AFTER the fixture entries. Release CI
+    # layers every dependency (--target) on the parent PYTHONPATH only, so
+    # dropping it here starves the subprocess (no django) while venv-installed
+    # CI stays green. The fixture tmp stays first, so the fixture `apps`
+    # package still wins over anything importable behind it.
+    entries = [str(tmp_path), str(Path(_report_views.__file__).resolve().parents[2])]
+    if os.environ.get("PYTHONPATH"):
+        entries.append(os.environ["PYTHONPATH"])
+    env["PYTHONPATH"] = os.pathsep.join(entries)
     script = (
         "import json\n"
         "from django.conf import settings\n"
