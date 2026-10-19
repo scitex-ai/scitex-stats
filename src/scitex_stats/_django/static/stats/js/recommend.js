@@ -271,7 +271,7 @@
       var reasons = a && !a.applicable
         ? (a.reason_items || []).filter(function (i) { return i.status !== "ok"; })
         : [];
-      var text = reasons.map(itemText).join(" ");
+      var text = reasons.map(itemText).join(" · ");
       radio.disabled = !!(a && !a.applicable);
       radio.setAttribute("aria-disabled", radio.disabled ? "true" : "false");
       if (label) {
