@@ -232,7 +232,10 @@
     box.textContent = "";
     var sec = rec.assumption_checks;
     if (!sec || !sec.rows.length) return;
-    box.appendChild(el("h3", "stats-summary__title", _("Assumption checks")));
+    var acc = el("details", "stx-acc stats-acc");
+    acc.open = true;
+    acc.appendChild(el("summary", "", _("Assumption checks")));
+    var body = el("div", "stx-acc__body");
     var table = el("table", "stats-applic stats-applic--checks");
     var head = el("tr");
     [_("Check"), _("Sample"), _("Result"), _("Threshold"), _("Decision")].forEach(function (h) {
@@ -251,13 +254,15 @@
     table.append(thead, tbody);
     var wrap = el("div", "stats-applic-wrap");
     wrap.appendChild(table);
-    box.appendChild(wrap);
-    sec.notes.forEach(function (n) { box.appendChild(itemNode("p", n, "stats-check-note")); });
+    body.appendChild(wrap);
+    sec.notes.forEach(function (n) { body.appendChild(itemNode("p", n, "stats-check-note")); });
     if (sec.qq.length) {
       var grid = el("div", "stats-qq-grid");
       sec.qq.forEach(function (q) { grid.appendChild(qqPlot(q)); });
-      box.appendChild(grid);
+      body.appendChild(grid);
     }
+    acc.appendChild(body);
+    box.appendChild(acc);
   }
 
   // Dim + disable inapplicable tests right in the picker; the failing
@@ -377,10 +382,13 @@
       out.hidden = false;
       if (!r.ok) { out.appendChild(el("p", "stats-error", (r.body && r.body.error) || "HTTP " + r.status)); return; }
       var res = r.body;
-      out.appendChild(el("h3", "stats-summary__title", _("Sensitivity analyses")));
+      var acc = el("details", "stx-acc stats-acc");
+      acc.open = true;
+      acc.appendChild(el("summary", "", _("Sensitivity analyses")));
+      var accBody = el("div", "stx-acc__body");
       var warn = itemNode("p", res.warning_item, "stats-warning");
       warn.setAttribute("role", "note");
-      out.appendChild(warn);
+      accBody.appendChild(warn);
       var table = el("table", "stats-applic stats-applic--results");
       var head = el("tr");
       [_("Role"), _("Test"), _("Result")].forEach(function (h) { var th = el("th", "", h); th.scope = "col"; head.appendChild(th); });
@@ -399,7 +407,9 @@
       table.append(thead, tbody);
       var wrap = el("div", "stats-applic-wrap");
       wrap.appendChild(table);
-      out.append(wrap, itemNode("p", res.agreement.summary_item, "stats-agreement is-" + res.agreement.status));
+      accBody.append(wrap, itemNode("p", res.agreement.summary_item, "stats-agreement is-" + res.agreement.status));
+      acc.appendChild(accBody);
+      out.appendChild(acc);
     } catch (e) {
       if (!current()) return;
       out.hidden = false;
