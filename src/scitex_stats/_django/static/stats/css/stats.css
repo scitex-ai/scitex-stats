@@ -225,6 +225,21 @@
   color: var(--text-muted);
 }
 
+/* Recommendation verdict: the kicker is an eyebrow above the test name,
+   never a run-on glued to it (operator CCT4715 picker concatenation). */
+.stats-rec__title {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.stats-rec__kicker {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
 .stats-groups {
   display: flex;
   flex-direction: column;
