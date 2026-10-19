@@ -7,6 +7,14 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.38] — 2026-10-19
+
+### Fixed
+- Unbreak stats auto-calculate, guard quick-analysis leave, bound PDF build
+  (#150).
+- Raise mcp-doctor CLI timeout 15s to 60s against xdist cold-start flake
+  (CI-only, #149).
+
 ## [0.2.37] — 2026-10-18
 
 ### Fixed
