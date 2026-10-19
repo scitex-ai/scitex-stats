@@ -317,8 +317,6 @@
     if (saves) saves.hidden = !hasProject;
     var plotSave = $("statsSavePlot");
     if (plotSave) plotSave.hidden = !hasProject;
-    var toggle = $("statsModeToggle");
-    if (toggle) toggle.hidden = !hasProject;
   }
 
   function setSaveStatus(message) {
@@ -873,22 +871,6 @@
     $("statsPosthoc").addEventListener("click", posthoc);
     $("statsCopy").addEventListener("click", copyResult);
     applyMode();
-    var modeToggle = $("statsModeToggle");
-    if (modeToggle) {
-      modeToggle.addEventListener("click", function () {
-        // Leaving project mode is a NAVIGATION, not a UI flag: the page reloads
-        // without `?project=`, which is the stateless state the server refuses
-        // to persist into. Entered data does not survive the reload, so guard
-        // against silent loss the same way the sample button does.
-        if (hasUserData() && !window.confirm(_("Leave the project and discard the entered data?"))) return;
-        var url = new URL(window.location.href);
-        url.searchParams.delete("project");
-        // Explicit stateless mode: without this the SDK would resume the LAST
-        // VISITED project and the page would keep accepting writes.
-        url.searchParams.set("quick", "1");
-        window.location.href = url.toString();
-      });
-    }
     var filePanel = $("statsProjectFiles");
     if (filePanel) {
       filePanel.addEventListener("click", function (event) {
