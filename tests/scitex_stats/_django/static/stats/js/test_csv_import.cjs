@@ -85,7 +85,8 @@ for (const prefix of ["", "/apps/u/stats"]) {
     await ui.file("a,b\n1,10\n,20\n3,\n0,40\n");
     assert.deepEqual(ui.groups(), ["1 3 0", "10 20 40"]);
     assert.deepEqual(ui.counts(), ["n = 3", "n = 3"]);
-    ui.document.getElementById("statsCalculate").click();
+    recalculate(ui);
+    await tick();
     await new Promise((resolve) => setImmediate(resolve));
     const request = ui.requests.find((r) => r.url === `${prefix}/api/run`);
     assert.ok(request, "calculation used the declared mount prefix");
@@ -137,12 +138,20 @@ function select(ui, name) {
   const radio = ui.document.querySelector(`input[name="statsTest"][value="${name}"]`);
   assert.ok(radio, `${name} is an available UI test`);
   radio.checked = true;
-  radio.dispatchEvent(new ui.dom.window.Event("change"));
+  // Bubbling: a manual pick calculates immediately (no Calculate button).
+  radio.dispatchEvent(new ui.dom.window.Event("change", { bubbles: true }));
+}
+
+// No Calculate button: re-dispatch change on the checked test; a manual
+// pick runs immediately.
+function recalculate(ui) {
+  const checked = ui.document.querySelector('input[name="statsTest"]:checked');
+  assert.ok(checked, "a test is checked before recalculation");
+  checked.dispatchEvent(new ui.dom.window.Event("change", { bubbles: true }));
 }
 
 async function calculate(ui, name) {
   select(ui, name);
-  ui.document.getElementById("statsCalculate").click();
   await tick();
 }
 
@@ -318,7 +327,11 @@ const syntheticRecommendation = {
 };
 
 async function recommend(ui) {
-  ui.document.getElementById("statsRecommend").click();
+  // No buttons: input re-derives the recommendation (debounced 500ms),
+  // so dispatch the design change and wait past the debounce instead of
+  // clicking the removed #statsRecommend button.
+  ui.document.getElementById("statsDesign").dispatchEvent(new ui.dom.window.Event("change", { bubbles: true }));
+  await new Promise((resolve) => setTimeout(resolve, 800));
   await tick();
 }
 
@@ -407,8 +420,7 @@ test("an in-flight recommendation cannot certify a later import with identical c
   const ui = await page(t, { recommendation: () => pending });
   await ui.file(complete);
   ui.document.getElementById("statsDesign").value = "paired";
-  ui.document.getElementById("statsRecommend").click();
-  await tick();
+  await recommend(ui);
   assert.equal(requestsFor(ui, "recommend-test").length, 1);
   await ui.file("a,b,c\n1,10,100\n,,\n2,20,200\n0,40,400\n");
   assert.deepEqual(ui.groups(), ["1 2 0", "10 20 40", "100 200 400"]);
