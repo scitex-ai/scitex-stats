@@ -101,13 +101,14 @@
   padding-bottom: calc(var(--site-dock-height, 0px) + 24px);
 }
 
-/* Canonical app header: the row chrome lives in scitex_sdk app-header.css
-   (linked by stats.html), the single source of truth shared by every
-   project-scoped app: 40px row, title 0.85rem, version 0.78rem, actions
-   order 2, 600px phone wrap. This leaf owns only identity values, never the
-   row — so no .stats-app-header row/typography/actions fork lives here.
-   `.stats-app-header` remains as a compat hook on the header element (the
-   canonical class is `.stx-app-header`); it carries no box properties. */
+/* Canonical SDK AppHeader: the row is rendered client-side by the prebuilt
+   scitex_sdk app-header.js module from the [data-stx-app-header] mount root
+   (stats.html) — title span, version badge, project slot, actions. The
+   single source of truth shared by every project-scoped app is that
+   component plus app-header.css: 40px row, title 0.85rem, version 0.78rem,
+   actions order 2, 600px phone wrap. This leaf owns only identity values
+   (product name, package version, its picker element), never the row — no
+   leaf fork lives here. */
 
 .stats-dropzone {
   transition: background-color 120ms ease, box-shadow 120ms ease;

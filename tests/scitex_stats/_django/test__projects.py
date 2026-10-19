@@ -319,24 +319,24 @@ def test_index_hides_the_project_panel_without_an_active_project(client):  # noq
     assert "data-stats-project-panel hidden" in html
 
 
-def test_index_has_exactly_one_header_picker_and_mode_toggle(client):  # noqa: F811
-    # Arrange
+def test_index_has_exactly_one_header_picker_and_no_mode_toggle(client):  # noqa: F811
+    # Arrange: the canonical mount root carries one picker and no mode button.
     # Act
     html = client.get("/").content.decode()
     # Assert
     assert (
-        html.count('<header class="stx-app-header stats-app-header"') == 1
-        and html.count('class="stx-app-header__slot--project-selector"') == 1
-        and html.count('id="statsModeToggle"') == 1
+        html.count("data-stx-app-header") == 1
+        and html.count("data-stx-project-picker") == 1
+        and 'id="statsModeToggle"' not in html
     )
 
 
-def test_index_offers_quick_analysis_as_the_explicit_alternative(client):  # noqa: F811
+def test_index_offers_no_quick_analysis_header_button(client):  # noqa: F811
     # Arrange
     # Act
     html = client.get("/").content.decode()
     # Assert
-    assert "Quick analysis" in html and 'id="statsSaveRow"' in html
+    assert "Quick analysis" not in html and 'id="statsSaveRow"' in html
 
 
 

@@ -98,7 +98,7 @@ bundle = [
 # The gui extra provides Django for both standalone and mounted operation.
 server = [
     "django>=4.2",
-    "scitex-sdk[gui]>=0.3.1",
+    "scitex-sdk[gui]>=0.3.7",
 ]
 dev = [
     "pytest>=7.0.0",
@@ -124,7 +124,7 @@ dev = [
     # [server] extra: shared SDK App/UI contracts and Django boot/mount
     # tests, at the same released floor as [server] (PS-210).
     "django>=4.2",
-    "scitex-sdk[gui]>=0.3.1",
+    "scitex-sdk[gui]>=0.3.7",
     # Note: fastmcp / mcp / scitex-dev / scitex-logging / pingouin come in via [project.dependencies].
     "weasyprint>=60",
 ]
