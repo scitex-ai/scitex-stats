@@ -7,6 +7,19 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.40] — 2026-10-19
+
+### Fixed
+- Results column cleanup: dedupe notes/decision-path/assumptions, flat
+  verdict card, Copy-by-contents inline in the Raw-result row, desktop pane
+  titles (operator order, #158).
+- Wrap assumption checks and sensitivity output in collapsible details
+  (open-by-default, #156).
+
+### Changed
+- Migrate stale frontend tests to the debounced auto-calculate flow
+  (CI-only, #157).
+
 ## [0.2.39] — 2026-10-19
 
 ### Fixed
