@@ -90,7 +90,10 @@
     lastRec = null;
     resetPickerStates();
     renderNotes([]);
-    $("statsApplicRows").textContent = "";
+    // statsApplicRows was removed with the Applicable-tests rail (#147);
+    // applicability survives only as picker dim/disable + hover tooltips.
+    var applicRows = $("statsApplicRows");
+    if (applicRows) applicRows.textContent = "";
     $("statsRecCard").textContent = "";
     $("statsAssumptions").textContent = "";
     $("statsRunAll").hidden = true;
@@ -306,7 +309,8 @@
     if (!r.ok) {
       lastRec = null;
       renderNotes([{ msg: (r.body && r.body.error) || "Request failed (HTTP %s).", args: r.body && r.body.error ? [] : [r.status] }]);
-      $("statsApplicRows").textContent = "";
+      var applicRows = $("statsApplicRows");
+      if (applicRows) applicRows.textContent = "";
       $("statsRecCard").textContent = "";
       $("statsAssumptions").textContent = "";
       $("statsRunAll").hidden = true;

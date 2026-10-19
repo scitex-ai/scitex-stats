@@ -878,7 +878,9 @@
       modeToggle.addEventListener("click", function () {
         // Leaving project mode is a NAVIGATION, not a UI flag: the page reloads
         // without `?project=`, which is the stateless state the server refuses
-        // to persist into.
+        // to persist into. Entered data does not survive the reload, so guard
+        // against silent loss the same way the sample button does.
+        if (hasUserData() && !window.confirm(_("Leave the project and discard the entered data?"))) return;
         var url = new URL(window.location.href);
         url.searchParams.delete("project");
         // Explicit stateless mode: without this the SDK would resume the LAST
