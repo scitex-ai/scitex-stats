@@ -101,8 +101,6 @@
 .stats-rec {
   padding: 8px 10px;
   border-left: 3px solid var(--stats-accent);
-  border-radius: 4px;
-  background: var(--bg-muted);
 }
 
 .stats-rec__title {
@@ -122,6 +120,16 @@
 .stats-rec__reason {
   margin: 0;
   font-size: 0.85rem;
+}
+
+/* Notes sit inside the rec card as a footnote to the verdict, not a second
+   verdict block: no bullet marker, secondary tone. */
+#statsRecCard .stats-notes {
+  margin: 8px 0 0;
+  padding-left: 0;
+  list-style: none;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
 }
 
 .stats-rec__path li.is-fail {

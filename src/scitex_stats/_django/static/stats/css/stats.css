@@ -66,6 +66,19 @@
   background: var(--bg-surface);
 }
 
+/* Operator 2026-10-19 results-column cleanup: Copy sits in the Raw-result
+   summary row, next to the JSON it copies — not detached in the pane header. */
+.stats-raw__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stats-raw__summary .stats-copy {
+  flex: none;
+}
+
 .stats-pane__title {
   margin: 0;
   font-size: 0.8rem;
@@ -575,23 +588,23 @@
 }
 
 /* Phones (600px SDK contract boundary, plus coarse pointers): one column,
-   and every actionable control keeps a >=44px touch target. The pane header
-   wraps instead of clipping. The app-header row wrap itself is owned by the
-   SDK canonical app-header.css (same 600px boundary) — this leaf only wraps
-   its own pane rows here. */
+   and every actionable control keeps a >=44px touch target. The pane
+   headers stand down (the SDK panes tab bar carries the labels). The
+   app-header row wrap itself is owned by the SDK canonical app-header.css
+   (same 600px boundary). */
 @media (max-width: 600px), (pointer: coarse) {
   .stats-options {
     grid-template-columns: 1fr;
   }
 
-  .stats-pane__header {
-    height: auto;
-    min-height: 48px;
-    flex-wrap: wrap;
+  /* Phones: the SDK panes tab bar carries the pane labels, so the desktop
+     titles and their now-empty header rows stand down. */
+  .stats-pane__title {
+    display: none;
   }
 
-  .stats-pane__header .stats-pane__actions {
-    flex-wrap: wrap;
+  .stats-pane__header {
+    display: none;
   }
 
   .stats-app .stats-btn,

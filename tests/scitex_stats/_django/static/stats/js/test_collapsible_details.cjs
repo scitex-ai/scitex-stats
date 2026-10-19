@@ -1,5 +1,8 @@
 // Operator layout rule CCT: results-pane minutiae (assumption checks,
-// sensitivity output) render inside collapsible <details>, open by default.
+// sensitivity output) render inside collapsible <details>.
+// Operator 2026-10-19 results-column cleanup supersedes the open-by-default
+// half: decision-path and assumption evidence stay one click away so the
+// verdict block does not repeat them. Sensitivity stays open (user-invoked).
 // Actual shipped page scripts; every request and result is synthetic. No service/store.
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
@@ -118,7 +121,7 @@ test("assumption checks render inside an open collapsible details", async (t) =>
   const box = ui.el("statsAssumptions");
   const acc = box.querySelector(":scope > details.stx-acc.stats-acc");
   assert.ok(acc, "assumptions wrapped in details.stx-acc");
-  assert.equal(acc.open, true, "open by default (current visibility preserved)");
+  assert.equal(acc.open, false, "closed by default (2026-10-19 cleanup: verdict block, evidence one click away)");
   assert.equal(acc.querySelector(":scope > summary").textContent, "Assumption checks");
   assert.ok(acc.querySelector(":scope > .stx-acc__body table.stats-applic--checks"), "checks table inside body");
   assert.ok(acc.querySelector(":scope > .stx-acc__body .stats-qq-grid"), "Q-Q plots inside body");
@@ -132,7 +135,7 @@ test("sensitivity output renders inside an open collapsible details", async (t) 
   assert.equal(out.hidden, false);
   const acc = out.querySelector(":scope > details.stx-acc.stats-acc");
   assert.ok(acc, "sensitivity output wrapped in details.stx-acc");
-  assert.equal(acc.open, true, "open by default (current visibility preserved)");
+  assert.equal(acc.open, true, "open on arrival (user-invoked: Run all was just clicked)");
   assert.equal(acc.querySelector(":scope > summary").textContent, "Sensitivity analyses");
   assert.ok(acc.querySelector(":scope > .stx-acc__body table.stats-applic--results"), "results table inside body");
   assert.ok(acc.querySelector(":scope > .stx-acc__body .stats-warning"), "warning inside body");

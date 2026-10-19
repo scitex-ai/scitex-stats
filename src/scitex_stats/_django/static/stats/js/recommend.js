@@ -84,6 +84,15 @@
     });
   }
 
+  // The rec notes list lives inside the rec card (single verdict block), so
+  // clearing the card must preserve it; renderNotes owns its content.
+  function clearRecCard() {
+    var card = $("statsRecCard");
+    Array.prototype.slice.call(card.children).forEach(function (child) {
+      if (child.id !== "statsRecNotes") card.removeChild(child);
+    });
+  }
+
   function invalidateRecommendation() {
     generation += 1;
     lastPayload = null;
@@ -94,7 +103,7 @@
     // applicability survives only as picker dim/disable + hover tooltips.
     var applicRows = $("statsApplicRows");
     if (applicRows) applicRows.textContent = "";
-    $("statsRecCard").textContent = "";
+    clearRecCard();
     $("statsAssumptions").textContent = "";
     $("statsRunAll").hidden = true;
     $("statsRunAllOut").hidden = true;
@@ -160,7 +169,7 @@
 
   function renderCard(rec) {
     var card = $("statsRecCard");
-    card.textContent = "";
+    clearRecCard();
     if (!rec.primary) {
       card.appendChild(el("p", "stats-rec__title", _("No test can be recommended for these data.")));
     } else {
@@ -171,7 +180,8 @@
     var path = el("ol", "stats-rec__path");
     rec.decision_path.forEach(function (i) { path.appendChild(itemNode("li", i, "is-" + i.status)); });
     var pathBox = el("details", "stx-acc stats-acc");
-    pathBox.open = true;
+    // Closed by default (operator 2026-10-19 results-column cleanup): the
+    // verdict is the title + reason; the path is reference one click away.
     pathBox.append(el("summary", "", _("Decision path")), path);
     card.appendChild(pathBox);
     if (rec.alternatives.length) {
@@ -185,6 +195,10 @@
       alts.append(el("summary", "", app.fmt(_("Alternatives (%s), secondary"), [rec.alternatives.length])), list);
       card.appendChild(alts);
     }
+    // Notes read as a footnote to the verdict, not a second verdict block:
+    // keep them inside the single card but after title/reason/evidence.
+    var notes = $("statsRecNotes");
+    if (notes) card.appendChild(notes);
   }
 
   function checkSegments(r) {
@@ -233,7 +247,8 @@
     var sec = rec.assumption_checks;
     if (!sec || !sec.rows.length) return;
     var acc = el("details", "stx-acc stats-acc");
-    acc.open = true;
+    // Closed by default (operator 2026-10-19 results-column cleanup): the
+    // reason sentence carries the verdict; the table is evidence one click away.
     acc.appendChild(el("summary", "", _("Assumption checks")));
     var body = el("div", "stx-acc__body");
     var table = el("table", "stats-applic stats-applic--checks");
@@ -316,7 +331,7 @@
       renderNotes([{ msg: (r.body && r.body.error) || "Request failed (HTTP %s).", args: r.body && r.body.error ? [] : [r.status] }]);
       var applicRows = $("statsApplicRows");
       if (applicRows) applicRows.textContent = "";
-      $("statsRecCard").textContent = "";
+      clearRecCard();
       $("statsAssumptions").textContent = "";
       $("statsRunAll").hidden = true;
       setVisible(true);

@@ -889,7 +889,10 @@
     });
     $("statsCorrect").addEventListener("click", correct);
     $("statsPosthoc").addEventListener("click", posthoc);
-    $("statsCopy").addEventListener("click", copyResult);
+    // Copy sits inside the Raw-result summary row (operator 2026-10-19: next
+    // to what it copies); preventDefault stops the click from toggling the
+    // enclosing details.
+    $("statsCopy").addEventListener("click", function (event) { if (event) event.preventDefault(); copyResult(); });
     applyMode();
     var filePanel = $("statsProjectFiles");
     if (filePanel) {
