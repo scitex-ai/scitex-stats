@@ -137,7 +137,11 @@ class TestListPythonAPIs:
     def test_list_python_apis_json_returncode(self):
         # Arrange
         # Act
-        result = _run_cli("list-python-apis", "--json")
+        # 60s, not 30s: same cold-start flake guard as mcp-doctor above —
+        # `list-python-apis --json` imports the full battery + serializes,
+        # and exceeded 30s on py3.11/org-06 under xdist load (develop CI
+        # 2026-10-20) while 3.12/3.13 passed; local single-run is ~2s.
+        result = _run_cli("list-python-apis", "--json", timeout=60)
         # Assert
         assert result.returncode == 0
         import json
@@ -146,7 +150,7 @@ class TestListPythonAPIs:
 
     def test_list_python_apis_json_case_2(self):
         # Arrange
-        result = _run_cli("list-python-apis", "--json")
+        result = _run_cli("list-python-apis", "--json", timeout=60)
         import json
 
         # Act
