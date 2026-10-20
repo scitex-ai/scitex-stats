@@ -1,7 +1,7 @@
 {
   "name": "stats_calculator",
   "slug": "stats",
-  "label": "Stats",
+  "label": "SciTeX Stats",
   "scope": "project",
   "pip_package": "scitex-stats",
   "icon": "fas fa-chart-bar",
@@ -21,7 +21,10 @@
     "Multiple-comparison corrections (Bonferroni, Holm, Sidak, FDR)",
     "Publication-style result line"
   ],
-  "allowed_extensions": [".csv", ".tsv"],
+  "allowed_extensions": [
+    ".csv",
+    ".tsv"
+  ],
   "wip": false,
   "mobile_layout": true,
   "standalone": true,
@@ -30,7 +33,11 @@
   "frontend_type": "vanilla",
   "embedded_package": true,
   "dependencies": {
-    "python": ["scitex-stats", "scitex-sdk", "django"]
+    "python": [
+      "scitex-stats",
+      "scitex-sdk",
+      "django"
+    ]
   },
   "mount_policy": {
     "login_required": true,
@@ -38,7 +45,9 @@
     "jail": {
       "scope": "project",
       "working_dir_param": "project",
-      "path_params": ["name"]
+      "path_params": [
+        "name"
+      ]
     }
   }
 }
