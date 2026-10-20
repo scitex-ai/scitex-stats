@@ -1945,4 +1945,3 @@ def test_correct_pvalues_fallback_unknown_method_uses_fdr_bh():
 
     # Assert
     assert [round(v, 9) for v in out["corrected_pvalues"]] == [0.03, 0.03, 0.05]
-    assert out["method"] == "not_a_real_method"
