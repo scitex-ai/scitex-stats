@@ -145,7 +145,7 @@
   margin: 0;
   padding: 8px 10px;
   border: 1px solid var(--status-warning, #b26a00);
-  border-radius: 6px;
+  border-radius: 0;
   font-size: 0.8rem;
 }
 

@@ -5,7 +5,7 @@
   gap: 6px;
   padding: 10px 12px;
   border: 1px solid var(--border-default, rgba(127, 127, 127, 0.3));
-  border-radius: 8px;
+  border-radius: 0;
 }
 
 .stats-report__title {
