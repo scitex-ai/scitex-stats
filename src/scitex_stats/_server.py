@@ -21,7 +21,7 @@ mcp = FastMCP(
     name="scitex-stats",
     instructions=(
         "Statistical testing framework for publication-ready analysis. "
-        "Provides 23 tests (parametric, nonparametric, correlation, categorical, normality), "
+        "Provides 25 tests (parametric, nonparametric, correlation, categorical, normality, agreement), "
         "effect sizes, power analysis, multiple comparison corrections, and APA formatting."
     ),
 )

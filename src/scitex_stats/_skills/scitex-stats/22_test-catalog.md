@@ -1,12 +1,12 @@
 ---
 description: |
   [TOPIC] Test Catalog
-  [DETAILS] parametric, nonparametric, correlation, categorical, normality.
+  [DETAILS] parametric, nonparametric, correlation, categorical, normality, agreement.
 tags: [scitex-stats-test-catalog, scitex-stats]
 ---
 
 
-# Test Catalog (23 Tests)
+# Test Catalog (25 Tests)
 
 ## Parametric (6)
 
@@ -55,6 +55,13 @@ tags: [scitex-stats-test-catalog, scitex-stats]
 | `test_normality` | Combined normality assessment |
 | `test_ks_1samp` | Kolmogorov-Smirnov (one-sample) |
 | `test_ks_2samp` | Kolmogorov-Smirnov (two-sample) |
+
+## Agreement (2)
+
+| Function | Use Case |
+|----------|----------|
+| `test_kendalls_w` | Inter-rater agreement (Kendall's W) |
+| `test_icc` | Intraclass correlation (rater reliability) |
 
 ## Dispatcher Aliases
 

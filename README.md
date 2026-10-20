@@ -6,7 +6,7 @@
   </a>
 </p>
 
-<p align="center"><b>Publication-ready statistical testing with 23 tests, effect sizes, power analysis, and APA formatting</b></p>
+<p align="center"><b>Publication-ready statistical testing with 25 tests, effect sizes, power analysis, and APA formatting</b></p>
 
 <p align="center">
   <a href="https://scitex-stats.readthedocs.io/">Full Documentation</a> · <code>uv pip install "scitex-stats[all]"</code>
@@ -47,7 +47,7 @@ rng = np.random.default_rng(42)
 group1 = rng.normal(0.0, 1.0, 30)
 group2 = rng.normal(0.5, 1.0, 30)
 
-# Unified test API — same dict shape for every one of the 23 tests
+# Unified test API — same dict shape for every one of the 25 tests
 result = ss.run_test("ttest_ind", data=group1, data2=group2)
 
 assert result["stat_symbol"] == "t"
@@ -136,7 +136,8 @@ ss.recommend_tests(ctx, top_k=3)
 
 ### 2. Run the test, get the unified result
 
-`run_test` is the single dispatcher for all 23 tests. The same result
+`run_test` is the single dispatcher for the test battery (see `available_tests()`
+for the exact name list). The same result
 dict shape (`statistic`, `pvalue`, `effect_size`, `power`, `formatted`,
 …) makes the downstream code test-agnostic.
 
@@ -234,11 +235,12 @@ ss.run_test("shapiro", data=group1)         # normality check, same result dict 
 
 ```mermaid
 flowchart LR
-    All[23 tests] --> P[Parametric]
+    All[25 tests] --> P[Parametric]
     All --> N[Nonparametric]
     All --> C[Correlation]
     All --> Cat[Categorical]
     All --> Norm[Normality]
+    All --> Agr[Agreement]
 
     P --> P1[t-test ind / paired / 1-samp]
     P --> P2[ANOVA 1-way / RM / 2-way]
@@ -263,10 +265,13 @@ flowchart LR
     Norm --> Norm2[Kolmogorov-Smirnov 1-samp]
     Norm --> Norm3[Kolmogorov-Smirnov 2-samp]
 
+    Agr --> Agr1[Kendall's W]
+    Agr --> Agr2[ICC]
+
     style All fill:#4a90d9,stroke:#2c3e50,color:#fff
 ```
 
-<p align="center"><sub><b>Figure 2.</b> The 23 tests grouped by family. Every leaf is callable through the same <code>run_test(name, ...)</code> dispatcher and returns the unified result dict (Figure 1).</sub></p>
+<p align="center"><sub><b>Figure 2.</b> The 25 tests grouped by family. Every leaf is callable as <code>scitex_stats.test_*</code> and returns the unified result dict (Figure 1); <code>run_test(name, ...)</code> dispatches the battery by name — see <code>available_tests()</code> for the exact name list.</sub></p>
 
 ```mermaid
 flowchart TB
@@ -344,7 +349,7 @@ bash examples/00_run_all.sh
 import scitex_stats as ss
 from scitex_stats import effect_sizes, power, correct, posthoc
 
-ss.run_test("ttest_ind", data=g1, data2=g2)             # 23 tests, one dispatcher
+ss.run_test("ttest_ind", data=g1, data2=g2)             # one dispatcher, 25 tests
 ss.recommend_tests(ss.StatContext(n_groups=2, ...))     # design-driven test selection
 effect_sizes.cohens_d(g1, g2)                           # standalone effect size
 power.sample_size_ttest(effect_size=0.5,
@@ -386,7 +391,7 @@ results autonomously.
 | Tool | Description |
 |------|-------------|
 | `recommend_tests` | Recommend appropriate tests from a `StatContext` |
-| `run_test` | Execute any of the 23 statistical tests |
+| `run_test` | Execute the test battery by name (see `available_tests()`) |
 | `format_results` | Format results in journal style (APA, Nature, LaTeX) |
 | `power_analysis` | Compute statistical power or required sample size |
 | `correct_pvalues` | Apply multiple-comparison correction |
@@ -421,7 +426,7 @@ scitex-dev skills export --package scitex-stats       # export to Claude Code
 | Skill | Content |
 |-------|---------|
 | `quick-start` | Basic usage and core patterns |
-| `test-catalog` | All 23 statistical tests with categories |
+| `test-catalog` | All 25 statistical tests with categories |
 | `effect-sizes` | Effect size measures and interpretation |
 | `workflows` | Common analysis patterns |
 | `cli-reference` | CLI commands |

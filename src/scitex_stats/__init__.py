@@ -5,8 +5,8 @@
 
 Functionalities
 ---------------
-- `run_test(name, ...)` — single dispatcher across 23 tests (parametric,
-  nonparametric, correlation, categorical, normality) returning a unified
+- `run_test(name, ...)` — single dispatcher across 25 tests (parametric,
+  nonparametric, correlation, categorical, normality, agreement) returning a unified
   result dict (statistic, pvalue, effect_size, power, formatted, ...).
 - `recommend_tests(StatContext(...))` — design-driven test selection from
   number of groups, sample sizes, outcome type, paired vs between.
