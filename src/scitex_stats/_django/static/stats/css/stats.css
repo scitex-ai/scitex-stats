@@ -11,6 +11,7 @@
 
 .stats-app .stx-panes:not(.stx-panes--single) {
   height: 100%;
+  align-items: stretch;
   gap: 1px;
   background: var(--border-muted);
 }
@@ -49,6 +50,7 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  height: 100%;
   overflow: auto;
   background: var(--bg-surface);
 }
@@ -108,6 +110,7 @@
 .stats-pane__body {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
   gap: 12px;
   padding: 12px;
   /* keep the last controls scrollable above the hub's floating dock */
