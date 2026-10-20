@@ -22,7 +22,9 @@
    state is superseded): a flat bar with no pill/box container; the active
    tab carries only a bottom border plus brighter text; hover brightens
    the text with no box. This neutralises the boxed scitex-ui pill tabs,
-   scoped to the stats app. */
+   scoped to the stats app. (SDK 0.3.9 ships the same idiom natively via
+   an inset box-shadow underline; the leaf keeps the border-bottom form
+   so the underline wears the stats accent token.) */
 .stats-app .stx-panes--single > .stx-panes__tabs {
   gap: 0;
   padding: 0 8px;
