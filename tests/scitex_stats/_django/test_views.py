@@ -211,6 +211,15 @@ def test_wizard_tab_bar_is_flat():
     assert "gap: 0" in block
 
 
+def test_wizard_tab_hover_brightens_text_without_box():
+    # Arrange — underline-only idiom: hover may brighten text, never box it.
+    css = _stats_css()
+    # Act
+    block = _wizard_tab_rule(css, ".stats-app .stx-panes__tab:hover")
+    # Assert
+    assert "color: var(--text-primary)" in block
+
+
 def test_index_stx_mount_is_root_prefix(client):
     # Arrange — standalone root mount is "" (contract: never a trailing "/")
     # Act
