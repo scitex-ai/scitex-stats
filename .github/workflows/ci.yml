@@ -44,6 +44,12 @@ jobs:
   pytest-matrix:
     uses: scitex-ai/.github/.github/workflows/pytest-matrix.yml@main
     secrets: inherit
+    with:
+      # Durable fix for 2026-10-20 uv-cache corruption wave (archive-v0
+      # ENOENT -> broken torch, org-02/04/05/06/07): copy instead of
+      # hardlinking out of the shared uv cache, per infra recommendation.
+      # Runs after checkout, exported via GITHUB_ENV before uv pip install.
+      pre_test_command: echo "UV_LINK_MODE=copy" >> "$GITHUB_ENV"
 
   import-smoke:
     uses: scitex-ai/.github/.github/workflows/import-smoke.yml@main
