@@ -1,7 +1,7 @@
 ---
 name: scitex-stats
 description: |
-  [WHAT] Publication-ready statistical testing for 23 tests.
+  [WHAT] Publication-ready statistical testing for 25 tests.
   [WHEN] Use when the user asks to "run a t-test / ANOVA / correlation / normality test", "compare two groups", "test if distributions differ", "compute p-value", "compute effect size", "correct for multiple comparisons", "compute required sample size", "pick the right statistical test".
   [HOW] `import scitex_stats` for the Python API; see leaf skills for entry points.
 tags: [scitex-stats]
@@ -19,7 +19,7 @@ interfaces:
 
 # scitex-stats
 
-Publication-ready statistical testing framework with 23 tests, effect sizes, power analysis, and automatic test recommendation.
+Publication-ready statistical testing framework with 25 tests, effect sizes, power analysis, and automatic test recommendation.
 
 ## Installation & import (two equivalent paths)
 
@@ -48,7 +48,7 @@ rule and empirical verification table.
 ### Mandatory (per ecosystem spec)
 - [01_installation.md](01_installation.md) — pip install, extras, verification
 - [02_quick-start.md](02_quick-start.md) — Smallest end-to-end t-test example
-- [03_python-api.md](03_python-api.md) — Public callables (dispatcher + 23 tests)
+- [03_python-api.md](03_python-api.md) — Public callables (dispatcher + 25 tests)
 - [04_cli-reference.md](04_cli-reference.md) — Full CLI command surface
 
 ### Workflows
@@ -61,7 +61,7 @@ rule and empirical verification table.
 - [17_provenance-verify.md](17_provenance-verify.md) — Provenance receipts, seed=42 determinism, input integrity, verify() before reporting any number
 
 ### Reference
-- [22_test-catalog.md](22_test-catalog.md) — All 23 statistical tests with categories
+- [22_test-catalog.md](22_test-catalog.md) — All 25 statistical tests with categories
 - [21_effect-sizes.md](21_effect-sizes.md) — Effect size measures and interpretation
 
 ## CLI

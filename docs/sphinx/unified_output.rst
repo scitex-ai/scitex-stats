@@ -31,7 +31,7 @@ Result Dictionary
 Key Fields
 ----------
 
-.. list-table:: **Table 1.** Unified result dictionary keys. All 23 tests return these fields (with test-specific additions where appropriate).
+.. list-table:: **Table 1.** Unified result dictionary keys. All 25 tests return these fields (with test-specific additions where appropriate).
    :header-rows: 1
    :widths: 25 15 60
 

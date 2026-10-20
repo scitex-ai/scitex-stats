@@ -78,7 +78,7 @@ def _get_version() -> str:
 )
 @click.pass_context
 def main(ctx, as_json):
-    """SciTeX Stats — publication-ready statistical testing (23 tests, effect sizes,
+    """SciTeX Stats — publication-ready statistical testing (25 tests, effect sizes,
     power analysis, MCP server).
 
     \b

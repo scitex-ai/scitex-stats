@@ -65,9 +65,19 @@ async def correct_pvalues_handler(
             n = len(pvalues)
             pvals = np.array(pvalues)
 
-            if method == "bonferroni":
+            # Unknown methods fall back to fdr_bh, mirroring the
+            # statsmodels path's method_map default
+            # (test_unknown_method_falls_back_to_fdr_bh). The requested
+            # name is still echoed in the output's "method" field.
+            correct_method = (
+                method
+                if method in ("bonferroni", "holm", "fdr_bh", "fdr_by", "sidak")
+                else "fdr_bh"
+            )
+
+            if correct_method == "bonferroni":
                 corrected = np.minimum(pvals * n, 1.0)
-            elif method == "holm":
+            elif correct_method == "holm":
                 sorted_idx = np.argsort(pvals)
                 corrected = np.empty(n)
                 cummax = 0.0
@@ -76,7 +86,7 @@ async def correct_pvalues_handler(
                     adj = max(adj, cummax)
                     corrected[idx] = adj
                     cummax = adj
-            elif method == "fdr_bh":
+            elif correct_method == "fdr_bh":
                 sorted_idx = np.argsort(pvals)
                 corrected = np.empty(n)
                 prev = 1.0
@@ -86,7 +96,7 @@ async def correct_pvalues_handler(
                     val = min(bh, prev, 1.0)
                     corrected[idx] = val
                     prev = val
-            elif method == "sidak":
+            elif correct_method == "sidak":
                 corrected = 1 - (1 - pvals) ** n
             else:
                 corrected = pvals
