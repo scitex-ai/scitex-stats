@@ -7,6 +7,34 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.0-alpha] — 2026-10-20
+
+First alpha toward 1.0.0: whole-package professional-grade pass
+(stats-pro-grade-audit-20261020).
+
+### Fixed
+- Results column cleanup follow-ups: straight result card and
+  assumption-check highlight, no rounding (operator, #160, #161).
+- DATA INPUT full-height fill: panes stretch, pane fills column height,
+  body flexes (operator CCT4792, #161).
+- MCP `correct_pvalues` no-statsmodels fallback: unknown methods now
+  correct via fdr_bh like the statsmodels path (was: raw p-values
+  returned as corrected); requested name still echoed (#162).
+
+### Changed
+- Test count standardized on 25 public `test_*` functions across
+  README, sphinx docs, CLI/MCP descriptions, and skill catalog;
+  agreement family (Kendall's W, ICC) added to README Figure 2 and
+  the catalog (#162).
+- `scitex-sdk[gui]` floor raised to >=0.3.8 (server + dev, #161).
+
+### Known limitations (beta scope)
+- `run_test()` dispatches 22 names; MCP `run_test` accepts 23; both
+  short of the 25 public functions — tracked as
+  stats-dispatch-parity-20261020.
+- Test-count-sensitive wording: MCP `run_test` description stays at 23
+  (its enum truth) until parity lands.
+
 ## [0.2.40] — 2026-10-19
 
 ### Fixed
