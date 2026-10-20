@@ -247,7 +247,7 @@
 .stats-badge {
   padding: 1px 6px;
   border: 1px solid var(--border-default);
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 0.7rem;
   color: var(--text-muted);
 }
@@ -566,7 +566,7 @@
   max-height: 280px;
   margin: 0;
   padding: 8px;
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--bg-muted);
   font-size: 0.75rem;
   white-space: pre-wrap;
