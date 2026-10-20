@@ -17,9 +17,12 @@
 }
 
 /* Wizard tabs (Data / Test / Results) follow the Writer underline-tab
-   style: a flat bar with no pill/box container; the active tab carries
-   only a bottom border plus brighter text. This neutralises the boxed
-   scitex-ui pill tabs, scoped to the stats app. */
+   style — the current underline-only idiom (Board|DM switcher + D/W/M
+   timeline tabs, operator 2026-10-20; the old boxed shared-Tabs selected
+   state is superseded): a flat bar with no pill/box container; the active
+   tab carries only a bottom border plus brighter text; hover brightens
+   the text with no box. This neutralises the boxed scitex-ui pill tabs,
+   scoped to the stats app. */
 .stats-app .stx-panes--single > .stx-panes__tabs {
   gap: 0;
   padding: 0 8px;
@@ -44,6 +47,11 @@
   box-shadow: none;
   color: var(--text-primary);
   font-weight: 600;
+}
+
+.stats-app .stx-panes__tab:hover {
+  background: transparent;
+  color: var(--text-primary);
 }
 
 .stats-pane {
