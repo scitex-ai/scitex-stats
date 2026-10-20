@@ -123,14 +123,17 @@ class TestListPythonAPIs:
     def test_list_python_apis_returncode(self):
         # Arrange
         # Act
-        result = _run_cli("list-python-apis")
+        # 60s like the --json variants: same cold-start flake guard (develop
+        # CI 2026-10-20: plain variant timed out at 30s on an overloaded
+        # runner while the suite itself ran 693s).
+        result = _run_cli("list-python-apis", timeout=60)
         # Assert
         assert result.returncode == 0
 
     def test_list_python_apis_scitex_stats_stdout_api(self):
         # Arrange
         # Act
-        result = _run_cli("list-python-apis")
+        result = _run_cli("list-python-apis", timeout=60)
         # Assert
         assert "scitex_stats" in result.stdout or "API" in result.stdout
 
