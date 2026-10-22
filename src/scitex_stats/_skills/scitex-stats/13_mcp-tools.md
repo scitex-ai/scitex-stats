@@ -1,14 +1,16 @@
 ---
 description: |
   [TOPIC] Mcp Tools
-  [DETAILS] 10 statistical tools accessible via scitex MCP server.
+  [DETAILS] 18 tools accessible via scitex MCP server: 12 statistical
+  tools plus report, verify, skills, and APA helpers.
 tags: [scitex-stats-mcp-tools, scitex-stats]
 ---
 
 
 # MCP Tools (for AI Agents)
 
-All tools are prefixed `stats_` under the scitex MCP server.
+All tools are prefixed `stats_` under the scitex MCP server
+(`scitex-stats mcp list-tools`: 18 tools, 9 modules).
 
 | Tool | Purpose |
 |------|---------|
@@ -22,6 +24,13 @@ All tools are prefixed `stats_` under the scitex MCP server.
 | `stats_normality_test` | Test data for normality |
 | `stats_format_results` | Format statistical results for publication |
 | `stats_p_to_stars` | Convert p-value to significance stars |
+| `stats_generate_report` | Write a bundled statistical report (PDF/HTML) |
+| `stats_verify_result` | Verify a result's receipt, data hashes and statistics |
+| `stats_validate_apa` | Report APA 7 violations in a results string |
+| `stats_skills_list` / `stats_skills_get` | List / fetch bundled agent skills |
+| `stats_check_applicability` | Decide per-test applicability for data |
+| `stats_recommend_test` | Recommend ONE primary test with reason |
+| `stats_run_all_applicable` | Run every applicable test (primary + sensitivity) |
 
 ## Handler Organization
 
@@ -36,3 +45,5 @@ MCP handlers are in `scitex_stats/_mcp/_handlers/`:
 - `_normality.py` — Normality testing
 - `_format.py` — Publication formatting
 - `_stars.py` — p-to-stars conversion
+- `_report.py` — bundled report generation (PDF/HTML)
+- `_verify.py` — result receipt / recompute verification
