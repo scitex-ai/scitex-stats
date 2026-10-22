@@ -27,6 +27,9 @@ the same kwarg.
 
 ## Statistical tests (25 callables)
 
+(25 statistical tests; `test_result_to_stats`, the bundle-I/O helper,
+is not counted here.)
+
 ```python
 sst.test_ttest_1samp(x, popmean=0.0)
 sst.test_ttest_ind(group_a, group_b)
