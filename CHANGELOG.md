@@ -7,6 +7,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- Bundled skill docs now match the measured surface: MCP tool table
+  lists all 18 served tools (was 10, missing report/verify/skills/APA
+  rows) and `tests list` notes 22 names (was 23).
+
 ## [1.0.0-alpha] — 2026-10-20
 
 First alpha toward 1.0.0: whole-package professional-grade pass
