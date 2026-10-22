@@ -20,7 +20,7 @@ Top-level groups: `tests`, `mcp`, `python-api`, `skills`. Top-level leaves:
 ## tests — run / describe / recommend statistical tests
 
 ```bash
-scitex-stats tests list                            # all 23 test names
+scitex-stats tests list                            # all 22 test names (aliases included)
 scitex-stats tests execute ttest_ind data.csv \
     --x group_a --y group_b
 scitex-stats tests execute anova data.csv --groups col1,col2,col3
