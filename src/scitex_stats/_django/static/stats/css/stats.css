@@ -123,8 +123,8 @@
   flex: 1 1 auto;
   gap: 12px;
   padding: 12px;
-  /* keep the last controls scrollable above the hub's floating dock */
-  padding-bottom: calc(var(--site-dock-height, 0px) + 24px);
+  /* launcher overlay reserves no viewport: keep 24px + iOS home-bar inset */
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
 /* Canonical SDK AppHeader: the row is rendered client-side by the prebuilt
