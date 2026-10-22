@@ -59,6 +59,14 @@ def tools_by_name(mcp_server):
     return {t.name: t for t in tools}
 
 
+def _props_of(tool):
+    """Schema properties across MCP SDK majors (2.x: input_schema)."""
+    schema = getattr(tool, "input_schema", None)
+    if schema is None:
+        schema = getattr(tool, "inputSchema", None)
+    return (schema or {}).get("properties", {})
+
+
 # ===================================================================
 # 1. Server creation
 # ===================================================================
@@ -150,7 +158,7 @@ class TestToolSchemas:
         # Arrange
         tool = tools_by_name["run_test"]
         # Act
-        props = tool.inputSchema.get("properties", {})
+        props = _props_of(tool)
         # Assert
         assert "test_name" in props
 
@@ -158,7 +166,7 @@ class TestToolSchemas:
         # Arrange
         tool = tools_by_name["recommend_tests"]
         # Act
-        props = tool.inputSchema.get("properties", {})
+        props = _props_of(tool)
         # Assert
         assert "n_groups" in props
 
@@ -166,7 +174,7 @@ class TestToolSchemas:
         # Arrange
         tool = tools_by_name["correct_pvalues"]
         # Act
-        props = tool.inputSchema.get("properties", {})
+        props = _props_of(tool)
         # Assert
         assert "pvalues" in props
 
@@ -174,7 +182,7 @@ class TestToolSchemas:
         # Arrange
         tool = tools_by_name["effect_size"]
         # Act
-        props = tool.inputSchema.get("properties", {})
+        props = _props_of(tool)
         # Assert
         assert "group1" in props
 
@@ -182,7 +190,7 @@ class TestToolSchemas:
         # Arrange
         tool = tools_by_name["effect_size"]
         # Act
-        props = tool.inputSchema.get("properties", {})
+        props = _props_of(tool)
         # Assert
         assert "group2" in props
 
@@ -190,7 +198,7 @@ class TestToolSchemas:
         # Arrange
         tool = tools_by_name["p_to_stars"]
         # Act
-        props = tool.inputSchema.get("properties", {})
+        props = _props_of(tool)
         # Assert
         assert "p_value" in props
 
