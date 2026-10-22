@@ -7,6 +7,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- `scitex-sdk[gui]` floor raised to >=0.3.12 (server + dev; identical-row
+  pack + layout doctrine).
+
 ### Fixed
 - Bundled skill docs now match the measured surface: MCP tool table
   lists all 18 served tools (was 10, missing report/verify/skills/APA
