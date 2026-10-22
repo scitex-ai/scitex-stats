@@ -1,7 +1,8 @@
 {
   "name": "stats_calculator",
   "slug": "stats",
-  "label": "SciTeX Stats",
+  "label": "Stats",
+  "group": "work",
   "scope": "project",
   "pip_package": "scitex-stats",
   "icon": "fas fa-chart-bar",
