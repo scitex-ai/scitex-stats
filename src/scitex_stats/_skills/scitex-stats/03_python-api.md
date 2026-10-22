@@ -1,7 +1,7 @@
 ---
 description: |
   [TOPIC] Python API
-  [DETAILS] dispatcher, 23 test_* functions, descriptives, effect sizes, helpers.
+  [DETAILS] dispatcher, 25 test_* functions, descriptives, effect sizes, helpers.
 tags: [scitex-stats-python-api, scitex-stats]
 ---
 
@@ -25,7 +25,7 @@ import scitex_stats as sst
 `"dict"`). All `test_*` functions decorated with `@supports_return_as` accept
 the same kwarg.
 
-## Statistical tests (23 callables)
+## Statistical tests (25 callables)
 
 ```python
 sst.test_ttest_1samp(x, popmean=0.0)
@@ -56,6 +56,9 @@ sst.test_shapiro(x)
 sst.test_normality(x)                # composite
 sst.test_ks_1samp(x, cdf)
 sst.test_ks_2samp(a, b)
+
+sst.test_kendalls_w(ratings)        # inter-rater agreement
+sst.test_icc(ratings)               # intraclass correlation
 ```
 
 See [20_test-catalog.md](20_test-catalog.md) for the categorized catalog.
