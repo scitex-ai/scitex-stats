@@ -11,6 +11,9 @@ versions follow [Semantic Versioning](https://semver.org/).
 - Bundled skill docs now match the measured surface: MCP tool table
   lists all 18 served tools (was 10, missing report/verify/skills/APA
   rows) and `tests list` notes 22 names (was 23).
+- Skill Python-API page now states 25 `test_*` functions with the
+  Agreement pair (`test_kendalls_w`, `test_icc`) in the examples
+  (was 23, pair omitted).
 
 ## [1.0.0-alpha] — 2026-10-20
 
