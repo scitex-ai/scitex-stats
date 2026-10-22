@@ -86,7 +86,6 @@ def test_run_test_schema_lists_all_23_tests():
     # Arrange
     # Act
     schema = _schema_of(next(t for t in get_tool_schemas() if t.name == "run_test"))
-    assert schema is not None, "run_test tool carries no input schema"
-    enum_vals = schema["properties"]["test_name"]["enum"]
+    enum_vals = (schema or {})["properties"]["test_name"]["enum"]
     # Assert
     assert len(enum_vals) == 23, f"expected 23 tests, got {len(enum_vals)}"
