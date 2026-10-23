@@ -74,8 +74,10 @@
   min-height: 48px;
   flex: 0 0 48px;
   padding: 6px 12px;
-  border-bottom: 1px solid var(--border-muted);
-  background: var(--bg-surface);
+  /* Operator 2026-10-23: a bit stronger header contrast for the columns —
+     muted header background plus a default (not muted) bottom edge. */
+  border-bottom: 1px solid var(--border-default);
+  background: var(--bg-muted);
 }
 
 /* Operator 2026-10-19 results-column cleanup: Copy sits in the Raw-result
@@ -97,7 +99,8 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--text-secondary);
+  /* Operator 2026-10-23: primary text for stronger column-header contrast. */
+  color: var(--text-primary);
 }
 
 .stats-pane__actions,
@@ -106,6 +109,32 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+}
+
+/* Operator 2026-10-23: the sample action is right-aligned, separated from
+   the ordinal Add-group/Clear workflow on the left. */
+.stats-row__right {
+  margin-left: auto;
+}
+
+/* Operator 2026-10-23: CSV column chooser — one checkbox row per numeric
+   column, all checked = the old import-everything in one click. */
+.stats-colpick {
+  margin: 8px 0;
+}
+
+.stats-colpick__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0;
+}
+
+.stats-colpick__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
 }
 
 .stats-pane__header .stats-pane__actions {

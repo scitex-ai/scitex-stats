@@ -97,11 +97,56 @@
     [6.3, 6.8, 6.1, 7.0, 6.6, 6.9, 6.4, 7.2],
   ];
 
+  // Categorical twin of SAMPLE: one row of counts per box. Categorical tests
+  // require non-negative integer counts, so the decimal SAMPLE above yields
+  // zero applicable tests under the categorical scale (operator 2026-10-23:
+  // the sample must fit the current scale to show results).
+  var SAMPLE_COUNTS = [
+    [12, 7, 14, 9],
+    [8, 13, 6, 12],
+  ];
+
   var $ = function (id) { return document.getElementById(id); };
 
+  // Separator estimation (operator 2026-10-23): the boxes and file drops
+  // accept comma, space, tab, newline, semicolon, pipe — the in-line
+  // delimiter is estimated from the input itself. No third-party sniffer
+  // is vendored and Python's csv.Sniffer cannot apply: all paste/drop
+  // parsing happens client-side before any server round-trip.
+  // SPEC: candidates are tab, comma, semicolon, pipe (whitespace, including
+  // newlines, always splits). The winner is the candidate with the highest
+  // count in the sampled text; ties resolve tab > comma > semicolon > pipe
+  // (tab-first: columnar pastes are the most structured); with no candidate
+  // present the text is whitespace-separated. A single dominant separator
+  // wins, so pathological mixed-separator input keeps only its winner's
+  // tokens. Returns the one-character delimiter, or "" for whitespace-only.
+  function estimateSep(sampled) {
+    var text = String(sampled || "");
+    var counts = { "\t": 0, ",": 0, ";": 0, "|": 0 };
+    var i;
+    for (i = 0; i < text.length; i++) {
+      if (Object.prototype.hasOwnProperty.call(counts, text[i])) counts[text[i]]++;
+    }
+    var order = ["\t", ",", ";", "|"];
+    var best = "";
+    var bestCount = 0;
+    for (i = 0; i < order.length; i++) {
+      if (counts[order[i]] > bestCount) { best = order[i]; bestCount = counts[order[i]]; }
+    }
+    return best;
+  }
+
+  var _SEP_ESCAPED = { "\t": "\\t", ",": ",", ";": ";", "|": "\\|" };
+
+  function splitPattern(sep) {
+    // Whitespace always splits; the estimated in-line delimiter joins it.
+    return sep ? new RegExp("[\\s" + _SEP_ESCAPED[sep] + "]+") : /[\s]+/;
+  }
+
   function parseNumbers(text) {
-    return String(text || "")
-      .split(/[\s,;]+/)
+    var raw = String(text || "");
+    return raw
+      .split(splitPattern(estimateSep(raw)))
       .filter(Boolean)
       .map(Number)
       .filter(function (n) { return Number.isFinite(n); });
@@ -262,10 +307,15 @@
 
   function loadCsvText(text, name) {
     var lines = String(text).split(/\r?\n/).filter(function (l) { return l.trim(); });
-    var sep = (name || "").toLowerCase().endsWith(".tsv") || (lines[0] || "").indexOf("\t") >= 0 ? "\t" : ",";
+    // Operator 2026-10-23: estimate the file's delimiter from its first
+    // line (tab/comma/semicolon/pipe) instead of assuming comma. A .tsv
+    // keeps its tab contract; a delimiter-free single column falls back to
+    // comma, which is harmless (splitting a line without the delimiter
+    // returns the line itself).
+    var sep = (name || "").toLowerCase().endsWith(".tsv") ? "\t" : (estimateSep(lines[0] || "") || ",");
     var rows = lines.map(function (l) { return l.split(sep); });
     var cols = rows.reduce(function (m, r) { return Math.max(m, r.length); }, 0);
-    var groups = [];
+    var numeric = [];
     for (var c = 0; c < cols; c++) {
       var col = rows
         .map(function (r) {
@@ -275,10 +325,56 @@
           return cell === "" ? NaN : Number(cell);
         })
         .filter(function (n) { return Number.isFinite(n); });
-      if (col.length) groups.push(col);
+      if (col.length) numeric.push({ label: fmt(_("Column %s (%s values)"), [c + 1, col.length]), values: col });
     }
-    if (groups.length) setGroups(groups, csvRowIntegrity(text, sep, cols));
-    else showError(_("No numeric columns found in this file."));
+    if (!numeric.length) return showError(_("No numeric columns found in this file."));
+    // Operator 2026-10-23: CSV upload with column specification — a single
+    // numeric column imports directly; several offer a chooser (all checked
+    // = the old import-everything in one click).
+    if (numeric.length === 1) {
+      hideColPick();
+      setGroups([numeric[0].values], csvRowIntegrity(text, sep, cols));
+      return;
+    }
+    renderColPick(numeric);
+  }
+
+  var _colPickCols = [];
+
+  function hideColPick() {
+    _colPickCols = [];
+    var panel = $("statsColPick");
+    if (panel) panel.hidden = true;
+  }
+
+  function renderColPick(numeric) {
+    _colPickCols = numeric;
+    var list = $("statsColPickList");
+    list.textContent = "";
+    numeric.forEach(function (entry, i) {
+      var label = document.createElement("label");
+      label.className = "stats-colpick__item";
+      var box = document.createElement("input");
+      box.type = "checkbox";
+      box.checked = true;
+      box.value = String(i);
+      label.appendChild(box);
+      label.appendChild(document.createTextNode(" " + entry.label));
+      list.appendChild(label);
+    });
+    $("statsColPick").hidden = false;
+  }
+
+  function importColPick() {
+    var picked = [];
+    $("statsColPickList").querySelectorAll("input[type=checkbox]").forEach(function (box) {
+      if (box.checked && _colPickCols[Number(box.value)]) picked.push(_colPickCols[Number(box.value)].values);
+    });
+    if (!picked.length) return showError(_("Select at least one column to import."));
+    hideColPick();
+    // A hand-picked subset is manual input: the whole-file row-integrity
+    // snapshot no longer describes the boxes.
+    setGroups(picked);
   }
 
   function loadCsv(file) {
@@ -841,11 +937,18 @@
       invalidateImportedRows();
       addGroup();
     });
-    $("statsClear").addEventListener("click", function () { setGroups([[], []]); });
+    $("statsClear").addEventListener("click", function () { hideColPick(); setGroups([[], []]); });
     $("statsSample").addEventListener("click", function () {
-      if (hasUserData() && !window.confirm(_("Replace the data in the boxes with the sample dataset?"))) return;
-      setGroups(SAMPLE);
+      if (hasUserData() && !window.confirm(_("Replace the data in the boxes with the sample data?"))) return;
+      hideColPick();
+      // Operator 2026-10-23: the sample must fit the current measurement
+      // scale so results show — categorical needs integer counts, the other
+      // scales run on the default decimal sample. The design selector is
+      // left untouched: two equal groups run under both designs.
+      setGroups($("statsScale").value === "categorical" ? SAMPLE_COUNTS : SAMPLE);
     });
+    $("statsColPickImport").addEventListener("click", importColPick);
+    $("statsColPickCancel").addEventListener("click", hideColPick);
     $("statsChooseFile").addEventListener("click", function () {
       // Project mode imports from the PROJECT; the manual picker is Quick
       // analysis' input, so it refuses here instead of offering a second path.

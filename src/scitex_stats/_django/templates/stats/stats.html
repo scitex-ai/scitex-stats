@@ -65,8 +65,8 @@ base page (site header + dock), standalone uses the SDK UI shell.
         <button type="button" class="stats-btn stats-dropzone__button" id="statsChooseFile">{% translate "Drop a CSV or TSV file here, or choose a file" %}</button>
         <section class="stats-source" aria-labelledby="statsSourceTitle" hidden>
           <h3 class="stats-source__title" id="statsSourceTitle">{% translate "No dataset yet?" %}</h3>
-          <button type="button" class="stats-btn stats-btn--secondary stats-source__sample" id="statsSampleOld" tabindex="-1" aria-hidden="true" hidden>{% translate "Load sample dataset" %}</button>
-          <p class="stats-hint" id="statsSampleHint">{% translate "Use the Load sample dataset button beside Add group below." %}</p>
+          <button type="button" class="stats-btn stats-btn--secondary stats-source__sample" id="statsSampleOld" tabindex="-1" aria-hidden="true" hidden>{% translate "Try with Sample Data" %}</button>
+          <p class="stats-hint" id="statsSampleHint">{% translate "Use the Try with Sample Data button at the right of the row below." %}</p>
         </section>
       </section>
       <div class="stats-options">
@@ -85,10 +85,18 @@ base page (site header + dock), standalone uses the SDK UI shell.
         </label>
       </div>
       <div id="statsGroups" class="stats-groups"></div>
+      <section class="stats-colpick" id="statsColPick" hidden>
+        <h3 class="stats-source__title">{% translate "Choose columns to import" %}</h3>
+        <div class="stats-colpick__list" id="statsColPickList" role="group" aria-label="{% translate "CSV columns" %}"></div>
+        <div class="stats-row">
+          <button type="button" class="stats-btn stats-btn--secondary" id="statsColPickImport">{% translate "Import selected" %}</button>
+          <button type="button" class="stats-btn stats-btn--ghost" id="statsColPickCancel">{% translate "Cancel" %}</button>
+        </div>
+      </section>
       <div class="stats-row">
         <button type="button" class="stats-btn stats-btn--ghost" id="statsAddGroup">+ {% translate "Add group" %}</button>
-        <button type="button" class="stats-btn stats-btn--secondary stats-source__sample" id="statsSample" title="{% translate "Loads the sample two-group dataset into the boxes, replacing anything already entered." %}">{% translate "Load sample dataset" %}</button>
         <button type="button" class="stats-btn stats-btn--ghost" id="statsClear">{% translate "Clear" %}</button>
+        <button type="button" class="stats-btn stats-btn--secondary stats-source__sample stats-row__right" id="statsSample" title="{% translate "Loads sample data fitting the current design and scale into the boxes, replacing anything already entered." %}">{% translate "Try with Sample Data" %}</button>
       </div>
     </div>
   {% endscitex_pane %}
