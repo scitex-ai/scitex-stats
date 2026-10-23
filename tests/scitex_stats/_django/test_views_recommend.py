@@ -305,16 +305,23 @@ def test_index_has_plot_slot(client):  # noqa: F811
     assert "data-stats-plot-slot" in html
 
 
-def test_column_headers_use_stronger_contrast():  # noqa: F811
+def test_column_headers_have_muted_background_with_default_border():  # noqa: F811
     # Arrange
     css = _stats_css()
     # Act
     header_rule = css.split(".stats-pane__header {", 1)[1].split("}", 1)[0]
-    title_rule = css.split(".stats-pane__title {", 1)[1].split("}", 1)[0]
     # Assert
     # Operator 2026-10-23: stronger contrast for the three column headers
     # (1. Data Input, 2. Test Selection, 3. Results).
     assert "background: var(--bg-muted);" in header_rule and "border-bottom: 1px solid var(--border-default);" in header_rule
+
+
+def test_column_titles_use_primary_text_color():  # noqa: F811
+    # Arrange
+    css = _stats_css()
+    # Act
+    title_rule = css.split(".stats-pane__title {", 1)[1].split("}", 1)[0]
+    # Assert
     assert "color: var(--text-primary);" in title_rule
 
 
@@ -329,14 +336,22 @@ def test_sample_action_is_right_aligned_in_its_row():  # noqa: F811
     assert "margin-left: auto;" in rule
 
 
-def test_sample_loader_picks_counts_for_categorical_scale():  # noqa: F811
+def test_sample_loader_defines_categorical_counts_twin():  # noqa: F811
     # Arrange
     js = _stats_js()
     # Act
     # Assert
     # Operator 2026-10-23: the sample must fit the current measurement scale
     # so results show — categorical needs integer counts.
-    assert "var SAMPLE_COUNTS = [" in js and '$("statsScale").value === "categorical" ? SAMPLE_COUNTS : SAMPLE' in js
+    assert "var SAMPLE_COUNTS = [" in js
+
+
+def test_sample_loader_selects_counts_for_categorical_scale():  # noqa: F811
+    # Arrange
+    js = _stats_js()
+    # Act
+    # Assert
+    assert '$("statsScale").value === "categorical" ? SAMPLE_COUNTS : SAMPLE' in js
 
 
 def test_recommend_categorical_counts_are_applicable(client):  # noqa: F811
@@ -353,7 +368,7 @@ def test_recommend_categorical_counts_are_applicable(client):  # noqa: F811
     assert any(row.get("applicable") for row in body["applicability"])
 
 
-def test_recommend_categorical_decimals_are_rejected_with_counts_error(client):  # noqa: F811
+def test_recommend_categorical_decimals_return_400(client):  # noqa: F811
     # Arrange
     # Categorical tests require integer counts: the old decimal-only sample
     # is rejected under this scale (operator 2026-10-23) — hence the
@@ -367,10 +382,24 @@ def test_recommend_categorical_decimals_are_rejected_with_counts_error(client): 
     # Act
     resp = _post(client, "/api/recommend-test", payload)
     # Assert
-    assert resp.status_code == 400 and "counts" in resp.json().get("error", "")
+    assert resp.status_code == 400
 
 
-def test_separator_estimation_spec(client):  # noqa: F811
+def test_recommend_categorical_decimal_error_mentions_counts(client):  # noqa: F811
+    # Arrange
+    payload = {
+        "groups": [[5.1, 4.9, 5.6], [6.3, 6.8, 6.1]],
+        "group_names": ["Group 1", "Group 2"],
+        "design": "independent",
+        "scale": "categorical",
+    }
+    # Act
+    resp = _post(client, "/api/recommend-test", payload)
+    # Assert
+    assert "counts" in resp.json().get("error", "")
+
+
+def test_separator_estimation_defines_estimate_sep(client):  # noqa: F811
     # Arrange
     js = _stats_js()
     # Act
@@ -379,11 +408,25 @@ def test_separator_estimation_spec(client):  # noqa: F811
     # in-line delimiter estimated from the input (no vendored sniffer fits
     # the client-side parse path; Python csv.Sniffer cannot apply).
     assert "function estimateSep(sampled)" in js
+
+
+def test_separator_estimation_used_for_paste_parse(client):  # noqa: F811
+    # Arrange
+    js = _stats_js()
+    # Act
+    # Assert
     assert "splitPattern(estimateSep(raw))" in js
+
+
+def test_separator_estimation_used_for_first_line_probe(client):  # noqa: F811
+    # Arrange
+    js = _stats_js()
+    # Act
+    # Assert
     assert 'estimateSep(lines[0] || "")' in js
 
 
-def test_column_chooser_panel_is_present_but_hidden(client):  # noqa: F811
+def test_column_chooser_panel_present_but_hidden(client):  # noqa: F811
     # Arrange
     # Act
     html = client.get("/").content.decode()
@@ -391,27 +434,69 @@ def test_column_chooser_panel_is_present_but_hidden(client):  # noqa: F811
     # Operator 2026-10-23: CSV upload with column specification — multi
     # numeric columns offer a chooser; one imports directly.
     assert '<section class="stats-colpick" id="statsColPick" hidden>' in html
+
+
+def test_column_chooser_has_list_container(client):  # noqa: F811
+    # Arrange
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
     assert 'id="statsColPickList"' in html
+
+
+def test_column_chooser_has_import_action(client):  # noqa: F811
+    # Arrange
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
     assert 'id="statsColPickImport"' in html and "Import selected" in html
+
+
+def test_column_chooser_has_cancel_action(client):  # noqa: F811
+    # Arrange
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
     assert 'id="statsColPickCancel"' in html
 
 
-def test_column_chooser_renders_checked_checkbox_per_column():  # noqa: F811
+def test_column_chooser_defines_render_function():  # noqa: F811
     # Arrange
     js = _stats_js()
     # Act
     # Assert
     assert "function renderColPick(numeric)" in js
+
+
+def test_column_chooser_defines_import_function():  # noqa: F811
+    # Arrange
+    js = _stats_js()
+    # Act
+    # Assert
     assert "function importColPick()" in js
+
+
+def test_column_chooser_imports_single_column_directly():  # noqa: F811
+    # Arrange
+    js = _stats_js()
+    # Act
+    # Assert
     assert "numeric.length === 1" in js
 
 
-def test_column_chooser_has_checkbox_row_layout():  # noqa: F811
+def test_column_chooser_list_stacks_vertically():  # noqa: F811
     # Arrange
     css = _stats_css()
     # Act
     pick_list = css.split(".stats-colpick__list {", 1)[1].split("}", 1)[0]
-    pick_item = css.split(".stats-colpick__item {", 1)[1].split("}", 1)[0]
     # Assert
     assert "flex-direction: column;" in pick_list
+
+
+def test_column_chooser_items_center_align():  # noqa: F811
+    # Arrange
+    css = _stats_css()
+    # Act
+    pick_item = css.split(".stats-colpick__item {", 1)[1].split("}", 1)[0]
+    # Assert
     assert "align-items: center;" in pick_item
