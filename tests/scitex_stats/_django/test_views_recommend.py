@@ -145,13 +145,16 @@ def test_data_actions_keep_sample_and_use_clickable_drop_target(client):  # noqa
     # Assert
     assert (
         'id="statsSample"' in html
-        and "Load sample dataset" in html
+        and "Try with Sample Data" in html
         and "or Load Sample Data" not in html
         and 'class="stats-btn stats-dropzone__button" id="statsChooseFile"' in html
         # Operator 2026-10-22: the button lives with the data input boxes
         # (Add group / Clear row), always visible regardless of design/scale.
-        and html.index('id="statsGroups"') < html.index('id="statsSample"')
-        and html.index('id="statsSample"') < html.index('id="statsClear"')
+        # Operator 2026-10-23: right-aligned after Clear, separated from the
+        # ordinal Add-group/Clear workflow.
+        and html.index('id="statsGroups"') < html.index('id="statsClear"')
+        and html.index('id="statsClear"') < html.index('id="statsSample"')
+        and 'stats-row__right' in html
     )
 
 
@@ -171,9 +174,10 @@ def test_sample_action_is_a_labelled_secondary_button_with_a_description(client)
     # Assert
     assert (
         'id="statsSample"' in html
-        and "Load sample dataset" in html
+        and "Try with Sample Data" in html
         # The explainer rides the native tooltip now that the button sits
-        # in the action row (operator 2026-10-22).
+        # in the action row (operator 2026-10-22); renamed 2026-10-23 as
+        # "Load sample dataset" was ambiguous.
         and "replacing anything already entered" in html
     )
 
@@ -299,3 +303,115 @@ def test_index_has_plot_slot(client):  # noqa: F811
     html = client.get("/").content.decode()
     # Assert
     assert "data-stats-plot-slot" in html
+
+
+def test_column_headers_use_stronger_contrast():  # noqa: F811
+    # Arrange
+    css = _stats_css()
+    # Act
+    header_rule = css.split(".stats-pane__header {", 1)[1].split("}", 1)[0]
+    title_rule = css.split(".stats-pane__title {", 1)[1].split("}", 1)[0]
+    # Assert
+    # Operator 2026-10-23: stronger contrast for the three column headers
+    # (1. Data Input, 2. Test Selection, 3. Results).
+    assert "background: var(--bg-muted);" in header_rule and "border-bottom: 1px solid var(--border-default);" in header_rule
+    assert "color: var(--text-primary);" in title_rule
+
+
+def test_sample_action_is_right_aligned_in_its_row():  # noqa: F811
+    # Arrange
+    css = _stats_css()
+    # Act
+    rule = css.split(".stats-row__right {", 1)[1].split("}", 1)[0]
+    # Assert
+    # Operator 2026-10-23: right-aligned, separated from the ordinal
+    # Add-group/Clear workflow on the left.
+    assert "margin-left: auto;" in rule
+
+
+def test_sample_loader_picks_counts_for_categorical_scale():  # noqa: F811
+    # Arrange
+    js = _stats_js()
+    # Act
+    # Assert
+    # Operator 2026-10-23: the sample must fit the current measurement scale
+    # so results show — categorical needs integer counts.
+    assert "var SAMPLE_COUNTS = [" in js and '$("statsScale").value === "categorical" ? SAMPLE_COUNTS : SAMPLE' in js
+
+
+def test_recommend_categorical_counts_are_applicable(client):  # noqa: F811
+    # Arrange
+    payload = {
+        "groups": [[12, 7, 14, 9], [8, 13, 6, 12]],
+        "group_names": ["Group 1", "Group 2"],
+        "design": "independent",
+        "scale": "categorical",
+    }
+    # Act
+    body = _post(client, "/api/recommend-test", payload).json()
+    # Assert
+    assert any(row.get("applicable") for row in body["applicability"])
+
+
+def test_recommend_categorical_decimals_are_rejected_with_counts_error(client):  # noqa: F811
+    # Arrange
+    # Categorical tests require integer counts: the old decimal-only sample
+    # is rejected under this scale (operator 2026-10-23) — hence the
+    # counts variant the sample button now loads.
+    payload = {
+        "groups": [[5.1, 4.9, 5.6], [6.3, 6.8, 6.1]],
+        "group_names": ["Group 1", "Group 2"],
+        "design": "independent",
+        "scale": "categorical",
+    }
+    # Act
+    resp = _post(client, "/api/recommend-test", payload)
+    # Assert
+    assert resp.status_code == 400 and "counts" in resp.json().get("error", "")
+
+
+def test_separator_estimation_spec(client):  # noqa: F811
+    # Arrange
+    js = _stats_js()
+    # Act
+    # Assert
+    # Operator 2026-10-23: comma/space/tab/newline/semicolon/pipe, with the
+    # in-line delimiter estimated from the input (no vendored sniffer fits
+    # the client-side parse path; Python csv.Sniffer cannot apply).
+    assert "function estimateSep(sampled)" in js
+    assert "splitPattern(estimateSep(raw))" in js
+    assert 'estimateSep(lines[0] || "")' in js
+
+
+def test_column_chooser_panel_is_present_but_hidden(client):  # noqa: F811
+    # Arrange
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
+    # Operator 2026-10-23: CSV upload with column specification — multi
+    # numeric columns offer a chooser; one imports directly.
+    assert '<section class="stats-colpick" id="statsColPick" hidden>' in html
+    assert 'id="statsColPickList"' in html
+    assert 'id="statsColPickImport"' in html and "Import selected" in html
+    assert 'id="statsColPickCancel"' in html
+
+
+def test_column_chooser_renders_checked_checkbox_per_column():  # noqa: F811
+    # Arrange
+    js = _stats_js()
+    # Act
+    # Assert
+    assert "function renderColPick(numeric)" in js
+    assert "function importColPick()" in js
+    assert "numeric.length === 1" in js
+
+
+def test_column_chooser_has_checkbox_row_layout():  # noqa: F811
+    # Arrange
+    css = _stats_css()
+    # Act
+    pick_list = css.split(".stats-colpick__list {", 1)[1].split("}", 1)[0]
+    pick_item = css.split(".stats-colpick__item {", 1)[1].split("}", 1)[0]
+    # Assert
+    assert "flex-direction: column;" in pick_list
+    assert "align-items: center;" in pick_item
