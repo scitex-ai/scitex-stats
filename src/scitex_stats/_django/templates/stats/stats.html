@@ -27,7 +27,7 @@ base page (site header + dock), standalone uses the SDK UI shell.
   canonical slot after the prebuilt module mounts (see extra_js + app.js).
   {% endcomment %}
   <div data-stx-app-header
-       data-app-title="Stats"
+       data-app-title="SciTeX Stats"
        data-app-version="{{ stats_version }}"
        data-stats-project="{{ stats_current_project_id }}"
        data-stats-header>
@@ -133,7 +133,7 @@ base page (site header + dock), standalone uses the SDK UI shell.
       </section>
       <div id="statsEmpty" class="stats-empty">
         <div class="stats-empty__icon" aria-hidden="true">&sigma;</div>
-        <p>{% translate "Enter data — inapplicable tests dim, and the recommended test runs automatically." %}</p>
+        <p>{% translate "No results yet — enter data above and the recommended test runs automatically." %}</p>
       </div>
       <div id="statsResult" class="stats-result" hidden>
         <p id="statsResultTitle" class="stats-result__title"></p>

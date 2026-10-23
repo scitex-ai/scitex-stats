@@ -125,13 +125,15 @@ def test_index_contains_stx_mount_marker(client):
 
 
 def test_index_contains_app_header(client):
-    # Arrange — the header names the short tile label. (The tab title flows
-    # through shell_title, which strips any brand prefix; asserting the
-    # literal header keeps this test independent of the installed SDK.)
+    # Arrange — the header names the full product label (operator
+    # 2026-10-22: in-content label is "SciTeX Stats"; the launcher tile
+    # stays "Stats"). The tab title flows through shell_title, which
+    # strips any brand prefix; asserting the literal header keeps this
+    # test independent of the installed SDK.
     # Act
     html = client.get("/").content.decode()
     # Assert
-    assert 'data-app-title="Stats"' in html
+    assert 'data-app-title="SciTeX Stats"' in html
 
 
 def test_index_links_app_stylesheet(client):
@@ -487,7 +489,7 @@ def test_index_shows_the_leaf_title_and_package_version_once(client):
     # Assert
     assert (
         html.count("data-stx-app-header") == 1
-        and 'data-app-title="Stats"' in html
+        and 'data-app-title="SciTeX Stats"' in html
         and f'data-app-version="{scitex_stats.__version__}"' in html
         and "<h1" not in html
         and 'id="statsModeToggle"' not in html
