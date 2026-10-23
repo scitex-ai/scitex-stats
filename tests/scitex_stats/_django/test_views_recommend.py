@@ -243,10 +243,22 @@ def test_form_dropdowns_use_scitex_ui_select_primitive():
     selects = ["statsDesign", "statsScale", "statsAlt", "statsCorrMethod", "statsPhMethod"]
     # Assert
     assert all(f'<select class="stx-select" id="{select_id}">' in template for select_id in selects)
-    # Operator 2026-10-22: Alternative hypothesis leads the test pane
-    # (important, distinct from the other selectors) — it renders above
-    # the test radio list.
-    assert template.index('id="statsAlt"') < template.index('id="statsTests"')
+
+
+def test_alternative_hypothesis_leads_the_test_pane():
+    # Operator 2026-10-22: Alternative hypothesis is important and
+    # distinct from the other selectors — it renders above the test
+    # radio list. (Own test: STX-TQ007 allows one assertion per test.)
+    # Arrange
+    template = (
+        Path(__file__).resolve().parents[3]
+        / "src/scitex_stats/_django/templates/stats/stats.html"
+    ).read_text(encoding="utf-8")
+    # Act
+    alt_pos = template.index('id="statsAlt"')
+    tests_pos = template.index('id="statsTests"')
+    # Assert
+    assert alt_pos < tests_pos
 
 
 def test_pane_titles_show_the_three_step_workflow(client):  # noqa: F811
