@@ -63,10 +63,10 @@ base page (site header + dock), standalone uses the SDK UI shell.
       <section class="stats-manual" id="statsManualData" data-stats-manual>
         <p class="stats-hint">{% translate "One group per box. Paste numbers separated by spaces, commas or new lines." %}</p>
         <button type="button" class="stats-btn stats-dropzone__button" id="statsChooseFile">{% translate "Drop a CSV or TSV file here, or choose a file" %}</button>
-        <section class="stats-source" aria-labelledby="statsSourceTitle">
+        <section class="stats-source" aria-labelledby="statsSourceTitle" hidden>
           <h3 class="stats-source__title" id="statsSourceTitle">{% translate "No dataset yet?" %}</h3>
-          <button type="button" class="stats-btn stats-btn--secondary stats-source__sample" id="statsSample">{% translate "Load sample dataset" %}</button>
-          <p class="stats-hint" id="statsSampleHint">{% translate "Loads the sample two-group dataset into the boxes below, replacing anything already entered." %}</p>
+          <button type="button" class="stats-btn stats-btn--secondary stats-source__sample" id="statsSampleOld" tabindex="-1" aria-hidden="true" hidden>{% translate "Load sample dataset" %}</button>
+          <p class="stats-hint" id="statsSampleHint">{% translate "Use the Load sample dataset button beside Add group below." %}</p>
         </section>
       </section>
       <div class="stats-options">
@@ -87,6 +87,7 @@ base page (site header + dock), standalone uses the SDK UI shell.
       <div id="statsGroups" class="stats-groups"></div>
       <div class="stats-row">
         <button type="button" class="stats-btn stats-btn--ghost" id="statsAddGroup">+ {% translate "Add group" %}</button>
+        <button type="button" class="stats-btn stats-btn--secondary stats-source__sample" id="statsSample" title="{% translate "Loads the sample two-group dataset into the boxes, replacing anything already entered." %}">{% translate "Load sample dataset" %}</button>
         <button type="button" class="stats-btn stats-btn--ghost" id="statsClear">{% translate "Clear" %}</button>
       </div>
     </div>
@@ -98,15 +99,17 @@ base page (site header + dock), standalone uses the SDK UI shell.
     </header>
     <div class="stats-pane__body">
       <p id="statsError" class="stats-error" role="alert" hidden></p>
-      <div id="statsTests" class="stats-tests" role="radiogroup" aria-label="{% translate 'Statistical test' %}"></div>
       <div class="stats-options">
-        <label class="stats-field"><span>{% translate "Alternative hypothesis" %}</span>
+        <label class="stats-field stats-field--alt"><span>{% translate "Alternative hypothesis" %}</span>
           <select class="stx-select" id="statsAlt">
             <option value="two-sided" selected>{% translate "two-sided" %}</option>
             <option value="greater">{% translate "greater" %}</option>
             <option value="less">{% translate "less" %}</option>
           </select>
         </label>
+      </div>
+      <div id="statsTests" class="stats-tests" role="radiogroup" aria-label="{% translate 'Statistical test' %}"></div>
+      <div class="stats-options">
         <label class="stats-field" id="statsPopmeanWrap" hidden><span>{% translate "Population mean" %}</span>
           <input type="number" id="statsPopmean" value="0" step="any">
         </label>

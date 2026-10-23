@@ -148,15 +148,20 @@ def test_data_actions_keep_sample_and_use_clickable_drop_target(client):  # noqa
         and "Load sample dataset" in html
         and "or Load Sample Data" not in html
         and 'class="stats-btn stats-dropzone__button" id="statsChooseFile"' in html
+        # Operator 2026-10-22: the button lives with the data input boxes
+        # (Add group / Clear row), always visible regardless of design/scale.
+        and html.index('id="statsGroups"') < html.index('id="statsSample"')
+        and html.index('id="statsSample"') < html.index('id="statsClear"')
     )
 
 
-def test_sample_action_sits_below_the_drop_zone_not_in_the_header(client):  # noqa: F811
+def test_sample_action_sits_with_the_data_boxes_not_in_the_header(client):  # noqa: F811
     # Arrange
     # Act
     html = client.get("/").content.decode()
     # Assert
-    assert html.index('id="statsChooseFile"') < html.index('id="statsSample"')
+    # Operator 2026-10-22: input boxes first, then the action row.
+    assert html.index('id="statsGroups"') < html.index('id="statsSample"')
 
 
 def test_sample_action_is_a_labelled_secondary_button_with_a_description(client):  # noqa: F811
@@ -165,8 +170,10 @@ def test_sample_action_is_a_labelled_secondary_button_with_a_description(client)
     html = client.get("/").content.decode()
     # Assert
     assert (
-        '<button type="button" class="stats-btn stats-btn--secondary stats-source__sample" id="statsSample">'
-        in html
+        'id="statsSample"' in html
+        and "Load sample dataset" in html
+        # The explainer rides the native tooltip now that the button sits
+        # in the action row (operator 2026-10-22).
         and "replacing anything already entered" in html
     )
 
@@ -236,6 +243,10 @@ def test_form_dropdowns_use_scitex_ui_select_primitive():
     selects = ["statsDesign", "statsScale", "statsAlt", "statsCorrMethod", "statsPhMethod"]
     # Assert
     assert all(f'<select class="stx-select" id="{select_id}">' in template for select_id in selects)
+    # Operator 2026-10-22: Alternative hypothesis leads the test pane
+    # (important, distinct from the other selectors) — it renders above
+    # the test radio list.
+    assert template.index('id="statsAlt"') < template.index('id="statsTests"')
 
 
 def test_pane_titles_show_the_three_step_workflow(client):  # noqa: F811
