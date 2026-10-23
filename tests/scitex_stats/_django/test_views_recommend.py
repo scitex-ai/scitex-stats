@@ -500,3 +500,29 @@ def test_column_chooser_items_center_align():  # noqa: F811
     pick_item = css.split(".stats-colpick__item {", 1)[1].split("}", 1)[0]
     # Assert
     assert "align-items: center;" in pick_item
+
+
+def test_separator_selector_defaults_to_auto(client):  # noqa: F811
+    # Arrange
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
+    # Operator 2026-10-26: hard separator specification, Auto by default
+    # so estimation runs untouched until the user overrides.
+    assert '<option value="auto" selected>' in html
+
+
+def test_manual_separator_overrides_estimation_in_loader():  # noqa: F811
+    # Arrange
+    js = _stats_js()
+    # Act
+    # Assert
+    assert "var forced = manualSep();" in js
+
+
+def test_manual_separator_falls_back_to_tsv_contract():  # noqa: F811
+    # Arrange
+    js = _stats_js()
+    # Act
+    # Assert
+    assert 'forced || ((name || "").toLowerCase().endsWith(".tsv")' in js

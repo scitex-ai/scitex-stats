@@ -63,6 +63,15 @@ base page (site header + dock), standalone uses the SDK UI shell.
       <section class="stats-manual" id="statsManualData" data-stats-manual>
         <p class="stats-hint">{% translate "One group per box. Paste numbers separated by spaces, commas or new lines." %}</p>
         <button type="button" class="stats-btn stats-dropzone__button" id="statsChooseFile">{% translate "Drop a CSV or TSV file here, or choose a file" %}</button>
+        <label class="stats-field stats-sep"><span>{% translate "Separator" %}</span>
+          <select class="stx-select" id="statsSep">
+            <option value="auto" selected>{% translate "Auto" %}</option>
+            <option value=",">{% translate "Comma" %}</option>
+            <option value="&#9;">{% translate "Tab" %}</option>
+            <option value=";">{% translate "Semicolon" %}</option>
+            <option value="|">{% translate "Pipe" %}</option>
+          </select>
+        </label>
         <section class="stats-source" aria-labelledby="statsSourceTitle" hidden>
           <h3 class="stats-source__title" id="statsSourceTitle">{% translate "No dataset yet?" %}</h3>
           <button type="button" class="stats-btn stats-btn--secondary stats-source__sample" id="statsSampleOld" tabindex="-1" aria-hidden="true" hidden>{% translate "Try with Sample Data" %}</button>

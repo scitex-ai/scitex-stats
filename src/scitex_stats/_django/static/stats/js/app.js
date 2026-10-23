@@ -305,6 +305,15 @@
     );
   }
 
+  function manualSep() {
+    // Operator 2026-10-26: hard separator specification. "Auto" (default)
+    // keeps the estimated delimiter; an explicit choice overrides it for
+    // file imports only — paste boxes always use estimation.
+    var sel = $("statsSep");
+    var v = sel ? sel.value : "auto";
+    return v === "auto" ? "" : v;
+  }
+
   function loadCsvText(text, name) {
     var lines = String(text).split(/\r?\n/).filter(function (l) { return l.trim(); });
     // Operator 2026-10-23: estimate the file's delimiter from its first
@@ -312,7 +321,9 @@
     // keeps its tab contract; a delimiter-free single column falls back to
     // comma, which is harmless (splitting a line without the delimiter
     // returns the line itself).
-    var sep = (name || "").toLowerCase().endsWith(".tsv") ? "\t" : (estimateSep(lines[0] || "") || ",");
+    // Operator 2026-10-26: a manual separator choice overrides estimation.
+    var forced = manualSep();
+    var sep = forced || ((name || "").toLowerCase().endsWith(".tsv") ? "\t" : (estimateSep(lines[0] || "") || ","));
     var rows = lines.map(function (l) { return l.split(sep); });
     var cols = rows.reduce(function (m, r) { return Math.max(m, r.length); }, 0);
     var numeric = [];
