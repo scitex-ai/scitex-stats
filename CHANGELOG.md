@@ -19,6 +19,41 @@ versions follow [Semantic Versioning](https://semver.org/).
   Agreement pair (`test_kendalls_w`, `test_icc`) in the examples
   (was 23, pair omitted).
 
+## [1.0.0-beta] — 2026-10-23
+
+Beta: operator UI batch toward SciTeX Cloud beta (close to beta).
+
+### Added
+- Hard separator specification for CSV import: Separator selector
+  (Auto default + Comma/Tab/Semicolon/Pipe) under the drop zone;
+  overrides estimation for file imports only, paste boxes keep
+  estimation. Single-column files import directly, multi-column
+  files open the checked-by-default column chooser.
+- Dispatcher coverage note in the skill test catalog: `run_test()`
+  routes 22 aliases, MCP `run_test` 23 names; 8 public tests
+  (agreement family, anova_rm/2way, theilsen, mcnemar, cochran_q,
+  normality) go direct — documented limitation, not a silent gap.
+
+### Changed
+- "Load sample dataset" renamed to "Try with Sample Data",
+  right-aligned in the data-input action row (operator).
+- Sample data fits the current design/measurement scale: categorical
+  loads an integer-count twin so applicable tests auto-run and
+  results show (operator).
+- In-content title "SciTeX Stats", professional "No results yet"
+  empty-state copy, alternative hypothesis leads the test pane.
+- `scitex-sdk[gui]` floor raised to >=0.3.12 (server + dev).
+
+### Fixed
+- Bundled skill docs match the measured surface: MCP tool table
+  lists all 18 served tools (was 10); skill Python-API page states
+  25 `test_*` functions with the Agreement pair in the examples
+  (was 23, pair omitted).
+- `__init__` docstring MCP count 10 -> 18.
+- MCP 2.x compat: `input_schema` canonical kwarg + readers.
+- CLI `list-python-apis` 60s timeout guard against xdist cold-start
+  flake; plain-command 60s budget in tests.
+
 ## [1.0.0-alpha] — 2026-10-20
 
 First alpha toward 1.0.0: whole-package professional-grade pass
