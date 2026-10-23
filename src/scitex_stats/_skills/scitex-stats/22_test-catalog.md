@@ -63,6 +63,18 @@ tags: [scitex-stats-test-catalog, scitex-stats]
 | `test_kendalls_w` | Inter-rater agreement (Kendall's W) |
 | `test_icc` | Intraclass correlation (rater reliability) |
 
+## Dispatcher Coverage
+
+`run_test()` routes 22 aliases; the MCP `run_test` tool routes 23 names.
+Both cover the Parametric/Nonparametric/Correlation/Categorical/Normality
+families fully. Two edge gaps (measured on develop, documented — not
+silent): the Python dispatcher does not route `test_anova_rm`,
+`test_anova_2way`, `test_theilsen`, `test_mcnemar`, `test_cochran_q`,
+`test_kendalls_w`, `test_icc`, or `test_normality` by name (call these
+directly, e.g. `sst.test_mcnemar(...)`), and the MCP tool does not route
+`test_kendalls_w` or `test_icc`. Agreement-family and repeated-measures
+ANOVA go direct; everything else dispatches.
+
 ## Dispatcher Aliases
 
 The `run_test()` dispatcher accepts aliases:
