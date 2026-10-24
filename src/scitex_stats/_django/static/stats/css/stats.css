@@ -269,6 +269,53 @@
   color: var(--text-secondary);
 }
 
+/* Operator 2026-10-24: destructive actions wear the alert red — the same
+   --status-error token .stats-error uses (scitex-sdk defines it per theme),
+   never a leaf-local hex. */
+.stats-btn--danger {
+  border-color: var(--status-error-border, currentColor);
+  background: transparent;
+  color: var(--status-error);
+}
+
+.stats-btn--danger:hover:not(:disabled) {
+  background: var(--status-error-bg);
+}
+
+/* Operator 2026-10-24: CSV import preview — filename, detected separator
+   and first rows, so a wrong parse is visible before any test runs. */
+.stats-preview {
+  margin: 8px 0;
+  overflow-x: auto;
+}
+
+.stats-preview__meta {
+  margin: 2px 0 6px;
+}
+
+.stats-preview table {
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.stats-preview th,
+.stats-preview td {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 2px 8px 2px 0;
+  text-align: left;
+  font-weight: 400;
+}
+
+.stats-preview thead th {
+  color: var(--text-primary);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-default);
+}
+
 .stats-btn--primary {
   border-color: var(--stats-accent);
   background: var(--stats-accent);

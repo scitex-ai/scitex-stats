@@ -95,6 +95,11 @@ base page (site header + dock), standalone uses the SDK UI shell.
         </label>
       </div>
       <div id="statsGroups" class="stats-groups"></div>
+      <section class="stats-preview" id="statsPreview" hidden>
+        <h3 class="stats-source__title" id="statsPreviewTitle">{% translate "Preview" %}</h3>
+        <p class="stats-hint stats-preview__meta" id="statsPreviewMeta"></p>
+        <div class="stats-preview__table" id="statsPreviewTable" role="region" aria-label="{% translate "Imported file preview" %}" tabindex="0"></div>
+      </section>
       <section class="stats-colpick" id="statsColPick" hidden>
         <h3 class="stats-source__title">{% translate "Choose columns to import" %}</h3>
         <div class="stats-colpick__list" id="statsColPickList" role="group" aria-label="{% translate "CSV columns" %}"></div>
@@ -105,7 +110,7 @@ base page (site header + dock), standalone uses the SDK UI shell.
       </section>
       <div class="stats-row">
         <button type="button" class="stats-btn stats-btn--ghost" id="statsAddGroup">+ {% translate "Add group" %}</button>
-        <button type="button" class="stats-btn stats-btn--ghost" id="statsClear">{% translate "Clear" %}</button>
+        <button type="button" class="stats-btn stats-btn--danger" id="statsClear">{% translate "Clear" %}</button>
         <button type="button" class="stats-btn stats-btn--secondary stats-source__sample stats-row__right" id="statsSample" title="{% translate "Loads sample data fitting the current design and scale into the boxes, replacing anything already entered." %}">{% translate "Try with Sample Data" %}</button>
       </div>
     </div>
