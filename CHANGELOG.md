@@ -7,6 +7,13 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-10-24
+
+First stable release: the beta UI batch toward SciTeX Cloud, hardened
+after operator review (separator estimation + hard spec + live indicator,
+column-spec import with preview and pending-vs-active clarity, alert-red
+Clear, header-named chooser).
+
 ### Added
 - Active-separator indicator: a live hint under the Separator selector
   (Using: X, estimated/your choice), updated on every import and choice.
