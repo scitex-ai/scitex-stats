@@ -628,3 +628,12 @@ test("pending chooser states the boxes are still the active data", async (t) => 
   // is pinned by the Python static test. Here: the note slot exists.
   assert.ok(ui.document.getElementById("statsColPickNote"));
 });
+
+// Operator 2026-10-24: show which separator is being respected.
+test("selector shows which separator is being respected", async (t) => {
+  const ui = await page(t);
+  await ui.file("a;b\n1;10\n2;20\n");
+  assert.match(ui.document.getElementById("statsSepState").textContent, /Semicolon.*estimated/);
+  setSep(ui, ",");
+  assert.match(ui.document.getElementById("statsSepState").textContent, /Comma.*your choice/);
+});

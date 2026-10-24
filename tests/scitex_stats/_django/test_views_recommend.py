@@ -552,6 +552,23 @@ def test_pending_chooser_states_boxes_stay_active(client):  # noqa: F811
     assert "Not imported yet" in html and 'id="statsColPickNote"' in html
 
 
+def test_selector_state_line_lives_under_selector(client):  # noqa: F811
+    # Arrange
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
+    # Operator 2026-10-24: show which separator is being respected.
+    assert 'id="statsSepState"' in html and html.index('id="statsSep"') < html.index('id="statsSepState"')
+
+
+def test_selector_state_names_update_function():  # noqa: F811
+    # Arrange
+    js = _stats_js()
+    # Act
+    # Assert
+    assert "function updateSepState(sep, forced)" in js
+
+
 def test_chooser_labels_prefer_header_names():  # noqa: F811
     # Arrange
     js = _stats_js()
