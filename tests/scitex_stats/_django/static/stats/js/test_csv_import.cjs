@@ -588,3 +588,43 @@ test("Clear hides the preview and wears the alert red", async (t) => {
   ui.document.getElementById("statsClear").click();
   assert.equal(ui.document.getElementById("statsPreview").hidden, true);
 });
+
+// Operator 2026-10-24: a pending import must not look applied.
+test("chooser lists header names so the file-to-box mapping is explicit", async (t) => {
+  const ui = await page(t);
+  await ui.fileRaw("sin_x,sin_y\n0,0\n0.06,0.06\n");
+  assert.deepEqual(
+    [...ui.document.querySelectorAll("#statsColPickList .stats-colpick__item")].map((el) => el.textContent.trim()),
+    ["sin_x (2 values)", "sin_y (2 values)"]
+  );
+  ui.document.getElementById("statsColPickCancel").click();
+});
+
+test("editing a box after import hides the preview", async (t) => {
+  const ui = await page(t);
+  await ui.file("a,b\n1,10\n2,20\n");
+  assert.equal(ui.document.getElementById("statsPreview").hidden, false);
+  const first = ui.document.querySelector(".stats-group__input");
+  first.value = "9 9";
+  first.dispatchEvent(new ui.dom.window.Event("input", { bubbles: true }));
+  assert.equal(ui.document.getElementById("statsPreview").hidden, true);
+});
+
+test("chooser subset import hides the preview", async (t) => {
+  const ui = await page(t);
+  await ui.file("a,b,c\n1,10,100\n2,20,200\n");
+  assert.equal(ui.document.getElementById("statsPreview").hidden, false);
+  await ui.fileRaw("a,b,c\n1,10,100\n2,20,200\n");
+  const boxes = [...ui.document.querySelectorAll("#statsColPickList input[type=checkbox]")];
+  boxes[2].checked = false;
+  ui.document.getElementById("statsColPickImport").click();
+  assert.equal(ui.document.getElementById("statsPreview").hidden, true);
+});
+
+test("pending chooser states the boxes are still the active data", async (t) => {
+  const ui = await page(t);
+  await ui.fileRaw("a,b\n1,10\n2,20\n");
+  // The synthetic DOM strips {% translate %} text; the production wording
+  // is pinned by the Python static test. Here: the note slot exists.
+  assert.ok(ui.document.getElementById("statsColPickNote"));
+});

@@ -543,6 +543,24 @@ def test_preview_render_function_renders_separator_shape_rows():  # noqa: F811
     assert "function renderPreview(name, sep, rows, cols)" in js
 
 
+def test_pending_chooser_states_boxes_stay_active(client):  # noqa: F811
+    # Arrange
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
+    # Operator 2026-10-24: a pending import must not look applied.
+    assert "Not imported yet" in html and 'id="statsColPickNote"' in html
+
+
+def test_chooser_labels_prefer_header_names():  # noqa: F811
+    # Arrange
+    js = _stats_js()
+    # Act
+    # Assert
+    # Operator 2026-10-24: sin_x, not Column 1 — mapping must be explicit.
+    assert 'header ? _("%s (%s values)")' in js
+
+
 def test_separator_selector_defaults_to_auto(client):  # noqa: F811
     # Arrange
     # Act
