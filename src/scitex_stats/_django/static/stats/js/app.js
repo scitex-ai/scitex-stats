@@ -230,16 +230,20 @@
     return "";
   }
 
+  // Recognize only an unambiguous label row; numeric-looking/missing markers
+  // never grant alignment. Unsupported header syntax remains uncertain.
+  function isHeaderRow(cells) {
+    return cells.every(function (cell) {
+      cell = String(cell).trim();
+      return /^[A-Za-z_][A-Za-z0-9_ .-]*$/.test(cell) && !/^(nan|inf|infinity|null|none|na)$/i.test(cell);
+    });
+  }
+
   function csvRowIntegrity(text, sep, cols) {
     var lines = String(text).split(/\r?\n/);
     if (lines[lines.length - 1] === "") lines.pop(); // ordinary terminal newline
     var rows = lines.map(function (line) { return splitLine(line, sep); });
-    // Recognize only an unambiguous label row; numeric-looking/missing markers
-    // never grant alignment. Unsupported header syntax remains uncertain.
-    var header = rows.length > 1 && rows[0].length === cols && rows[0].every(function (cell) {
-      cell = String(cell).trim();
-      return /^[A-Za-z_][A-Za-z0-9_ .-]*$/.test(cell) && !/^(nan|inf|infinity|null|none|na)$/i.test(cell);
-    });
+    var header = rows.length > 1 && rows[0].length === cols && isHeaderRow(rows[0]);
     if (header) rows.shift();
     var aligned = rows.length > 0 && rows.every(function (row) {
       return row.length === cols && row.every(function (cell) {
@@ -352,6 +356,7 @@
     _lastImport = { text: String(text), name: name || "" };
     var rows = lines.map(function (l) { return splitLine(l, sep); });
     var cols = rows.reduce(function (m, r) { return Math.max(m, r.length); }, 0);
+    renderPreview(name || "", sep, rows, cols);
     var numeric = [];
     for (var c = 0; c < cols; c++) {
       var col = rows
@@ -377,6 +382,64 @@
     // old import-everything, so the whole-file integrity snapshot travels
     // with it; a subset is manual input (decided in importColPick).
     renderColPick(numeric, csvRowIntegrity(text, sep, cols));
+  }
+
+  var SEP_NAMES = { "\t": "Tab", ",": "Comma", ";": "Semicolon", "|": "Pipe", " ": "Space" };
+  var PREVIEW_ROWS = 5;
+  var PREVIEW_COLS = 6;
+
+  function hidePreview() {
+    var panel = $("statsPreview");
+    if (panel) panel.hidden = true;
+  }
+
+  // Operator 2026-10-24: CSV import preview — filename, detected
+  // separator and first rows, so a wrong parse is visible before any
+  // test runs. Built with textContent: file content is untrusted.
+  function renderPreview(name, sep, rows, cols) {
+    var panel = $("statsPreview");
+    if (!panel) return;
+    var header = rows.length > 1 && rows[0].length === cols && isHeaderRow(rows[0]);
+    var bodyRows = header ? rows.slice(1) : rows;
+    $("statsPreviewTitle").textContent = _("Preview") + (name ? ": " + name : "");
+    $("statsPreviewMeta").textContent = fmt(_("Detected separator: %s · %s rows × %s columns"), [SEP_NAMES[sep] || sep, bodyRows.length, cols]);
+    var table = $("statsPreviewTable");
+    table.textContent = "";
+    var el = document.createElement("table");
+    if (header) {
+      var head = document.createElement("thead");
+      var hr = document.createElement("tr");
+      rows[0].slice(0, PREVIEW_COLS).forEach(function (cell) {
+        var th = document.createElement("th");
+        th.textContent = String(cell).trim();
+        hr.appendChild(th);
+      });
+      if (rows[0].length > PREVIEW_COLS) {
+        var moreHead = document.createElement("th");
+        moreHead.textContent = "…";
+        hr.appendChild(moreHead);
+      }
+      head.appendChild(hr);
+      el.appendChild(head);
+    }
+    var tb = document.createElement("tbody");
+    bodyRows.slice(0, PREVIEW_ROWS).forEach(function (row) {
+      var tr = document.createElement("tr");
+      row.slice(0, PREVIEW_COLS).forEach(function (cell) {
+        var td = document.createElement("td");
+        td.textContent = String(cell).trim();
+        tr.appendChild(td);
+      });
+      if (row.length > PREVIEW_COLS) {
+        var moreCell = document.createElement("td");
+        moreCell.textContent = "…";
+        tr.appendChild(moreCell);
+      }
+      tb.appendChild(tr);
+    });
+    el.appendChild(tb);
+    table.appendChild(el);
+    panel.hidden = false;
   }
 
   var _colPickCols = [];
@@ -982,10 +1045,11 @@
       invalidateImportedRows();
       addGroup();
     });
-    $("statsClear").addEventListener("click", function () { hideColPick(); setGroups([[], []]); });
+    $("statsClear").addEventListener("click", function () { hideColPick(); hidePreview(); setGroups([[], []]); });
     $("statsSample").addEventListener("click", function () {
       if (hasUserData() && !window.confirm(_("Replace the data in the boxes with the sample data?"))) return;
       hideColPick();
+      hidePreview();
       // Operator 2026-10-23: the sample must fit the current measurement
       // scale so results show — categorical needs integer counts, the other
       // scales run on the default decimal sample. The design selector is
@@ -993,7 +1057,7 @@
       setGroups($("statsScale").value === "categorical" ? SAMPLE_COUNTS : SAMPLE);
     });
     $("statsColPickImport").addEventListener("click", importColPick);
-    $("statsColPickCancel").addEventListener("click", hideColPick);
+    $("statsColPickCancel").addEventListener("click", function () { hideColPick(); hidePreview(); });
     // Operator 2026-10-24: a hard separator choice re-parses the last
     // import in place, so a wrong guess is one click to fix.
     var sepSel = $("statsSep");

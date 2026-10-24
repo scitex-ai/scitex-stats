@@ -554,3 +554,37 @@ test("chooser cancel keeps the previous boxes", async (t) => {
   ui.document.getElementById("statsColPickCancel").click();
   assert.deepEqual(ui.groups(), before);
 });
+
+// Operator 2026-10-24: CSV import preview + red Clear.
+test("import renders a preview with separator, shape and first rows", async (t) => {
+  const ui = await page(t);
+  await ui.file("a;b\n1;10\n2;20\n3;30\n4;40\n5;50\n6;60\n");
+  const doc = ui.document;
+  assert.equal(doc.getElementById("statsPreview").hidden, false);
+  assert.match(doc.getElementById("statsPreviewTitle").textContent, /synthetic\.csv/);
+  assert.match(doc.getElementById("statsPreviewMeta").textContent, /Semicolon/);
+  assert.match(doc.getElementById("statsPreviewMeta").textContent, /6 rows × 2 columns/);
+  assert.deepEqual(
+    [...doc.querySelectorAll("#statsPreviewTable thead th")].map((el) => el.textContent),
+    ["a", "b"]
+  );
+  const first = [...doc.querySelectorAll("#statsPreviewTable tbody tr")][0];
+  assert.deepEqual([...first.querySelectorAll("td")].map((el) => el.textContent), ["1", "10"]);
+});
+
+test("hard separator change updates the preview", async (t) => {
+  const ui = await page(t);
+  await ui.file("a b\n1 10\n2 20\n", "synthetic.ssv");
+  assert.match(ui.document.getElementById("statsPreviewMeta").textContent, /Space/);
+  setSep(ui, ",");
+  assert.match(ui.document.getElementById("statsPreviewMeta").textContent, /Comma/);
+});
+
+test("Clear hides the preview and wears the alert red", async (t) => {
+  const ui = await page(t);
+  await ui.file("a,b\n1,10\n2,20\n");
+  assert.equal(ui.document.getElementById("statsPreview").hidden, false);
+  assert.ok(ui.document.getElementById("statsClear").classList.contains("stats-btn--danger"));
+  ui.document.getElementById("statsClear").click();
+  assert.equal(ui.document.getElementById("statsPreview").hidden, true);
+});
