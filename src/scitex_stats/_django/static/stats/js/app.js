@@ -341,6 +341,16 @@
     return v === "auto" ? "" : v;
   }
 
+  // Operator 2026-10-24: the selector always shows which separator is
+  // being respected — the estimate or the hard choice.
+  function updateSepState(sep, forced) {
+    var line = $("statsSepState");
+    if (!line) return;
+    line.textContent = forced
+      ? fmt(_("Using: %s (your choice)"), [SEP_NAMES[sep] || sep])
+      : fmt(_("Using: %s (estimated)"), [SEP_NAMES[sep] || sep]);
+  }
+
   var _lastImport = null;
 
   function loadCsvText(text, name) {
@@ -356,6 +366,7 @@
     // manual separator choice overrides estimation.
     var forced = manualSep();
     var sep = forced || ((name || "").toLowerCase().endsWith(".tsv") ? "\t" : (estimateFileSep(lines) || ","));
+    updateSepState(sep, Boolean(forced));
     _lastImport = { text: String(text), name: name || "" };
     var rows = lines.map(function (l) { return splitLine(l, sep); });
     var cols = rows.reduce(function (m, r) { return Math.max(m, r.length); }, 0);
@@ -1073,6 +1084,7 @@
     var sepSel = $("statsSep");
     if (sepSel) sepSel.addEventListener("change", function () {
       if (_lastImport) loadCsvText(_lastImport.text, _lastImport.name);
+      else if (manualSep()) updateSepState(manualSep(), true);
     });
     $("statsChooseFile").addEventListener("click", function () {
       // Project mode imports from the PROJECT; the manual picker is Quick

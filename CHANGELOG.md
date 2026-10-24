@@ -8,6 +8,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Active-separator indicator: a live hint under the Separator selector
+  (Using: X, estimated/your choice), updated on every import and choice.
 - Pending-vs-active clarity: the column chooser states the analysis still
   uses the boxes until Import; the preview shows only while boxes match the
   last import (hides on any edit or partial import); chooser lists real
