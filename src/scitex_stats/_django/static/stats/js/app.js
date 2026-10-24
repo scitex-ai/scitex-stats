@@ -213,6 +213,9 @@
       rowIntegrity = { status: "uncertain", reason: "edited-or-restored-data", source: "csv" };
       importedSnapshot = null;
     }
+    // Operator 2026-10-24: the preview is the file's record — edited boxes
+    // no longer match it, so it hides instead of describing stale data.
+    hidePreview();
     document.dispatchEvent(new CustomEvent("stats:data-change"));
   }
 
@@ -356,6 +359,9 @@
     _lastImport = { text: String(text), name: name || "" };
     var rows = lines.map(function (l) { return splitLine(l, sep); });
     var cols = rows.reduce(function (m, r) { return Math.max(m, r.length); }, 0);
+    // Operator 2026-10-24: the chooser lists real header names (sin_x),
+    // not Column N, so the file-to-box mapping is explicit.
+    var header = rows.length > 1 && rows[0].length === cols && isHeaderRow(rows[0]);
     renderPreview(name || "", sep, rows, cols);
     var numeric = [];
     for (var c = 0; c < cols; c++) {
@@ -367,7 +373,7 @@
           return cell === "" ? NaN : Number(cell);
         })
         .filter(function (n) { return Number.isFinite(n); });
-      if (col.length) numeric.push({ label: fmt(_("Column %s (%s values)"), [c + 1, col.length]), values: col });
+      if (col.length) numeric.push({ label: fmt(header ? _("%s (%s values)") : _("Column %s (%s values)"), [header ? String(rows[0][c]).trim() : c + 1, col.length]), values: col });
     }
     if (!numeric.length) return showError(_("No numeric columns found in this file."));
     // Operator 2026-10-23: CSV upload with column specification — a single
@@ -480,7 +486,11 @@
     // All columns checked = the old import-everything: the whole-file
     // row-integrity snapshot still describes the boxes. A hand-picked
     // subset is manual input instead. Snapshot before hideColPick clears.
-    var integrity = (picked.length === _colPickCols.length) ? _colPickIntegrity : undefined;
+    // A subset also hides the preview: the whole-file record no longer
+    // describes a partial import.
+    var full = picked.length === _colPickCols.length;
+    var integrity = full ? _colPickIntegrity : undefined;
+    if (!full) hidePreview();
     hideColPick();
     setGroups(picked, integrity);
   }

@@ -8,6 +8,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Pending-vs-active clarity: the column chooser states the analysis still
+  uses the boxes until Import; the preview shows only while boxes match the
+  last import (hides on any edit or partial import); chooser lists real
+  header names instead of Column N.
 - CSV import preview: filename, detected separator, shape and first rows
   render under the drop zone on every import (hidden on Clear/sample/
   chooser-cancel); wrong parses are visible before any test runs.

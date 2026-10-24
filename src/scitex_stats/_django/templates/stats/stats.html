@@ -102,6 +102,7 @@ base page (site header + dock), standalone uses the SDK UI shell.
       </section>
       <section class="stats-colpick" id="statsColPick" hidden>
         <h3 class="stats-source__title">{% translate "Choose columns to import" %}</h3>
+        <p class="stats-hint" id="statsColPickNote">{% translate "Not imported yet — the analysis still uses the boxes." %}</p>
         <div class="stats-colpick__list" id="statsColPickList" role="group" aria-label="{% translate "CSV columns" %}"></div>
         <div class="stats-row">
           <button type="button" class="stats-btn stats-btn--secondary" id="statsColPickImport">{% translate "Import selected" %}</button>
