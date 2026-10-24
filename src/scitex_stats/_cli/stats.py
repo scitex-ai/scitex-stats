@@ -24,8 +24,8 @@ def _read_data(path: str) -> "Any":
     """Read CSV / NumPy / JSON file or stdin JSON into numpy/pandas object.
 
     Supported input formats (auto-detected from extension):
-      - .csv  -> pandas.DataFrame (uses pd.read_csv)
-      - .tsv  -> pandas.DataFrame (sep='\\t')
+      - .csv  -> pandas.DataFrame (separator estimated: tab/comma/semicolon/pipe/space)
+      - .tsv  -> pandas.DataFrame (sep='\t')
       - .npy  -> numpy.ndarray
       - .json -> numpy.ndarray (loads list-of-list as 2D, list as 1D)
       - "-"   -> read JSON from stdin
@@ -40,10 +40,9 @@ def _read_data(path: str) -> "Any":
         with open(path) as f:
             return np.asarray(json.load(f))
     if path.endswith(".csv") or path.endswith(".tsv"):
-        import pandas as pd
+        from scitex_stats._utils._csv_support import _load_file
 
-        sep = "\t" if path.endswith(".tsv") else ","
-        return pd.read_csv(path, sep=sep)
+        return _load_file(path)
     raise ValueError(
         f"Unsupported data format: {path} (use .csv / .tsv / .npy / .json or '-' for stdin JSON)"
     )

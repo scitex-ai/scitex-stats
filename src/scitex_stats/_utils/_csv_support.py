@@ -10,15 +10,64 @@ import numpy as np
 import pandas as pd
 
 
-def _load_file(path: str) -> pd.DataFrame:
-    """Load a tabular file as DataFrame."""
-    return pd.read_csv(path)
+# Separator estimation (operator 2026-10-24): file loads accept comma,
+# tab, semicolon, pipe, and whitespace-separated tables. Candidates are
+# tried in tab > comma > semicolon > pipe order (tab-first: columnar data
+# is the most structured); a bare space only wins on a strict consistency
+# check so prose cells containing spaces never flip a comma file. The
+# one-character contract mirrors the web UI selector (Auto + hard spec).
+_SEP_PRIORITY = ("\t", ",", ";", "|")
+
+
+def detect_separator(text: str, *, filename: str = "") -> str:
+    """Estimate the delimiter of a tabular text sample.
+
+    Returns one of ``"\\t"``, ``","``, ``";"``, ``"|"``, or ``" "``
+    (whitespace: split on runs of whitespace). Falls back to ``","``.
+    A ``.tsv`` filename keeps its tab contract without looking.
+    """
+    if str(filename).lower().endswith(".tsv"):
+        return "\t"
+    lines = [ln for ln in str(text).splitlines() if ln.strip()]
+    if not lines:
+        return ","
+    counts = {sep: lines[0].count(sep) for sep in _SEP_PRIORITY}
+    for sep in _SEP_PRIORITY:
+        if counts[sep] > 0:
+            return sep
+    fields = [ln.split() for ln in lines]
+    if len(fields[0]) > 1 and all(len(f) == len(fields[0]) for f in fields):
+        return " "
+    return ","
+
+
+def _load_file(path: str, sep: str | None = None) -> pd.DataFrame:
+    """Load a tabular file as DataFrame.
+
+    Parameters
+    ----------
+    path : str
+        File path. ``.tsv`` keeps its tab contract (same as scitex-io).
+    sep : str or None
+        Hard separator specification; ``" "`` splits on whitespace runs.
+        None (default) estimates via :func:`detect_separator`.
+    """
+    if sep is None:
+        if str(path).lower().endswith(".tsv"):
+            sep = "\t"
+        else:
+            with open(path, encoding="utf-8-sig") as f:
+                sep = detect_separator(f.read(65536))
+    if sep == " ":
+        return pd.read_csv(path, sep=r"\s+", engine="python")
+    return pd.read_csv(path, sep=sep)
 
 
 def resolve_columns(
     data: Union[pd.DataFrame, str, Path],
     *,
     preserve_rows: bool = False,
+    sep: str | None = None,
     **col_map: Any,
 ) -> Dict[str, np.ndarray]:
     """Resolve string column names from a DataFrame or CSV to arrays.
@@ -31,6 +80,8 @@ def resolve_columns(
         Keep missing values at their original positions so paired callers
         can apply their existing joint mask. The default drops missing
         values independently in each resolved column.
+    sep : str or None, default None
+        Hard file separator (``" "`` = whitespace runs); None estimates.
     **col_map
         Keyword arguments mapping param names to values.
         String values are treated as column names and resolved.
@@ -54,7 +105,7 @@ def resolve_columns(
     array([1, 2, 3])
     """
     if isinstance(data, (str, Path)):
-        data = _load_file(str(data))
+        data = _load_file(str(data), sep=sep)
 
     result = {}
     for key, val in col_map.items():
@@ -75,6 +126,8 @@ def resolve_groups(
     data: Union[pd.DataFrame, str, Path],
     value_col: str,
     group_col: str,
+    *,
+    sep: str | None = None,
 ) -> Tuple[List[np.ndarray], List[str]]:
     """Split a DataFrame into groups by a column.
 
@@ -86,6 +139,8 @@ def resolve_groups(
         Column containing measurement values.
     group_col : str
         Column containing group labels.
+    sep : str or None, default None
+        Hard file separator (``" "`` = whitespace runs); None estimates.
 
     Returns
     -------
@@ -107,7 +162,7 @@ def resolve_groups(
     ['A', 'B']
     """
     if isinstance(data, (str, Path)):
-        data = _load_file(str(data))
+        data = _load_file(str(data), sep=sep)
 
     for col_name, col_label in [
         (value_col, "value_col"),

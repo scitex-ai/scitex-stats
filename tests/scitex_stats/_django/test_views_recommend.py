@@ -465,7 +465,7 @@ def test_column_chooser_defines_render_function():  # noqa: F811
     js = _stats_js()
     # Act
     # Assert
-    assert "function renderColPick(numeric)" in js
+    assert "function renderColPick(numeric, integrity)" in js
 
 
 def test_column_chooser_defines_import_function():  # noqa: F811
@@ -500,6 +500,47 @@ def test_column_chooser_items_center_align():  # noqa: F811
     pick_item = css.split(".stats-colpick__item {", 1)[1].split("}", 1)[0]
     # Assert
     assert "align-items: center;" in pick_item
+
+
+def test_clear_button_wears_alert_danger_class(client):  # noqa: F811
+    # Arrange
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
+    # Operator 2026-10-24: Clear is destructive — the alert red, not ghost.
+    assert 'class="stats-btn stats-btn--danger" id="statsClear"' in html
+
+
+def test_danger_button_uses_alert_status_token():  # noqa: F811
+    # Arrange
+    css = _stats_css()
+    # Act
+    danger = css.split(".stats-btn--danger {", 1)[1].split("}", 1)[0]
+    # Assert
+    # Operator 2026-10-24: the SDK alert token, never a leaf-local hex.
+    assert "var(--status-error)" in danger
+
+
+def test_import_preview_panel_lives_in_data_pane(client):  # noqa: F811
+    # Arrange
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
+    assert (
+        'id="statsPreview"' in html
+        and 'id="statsPreviewTitle"' in html
+        and 'id="statsPreviewMeta"' in html
+        and 'id="statsPreviewTable"' in html
+        and html.index('id="statsGroups"') < html.index('id="statsPreview"')
+    )
+
+
+def test_preview_render_function_renders_separator_shape_rows():  # noqa: F811
+    # Arrange
+    js = _stats_js()
+    # Act
+    # Assert
+    assert "function renderPreview(name, sep, rows, cols)" in js
 
 
 def test_separator_selector_defaults_to_auto(client):  # noqa: F811

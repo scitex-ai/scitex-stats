@@ -89,6 +89,7 @@ async def run_test_handler(  # noqa: C901
     data_file: str | None = None,
     columns: list[str] | None = None,
     alternative: str = "two-sided",
+    sep: str | None = None,
 ) -> dict:
     """Execute a statistical test by delegating to scitex.stats.tests.
 
@@ -107,6 +108,9 @@ async def run_test_handler(  # noqa: C901
         Path to CSV file. Use with ``columns`` instead of ``data``.
     columns : list[str], optional
         Column names to extract from ``data_file``.
+    sep : str or None, optional
+        Hard file separator (``" "`` = whitespace runs); None estimates
+        (tab/comma/semicolon/pipe/space, ``.tsv`` keeps tab).
     alternative : str
         Alternative hypothesis: "two-sided", "less", or "greater".
     """
@@ -114,9 +118,9 @@ async def run_test_handler(  # noqa: C901
         source = None
         # Resolve data from CSV if needed
         if data_file and columns:
-            import pandas as pd
+            from scitex_stats._utils._csv_support import _load_file
 
-            df = pd.read_csv(data_file)
+            df = _load_file(data_file, sep=sep)
             missing = [c for c in columns if c not in df.columns]
             if missing:
                 raise ValueError(

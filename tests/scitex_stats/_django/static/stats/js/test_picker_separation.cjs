@@ -101,6 +101,9 @@ async function page(t) {
         };
       });
       input.dispatchEvent(new win.Event("change")); await done; await tick();
+      // Operator 2026-10-24: "Import selected" with every box checked is
+      // the old import-everything in one click.
+      { const pick = document.getElementById("statsColPick"); if (pick && !pick.hidden) document.getElementById("statsColPickImport").click(); }
     },
     async prepared() {
       // No buttons: input re-derives the recommendation (debounced 500ms),

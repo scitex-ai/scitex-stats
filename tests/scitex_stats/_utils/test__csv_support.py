@@ -8,7 +8,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from scitex_stats._utils._csv_support import resolve_columns, resolve_groups
+from scitex_stats._utils._csv_support import (
+    _load_file,
+    detect_separator,
+    resolve_columns,
+    resolve_groups,
+)
 
 
 @pytest.fixture
@@ -447,6 +452,189 @@ class TestMultiGroupDataParam:
         result = test_anova(groups)
         # Assert
         assert "pvalue" in result
+
+
+# ---------------------------------------------------------------------------
+# Separator estimation + loading (operator 2026-10-24)
+# ---------------------------------------------------------------------------
+
+
+class TestDetectSeparator:
+    def test_comma_delimiter_detected(self):
+        # Arrange
+        text = "a,b\n1,2\n"
+        # Act
+        observed = detect_separator(text)
+        # Assert
+        assert observed == ","
+
+    def test_tab_beats_comma(self):
+        # Arrange
+        text = "a\tb,c\n1\t2,3\n"
+        # Act
+        observed = detect_separator(text)
+        # Assert
+        assert observed == "\t"
+
+    def test_semicolon_delimiter_detected(self):
+        # Arrange
+        text = "a;b\n1;10\n"
+        # Act
+        observed = detect_separator(text)
+        # Assert
+        assert observed == ";"
+
+    def test_pipe_delimiter_detected(self):
+        # Arrange
+        text = "a|b\n1|10\n"
+        # Act
+        observed = detect_separator(text)
+        # Assert
+        assert observed == "|"
+
+    def test_space_table_detected(self):
+        # Arrange
+        text = "a b\n1 10\n2 20\n"
+        # Act
+        observed = detect_separator(text)
+        # Assert
+        assert observed == " "
+
+    def test_prose_cells_keep_comma(self):
+        # Arrange
+        text = "city,note\nNew York,NY\nBoston,MA\n"
+        # Act
+        observed = detect_separator(text)
+        # Assert
+        assert observed == ","
+
+    def test_trailing_space_single_column_stays_comma(self):
+        # Arrange
+        text = "a\n1 \n2\n"
+        # Act
+        observed = detect_separator(text)
+        # Assert
+        assert observed == ","
+
+    def test_ragged_space_falls_back_to_comma(self):
+        # Arrange
+        text = "a b c\n1 2\n3 4 5\n"
+        # Act
+        observed = detect_separator(text)
+        # Assert
+        assert observed == ","
+
+    def test_tsv_filename_keeps_tab_contract(self):
+        # Arrange
+        text = "a b\n1 2\n"
+        # Act
+        observed = detect_separator(text, filename="data.tsv")
+        # Assert
+        assert observed == "\t"
+
+    def test_empty_sample_falls_back_to_comma(self):
+        # Arrange
+        text = ""
+        # Act
+        observed = detect_separator(text)
+        # Assert
+        assert observed == ","
+
+
+def _write(tmp_path, name, text):
+    path = tmp_path / name
+    path.write_text(text)
+    return str(path)
+
+
+class TestLoadFileSep:
+    def test_semicolon_file_resolves_first_column(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "s.csv", "x;y\n1;10\n2;20\n")
+        # Act
+        resolved = resolve_columns(path, x="x", y="y")
+        # Assert
+        assert list(resolved["x"]) == [1, 2]
+
+    def test_semicolon_file_resolves_second_column(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "s.csv", "x;y\n1;10\n2;20\n")
+        # Act
+        resolved = resolve_columns(path, x="x", y="y")
+        # Assert
+        assert list(resolved["y"]) == [10, 20]
+
+    def test_pipe_file_resolves_first_column(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "p.csv", "x|y\n1|10\n2|20\n")
+        # Act
+        resolved = resolve_columns(path, x="x", y="y")
+        # Assert
+        assert list(resolved["x"]) == [1, 2]
+
+    def test_space_table_resolves_first_column(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "w.csv", "x y\n1 10\n2 20\n")
+        # Act
+        resolved = resolve_columns(path, x="x", y="y")
+        # Assert
+        assert list(resolved["x"]) == [1, 2]
+
+    def test_space_table_resolves_second_column(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "w.csv", "x y\n1 10\n2 20\n")
+        # Act
+        resolved = resolve_columns(path, x="x", y="y")
+        # Assert
+        assert list(resolved["y"]) == [10, 20]
+
+    def test_tab_without_extension_resolves_columns(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "t.txt", "x\ty\n1\t10\n2\t20\n")
+        # Act
+        frame = _load_file(path)
+        # Assert
+        assert list(frame.columns) == ["x", "y"]
+
+    def test_tsv_extension_keeps_tab(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "t.tsv", "x\ty\n1\t10\n")
+        # Act
+        resolved = resolve_columns(path, x="x", y="y")
+        # Assert
+        assert list(resolved["x"]) == [1]
+
+    def test_hard_sep_overrides_estimation(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "s.csv", "x;y\n1;10\n2;20\n")
+        # Act
+        resolved = resolve_columns(path, sep=";", x="x", y="y")
+        # Assert
+        assert list(resolved["y"]) == [10, 20]
+
+    def test_wrong_hard_sep_surfaces_columns(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "s.csv", "x;y\n1;10\n")
+        # Act
+        # Assert
+        with pytest.raises(ValueError, match="Column 'x' not found"):
+            resolve_columns(path, sep=",", x="x")
+
+    def test_resolve_groups_with_semicolon_names(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "g.csv", "score;group\n1;A\n2;B\n3;A\n")
+        # Act
+        groups, names = resolve_groups(path, "score", "group")
+        # Assert
+        assert names == ["A", "B"]
+
+    def test_resolve_groups_with_semicolon_values(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "g.csv", "score;group\n1;A\n2;B\n3;A\n")
+        # Act
+        groups, names = resolve_groups(path, "score", "group")
+        # Assert
+        assert [list(g) for g in groups] == [[1, 3], [2]]
 
 
 if __name__ == "__main__":

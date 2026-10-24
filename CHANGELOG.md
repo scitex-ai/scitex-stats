@@ -7,6 +7,17 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- CSV import preview: filename, detected separator, shape and first rows
+  render under the drop zone on every import (hidden on Clear/sample/
+  chooser-cancel); wrong parses are visible before any test runs.
+- Clear button wears the alert red (`--status-error`, the same SDK token
+  `.stats-error` uses) via a new `stats-btn--danger` variant.
+- Space-separated tables: separator estimation and the hard Separator
+  selector accept whitespace tables (strict consistency, so prose cells
+  never flip a comma file); Python `data=` file loading, MCP `run_test`
+  (`sep`), and the CLI estimate instead of assuming comma.
+
 ### Changed
 - `scitex-sdk[gui]` floor raised to >=0.3.12 (server + dev; identical-row
   pack + layout doctrine).

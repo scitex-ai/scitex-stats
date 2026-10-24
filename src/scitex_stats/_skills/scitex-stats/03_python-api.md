@@ -25,6 +25,18 @@ import scitex_stats as sst
 `"dict"`). All `test_*` functions decorated with `@supports_return_as` accept
 the same kwarg.
 
+## Tabular file input (`data=`)
+
+```python
+sst.test_ttest_ind(x="before", y="after", data="measurements.csv")
+sst.test_anova(data="groups.tsv", value_col="score", group_col="group")
+```
+
+The file separator is estimated (tab / comma / semicolon / pipe / whitespace;
+`.tsv` keeps tab). The web UI offers the same Auto estimate plus a hard
+Separator choice and a column picker; `resolve_columns(..., sep=";")` and the
+MCP `run_test` `sep` parameter specify it programmatically.
+
 ## Statistical tests (25 callables)
 
 (25 statistical tests; `test_result_to_stats`, the bundle-I/O helper,
