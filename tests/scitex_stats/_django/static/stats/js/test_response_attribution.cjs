@@ -98,11 +98,15 @@ async function page(t) {
         };
       });
       input.dispatchEvent(new win.Event("change")); await done; await tick();
+      // Operator 2026-10-24: "Import selected" with every box checked is
+      // the old import-everything in one click.
+      { const pick = document.getElementById("statsColPick"); if (pick && !pick.hidden) document.getElementById("statsColPickImport").click(); }
     },
     async projectFile(text) {
       routes.set("/api/project-import?project=synthetic-project&name=synthetic.csv", () => response({ text, name: "synthetic.csv" }));
       const b = document.createElement("button"); b.className = "stats-project__import"; b.dataset.file = "synthetic.csv";
       this.el("statsProjectFiles").appendChild(b); b.click(); await tick();
+      { const pick = document.getElementById("statsColPick"); if (pick && !pick.hidden) document.getElementById("statsColPickImport").click(); }
     },
     async prepared() {
       await this.file(complete); this.change("statsDesign", "paired"); this.select("ttest_rel");

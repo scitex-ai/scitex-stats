@@ -465,7 +465,7 @@ def test_column_chooser_defines_render_function():  # noqa: F811
     js = _stats_js()
     # Act
     # Assert
-    assert "function renderColPick(numeric)" in js
+    assert "function renderColPick(numeric, integrity)" in js
 
 
 def test_column_chooser_defines_import_function():  # noqa: F811

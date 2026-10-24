@@ -136,6 +136,26 @@
     return best;
   }
 
+  // Operator 2026-10-24: file-level estimation. Classic delimiters keep
+  // the first-line count rule above; a bare space only wins on a strict
+  // consistency check (every line splits into the same field count > 1)
+  // so prose cells containing spaces never flip a comma file, and
+  // trailing-space single-column files keep their alignment verdict.
+  function estimateFileSep(lines) {
+    var first = estimateSep(lines[0] || "");
+    if (first) return first;
+    var fields = lines.map(function (l) { return String(l).trim().split(/\s+/); });
+    if (fields.length && fields[0].length > 1 && fields.every(function (f) {
+      return f.length === fields[0].length;
+    })) return " ";
+    return "";
+  }
+
+  function splitLine(line, sep) {
+    if (sep === " ") return String(line).trim().split(/\s+/);
+    return String(line).split(sep);
+  }
+
   var _SEP_ESCAPED = { "\t": "\\t", ",": ",", ";": ";", "|": "\\|" };
 
   function splitPattern(sep) {
@@ -213,7 +233,7 @@
   function csvRowIntegrity(text, sep, cols) {
     var lines = String(text).split(/\r?\n/);
     if (lines[lines.length - 1] === "") lines.pop(); // ordinary terminal newline
-    var rows = lines.map(function (line) { return line.split(sep); });
+    var rows = lines.map(function (line) { return splitLine(line, sep); });
     // Recognize only an unambiguous label row; numeric-looking/missing markers
     // never grant alignment. Unsupported header syntax remains uncertain.
     var header = rows.length > 1 && rows[0].length === cols && rows[0].every(function (cell) {
@@ -314,17 +334,23 @@
     return v === "auto" ? "" : v;
   }
 
+  var _lastImport = null;
+
   function loadCsvText(text, name) {
     var lines = String(text).split(/\r?\n/).filter(function (l) { return l.trim(); });
+    showError("");
     // Operator 2026-10-23: estimate the file's delimiter from its first
     // line (tab/comma/semicolon/pipe) instead of assuming comma. A .tsv
     // keeps its tab contract; a delimiter-free single column falls back to
     // comma, which is harmless (splitting a line without the delimiter
     // returns the line itself).
-    // Operator 2026-10-26: a manual separator choice overrides estimation.
+    // Operator 2026-10-24: file-level estimation adds whitespace tables
+    // (strict consistency, so prose cells never flip a comma file); a
+    // manual separator choice overrides estimation.
     var forced = manualSep();
-    var sep = forced || ((name || "").toLowerCase().endsWith(".tsv") ? "\t" : (estimateSep(lines[0] || "") || ","));
-    var rows = lines.map(function (l) { return l.split(sep); });
+    var sep = forced || ((name || "").toLowerCase().endsWith(".tsv") ? "\t" : (estimateFileSep(lines) || ","));
+    _lastImport = { text: String(text), name: name || "" };
+    var rows = lines.map(function (l) { return splitLine(l, sep); });
     var cols = rows.reduce(function (m, r) { return Math.max(m, r.length); }, 0);
     var numeric = [];
     for (var c = 0; c < cols; c++) {
@@ -347,19 +373,25 @@
       setGroups([numeric[0].values], csvRowIntegrity(text, sep, cols));
       return;
     }
-    renderColPick(numeric);
+    // Operator 2026-10-24: "Import selected" with every box checked is the
+    // old import-everything, so the whole-file integrity snapshot travels
+    // with it; a subset is manual input (decided in importColPick).
+    renderColPick(numeric, csvRowIntegrity(text, sep, cols));
   }
 
   var _colPickCols = [];
+  var _colPickIntegrity = null;
 
   function hideColPick() {
     _colPickCols = [];
+    _colPickIntegrity = null;
     var panel = $("statsColPick");
     if (panel) panel.hidden = true;
   }
 
-  function renderColPick(numeric) {
+  function renderColPick(numeric, integrity) {
     _colPickCols = numeric;
+    _colPickIntegrity = integrity || null;
     var list = $("statsColPickList");
     list.textContent = "";
     numeric.forEach(function (entry, i) {
@@ -382,10 +414,12 @@
       if (box.checked && _colPickCols[Number(box.value)]) picked.push(_colPickCols[Number(box.value)].values);
     });
     if (!picked.length) return showError(_("Select at least one column to import."));
+    // All columns checked = the old import-everything: the whole-file
+    // row-integrity snapshot still describes the boxes. A hand-picked
+    // subset is manual input instead. Snapshot before hideColPick clears.
+    var integrity = (picked.length === _colPickCols.length) ? _colPickIntegrity : undefined;
     hideColPick();
-    // A hand-picked subset is manual input: the whole-file row-integrity
-    // snapshot no longer describes the boxes.
-    setGroups(picked);
+    setGroups(picked, integrity);
   }
 
   function loadCsv(file) {
@@ -960,6 +994,12 @@
     });
     $("statsColPickImport").addEventListener("click", importColPick);
     $("statsColPickCancel").addEventListener("click", hideColPick);
+    // Operator 2026-10-24: a hard separator choice re-parses the last
+    // import in place, so a wrong guess is one click to fix.
+    var sepSel = $("statsSep");
+    if (sepSel) sepSel.addEventListener("change", function () {
+      if (_lastImport) loadCsvText(_lastImport.text, _lastImport.name);
+    });
     $("statsChooseFile").addEventListener("click", function () {
       // Project mode imports from the PROJECT; the manual picker is Quick
       // analysis' input, so it refuses here instead of offering a second path.

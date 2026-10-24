@@ -7,6 +7,12 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Space-separated tables: separator estimation and the hard Separator
+  selector accept whitespace tables (strict consistency, so prose cells
+  never flip a comma file); Python `data=` file loading, MCP `run_test`
+  (`sep`), and the CLI estimate instead of assuming comma.
+
 ### Changed
 - `scitex-sdk[gui]` floor raised to >=0.3.12 (server + dev; identical-row
   pack + layout doctrine).

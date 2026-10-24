@@ -8,7 +8,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from scitex_stats._utils._csv_support import resolve_columns, resolve_groups
+from scitex_stats._utils._csv_support import (
+    _load_file,
+    detect_separator,
+    resolve_columns,
+    resolve_groups,
+)
 
 
 @pytest.fixture
@@ -447,6 +452,128 @@ class TestMultiGroupDataParam:
         result = test_anova(groups)
         # Assert
         assert "pvalue" in result
+
+
+# ---------------------------------------------------------------------------
+# Separator estimation + loading (operator 2026-10-24)
+# ---------------------------------------------------------------------------
+
+
+class TestDetectSeparator:
+    def test_comma_detected(self):
+        # Arrange / Act / Assert
+        assert detect_separator("a,b\n1,2\n") == ","
+
+    def test_tab_beats_comma(self):
+        # Arrange / Act / Assert
+        assert detect_separator("a\tb,c\n1\t2,3\n") == "\t"
+
+    def test_semicolon_detected(self):
+        # Arrange / Act / Assert
+        assert detect_separator("a;b\n1;10\n") == ";"
+
+    def test_pipe_detected(self):
+        # Arrange / Act / Assert
+        assert detect_separator("a|b\n1|10\n") == "|"
+
+    def test_space_table_detected(self):
+        # Arrange / Act / Assert
+        assert detect_separator("a b\n1 10\n2 20\n") == " "
+
+    def test_prose_cells_keep_comma(self):
+        # Arrange: spaces inside cells must not flip a comma file
+        # Act / Assert
+        assert detect_separator("city,note\nNew York,NY\nBoston,MA\n") == ","
+
+    def test_trailing_space_single_column_stays_comma(self):
+        # Arrange / Act / Assert
+        assert detect_separator("a\n1 \n2\n") == ","
+
+    def test_ragged_space_falls_back_to_comma(self):
+        # Arrange / Act / Assert
+        assert detect_separator("a b c\n1 2\n3 4 5\n") == ","
+
+    def test_tsv_filename_keeps_tab_contract(self):
+        # Arrange / Act / Assert
+        assert detect_separator("a b\n1 2\n", filename="data.tsv") == "\t"
+
+    def test_empty_sample_falls_back_to_comma(self):
+        # Arrange / Act / Assert
+        assert detect_separator("") == ","
+
+
+def _write(tmp_path, name, text):
+    path = tmp_path / name
+    path.write_text(text)
+    return str(path)
+
+
+class TestLoadFileSep:
+    def test_semicolon_autodetected(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "s.csv", "x;y\n1;10\n2;20\n")
+        # Act
+        resolved = resolve_columns(path, x="x", y="y")
+        # Assert
+        assert list(resolved["x"]) == [1, 2]
+        assert list(resolved["y"]) == [10, 20]
+
+    def test_pipe_autodetected(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "p.csv", "x|y\n1|10\n2|20\n")
+        # Act
+        resolved = resolve_columns(path, x="x", y="y")
+        # Assert
+        assert list(resolved["x"]) == [1, 2]
+
+    def test_space_table_autodetected(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "w.csv", "x y\n1 10\n2 20\n")
+        # Act
+        resolved = resolve_columns(path, x="x", y="y")
+        # Assert
+        assert list(resolved["x"]) == [1, 2]
+        assert list(resolved["y"]) == [10, 20]
+
+    def test_tab_without_extension_autodetected(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "t.txt", "x\ty\n1\t10\n2\t20\n")
+        # Act
+        frame = _load_file(path)
+        # Assert
+        assert list(frame.columns) == ["x", "y"]
+
+    def test_tsv_extension_keeps_tab(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "t.tsv", "x\ty\n1\t10\n")
+        # Act
+        resolved = resolve_columns(path, x="x", y="y")
+        # Assert
+        assert list(resolved["x"]) == [1]
+
+    def test_hard_sep_overrides_estimation(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "s.csv", "x;y\n1;10\n2;20\n")
+        # Act
+        resolved = resolve_columns(path, sep=";", x="x", y="y")
+        # Assert
+        assert list(resolved["y"]) == [10, 20]
+
+    def test_wrong_hard_sep_surfaces_columns(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "s.csv", "x;y\n1;10\n")
+        # Act / Assert: forcing comma leaves one "x;y" column
+        with pytest.raises(ValueError, match="Column 'x' not found"):
+            resolve_columns(path, sep=",", x="x")
+
+    def test_resolve_groups_with_semicolon(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "g.csv", "score;group\n1;A\n2;B\n3;A\n")
+        # Act
+        groups, names = resolve_groups(path, "score", "group")
+        # Assert
+        assert names == ["A", "B"]
+        assert [list(g) for g in groups] == [[1, 3], [2]]
 
 
 if __name__ == "__main__":
