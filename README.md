@@ -85,6 +85,8 @@ print(result["formatted"])
 
 </details>
 
+For CSV/TSV imports, see [input separators and quoted cells](docs/csv-input.md).
+
 ## Installation
 
 ```bash

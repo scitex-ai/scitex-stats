@@ -19,6 +19,7 @@ from scitex_stats._utils._csv_support import (
 @pytest.fixture
 def paired_column_source(tmp_path):
     """Keep DataFrame/CSV source arrangement outside the shared test intent."""
+
     def select_source(frame, source_kind):
         if source_kind == "csv":
             source = tmp_path / "paired.csv"
@@ -32,7 +33,13 @@ def paired_column_source(tmp_path):
 @pytest.mark.parametrize("source_kind", ["dataframe", "csv"])
 @pytest.mark.parametrize(
     "engine_name",
-    ["test_ttest_rel", "test_wilcoxon", "test_pearson", "test_spearman", "test_kendall"],
+    [
+        "test_ttest_rel",
+        "test_wilcoxon",
+        "test_pearson",
+        "test_spearman",
+        "test_kendall",
+    ],
 )
 def test_paired_columns_keep_original_observation_positions(
     engine_name, source_kind, tmp_path, paired_column_source
@@ -57,9 +64,7 @@ def test_unpaired_columns_keep_independent_missing_value_removal(engine_name):
     # Arrange
     import scitex_stats
 
-    frame = pd.DataFrame(
-        {"x": [1, np.nan, 3, 4, 7, 9], "y": [8, 2, np.nan, 5, 6, 10]}
-    )
+    frame = pd.DataFrame({"x": [1, np.nan, 3, 4, 7, 9], "y": [8, 2, np.nan, 5, 6, 10]})
     engine = getattr(scitex_stats, engine_name)
     expected = engine(frame["x"].dropna().to_numpy(), frame["y"].dropna().to_numpy())
     # Act
@@ -348,6 +353,7 @@ class TestTwoSampleDataParam:
     def test_ttest_ind_with_data(self, sample_df):
         # Arrange
         from scitex_stats import test_ttest_ind
+
         # Act
         result = test_ttest_ind(x="before", y="after", data=sample_df)
         # Assert
@@ -356,6 +362,7 @@ class TestTwoSampleDataParam:
     def test_ttest_rel_with_data(self, sample_df):
         # Arrange
         from scitex_stats import test_ttest_rel
+
         # Act
         result = test_ttest_rel(x="before", y="after", data=sample_df)
         # Assert
@@ -364,6 +371,7 @@ class TestTwoSampleDataParam:
     def test_pearson_with_data(self, sample_df):
         # Arrange
         from scitex_stats import test_pearson
+
         # Act
         result = test_pearson(x="before", y="after", data=sample_df)
         # Assert
@@ -372,6 +380,7 @@ class TestTwoSampleDataParam:
     def test_mannwhitneyu_with_data(self, sample_df):
         # Arrange
         from scitex_stats import test_mannwhitneyu
+
         # Act
         result = test_mannwhitneyu(x="before", y="after", data=sample_df)
         # Assert
@@ -381,6 +390,7 @@ class TestTwoSampleDataParam:
         # Arrange
         _skip_without_scitex_io()
         from scitex_stats import test_ttest_ind
+
         # Act
         result = test_ttest_ind(x="before", y="after", data=csv_path)
         # Assert
@@ -389,6 +399,7 @@ class TestTwoSampleDataParam:
     def test_backward_compat_arrays(self, sample_df):
         # Arrange
         from scitex_stats import test_ttest_ind
+
         # Act
         result = test_ttest_ind(sample_df["before"].values, sample_df["after"].values)
         # Assert
@@ -401,6 +412,7 @@ class TestOneSampleDataParam:
     def test_shapiro_with_data(self, sample_df):
         # Arrange
         from scitex_stats import test_shapiro
+
         # Act
         result = test_shapiro(x="before", data=sample_df)
         # Assert
@@ -409,6 +421,7 @@ class TestOneSampleDataParam:
     def test_ttest_1samp_with_data(self, sample_df):
         # Arrange
         from scitex_stats import test_ttest_1samp
+
         # Act
         result = test_ttest_1samp(x="before", popmean=100, data=sample_df)
         # Assert
@@ -417,6 +430,7 @@ class TestOneSampleDataParam:
     def test_backward_compat_array(self, sample_df):
         # Arrange
         from scitex_stats import test_shapiro
+
         # Act
         result = test_shapiro(sample_df["before"].values)
         # Assert
@@ -429,6 +443,7 @@ class TestMultiGroupDataParam:
     def test_anova_with_data(self, sample_df):
         # Arrange
         from scitex_stats import test_anova
+
         # Act
         result = test_anova(data=sample_df, value_col="score", group_col="group")
         # Assert
@@ -437,6 +452,7 @@ class TestMultiGroupDataParam:
     def test_kruskal_with_data(self, sample_df):
         # Arrange
         from scitex_stats import test_kruskal
+
         # Act
         result = test_kruskal(data=sample_df, value_col="score", group_col="group")
         # Assert
@@ -445,6 +461,7 @@ class TestMultiGroupDataParam:
     def test_anova_backward_compat(self, sample_df):
         # Arrange
         from scitex_stats import test_anova
+
         groups = [
             sample_df[sample_df["group"] == g]["score"].values for g in ["A", "B", "C"]
         ]
@@ -531,6 +548,22 @@ class TestDetectSeparator:
         observed = detect_separator(text, filename="data.tsv")
         # Assert
         assert observed == "\t"
+
+    def test_quoted_header_comma_does_not_override_semicolon(self):
+        # Arrange: punctuation belongs to the column name, not the delimiter.
+        text = '"signal, mean";reference\n"1";"10"\n"2";"20"\n'
+        # Act
+        observed = detect_separator(text)
+        # Assert
+        assert observed == ";"
+
+    def test_quoted_header_tab_does_not_override_comma(self):
+        # Arrange
+        text = '"signal\tmean",reference\n1,10\n2,20\n'
+        # Act
+        observed = detect_separator(text)
+        # Assert
+        assert observed == ","
 
     def test_empty_sample_falls_back_to_comma(self):
         # Arrange
@@ -639,3 +672,13 @@ class TestLoadFileSep:
 
 if __name__ == "__main__":
     pytest.main([os.path.abspath(__file__)])
+
+
+def test_quoted_semicolon_file_preserves_named_numeric_columns(tmp_path):
+    # Arrange
+    path = tmp_path / "quoted.csv"
+    path.write_text('"signal, mean";reference\n"1";"10"\n"2";"20"\n')
+    # Act
+    columns = resolve_columns(str(path), x="signal, mean", y="reference")
+    # Assert
+    assert (columns["x"].tolist(), columns["y"].tolist()) == ([1.0, 2.0], [10.0, 20.0])
