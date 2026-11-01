@@ -682,3 +682,52 @@ def test_quoted_semicolon_file_preserves_named_numeric_columns(tmp_path):
     columns = resolve_columns(str(path), x="signal, mean", y="reference")
     # Assert
     assert (columns["x"].tolist(), columns["y"].tolist()) == ([1.0, 2.0], [10.0, 20.0])
+
+
+@pytest.mark.parametrize("separator", [",", "\t", ";", "|"])
+def test_detect_separator_uses_records_not_misleading_header_punctuation(separator):
+    # Arrange
+    text = (
+        "label, description"
+        + separator
+        + "value\ncontrol"
+        + separator
+        + "1\ncase"
+        + separator
+        + "2\n"
+    )
+    # Act
+    actual = detect_separator(text)
+    # Assert
+    assert actual == separator
+
+
+def test_ambiguous_separator_requires_explicit_choice(tmp_path):
+    # Arrange
+    path = tmp_path / "ambiguous.csv"
+    path.write_text("a,b;c\n1,2;3\n4,5;6\n")
+    # Act / Assert
+    with pytest.raises(ValueError, match="Ambiguous separator"):
+        _load_file(str(path))
+
+
+def test_explicit_separator_resolves_ambiguous_input(tmp_path):
+    # Arrange
+    path = tmp_path / "ambiguous.csv"
+    path.write_text("a,b;c\n1,2;3\n4,5;6\n")
+    # Act
+    frame = _load_file(str(path), sep=";")
+    # Assert
+    assert list(frame["c"]) == [3, 6]
+
+
+def test_quoted_whitespace_labels_and_bom_keep_numeric_columns(tmp_path):
+    # Arrange
+    path = tmp_path / "quoted.txt"
+    path.write_text('\ufefflabel value\n"control one"   1\n"case two"   2\n')
+    # Act
+    frame = _load_file(str(path))
+    # Assert
+    assert frame["label"].tolist() == ["control one", "case two"] and frame[
+        "value"
+    ].tolist() == [1, 2]

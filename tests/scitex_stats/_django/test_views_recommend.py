@@ -229,12 +229,12 @@ def test_sample_loader_confirms_before_replacing_typed_data():
     assert "function hasUserData()" in js and "window.confirm(" in js and "hasUserData() && !window.confirm(" in js
 
 
-def test_choose_file_button_and_zone_both_open_the_picker():
+def test_file_picker_is_explicit_inside_the_import_dialog():
     # Arrange
     js = _stats_js()
     # Act
     # Assert
-    assert '$("statsChooseFile").addEventListener("click"' in js and 'dropZone.addEventListener("click"' in js
+    assert '$("statsChooseFile").addEventListener("click"' in js and '$("statsOpenImport").addEventListener("click"' in js and 'dropZone.addEventListener("click"' not in js
 
 
 def test_form_dropdowns_use_scitex_ui_select_primitive():
@@ -418,12 +418,12 @@ def test_separator_estimation_used_for_paste_parse(client):  # noqa: F811
     assert "splitPattern(estimateSep(raw))" in js
 
 
-def test_separator_estimation_used_for_first_line_probe(client):  # noqa: F811
+def test_file_separator_estimation_uses_quote_aware_record_widths(client):
     # Arrange
     js = _stats_js()
     # Act
     # Assert
-    assert 'estimateSep(lines[0] || "")' in js
+    assert "function inspectFileSep(lines)" in js and "splitLine(line, sep).length" in js
 
 
 def test_column_chooser_panel_present_but_hidden(client):  # noqa: F811
@@ -432,7 +432,7 @@ def test_column_chooser_panel_present_but_hidden(client):  # noqa: F811
     html = client.get("/").content.decode()
     # Assert
     # Operator 2026-10-23: CSV upload with column specification — multi
-    # numeric columns offer a chooser; one imports directly.
+    # numeric columns share one explicit confirmation path, including one column.
     assert '<section class="stats-colpick" id="statsColPick" hidden>' in html
 
 
@@ -476,12 +476,12 @@ def test_column_chooser_defines_import_function():  # noqa: F811
     assert "function importColPick()" in js
 
 
-def test_column_chooser_imports_single_column_directly():  # noqa: F811
+def test_all_numeric_columns_wait_for_import_confirmation():
     # Arrange
     js = _stats_js()
     # Act
     # Assert
-    assert "numeric.length === 1" in js
+    assert "numeric.length === 1" not in js and "renderColPick(numeric," in js
 
 
 def test_column_chooser_list_stacks_vertically():  # noqa: F811
@@ -596,9 +596,9 @@ def test_manual_separator_overrides_estimation_in_loader():  # noqa: F811
     assert "var forced = manualSep();" in js
 
 
-def test_manual_separator_falls_back_to_tsv_contract():  # noqa: F811
+def test_explicit_separator_precedes_the_labeled_tsv_default():
     # Arrange
     js = _stats_js()
     # Act
     # Assert
-    assert 'forced || ((name || "").toLowerCase().endsWith(".tsv")' in js
+    assert 'forced || (filenameTab ? "\\t" : detection.sep)' in js and ".tsv default" in js

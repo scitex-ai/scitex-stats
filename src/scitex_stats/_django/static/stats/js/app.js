@@ -138,28 +138,36 @@
     return best;
   }
 
-  // Operator 2026-10-24: file-level estimation. Classic delimiters keep
-  // the first-line count rule above; a bare space only wins on a strict
-  // consistency check (every line splits into the same field count > 1)
-  // so prose cells containing spaces never flip a comma file, and
-  // trailing-space single-column files keep their alignment verdict.
-  function estimateFileSep(lines) {
-    var first = estimateSep(lines[0] || "");
-    if (first) return first;
-    var fields = lines.map(function (l) { return String(l).trim().split(/\s+/); });
-    if (fields.length && fields[0].length > 1 && fields.every(function (f) {
-      return f.length === fields[0].length;
-    })) return " ";
-    return "";
+  // Compare quote-aware record widths before choosing a file separator.
+  // Structured tabs retain their documented priority; ambiguous punctuation
+  // waits for an explicit choice. The manual number-box parser is unchanged.
+  function csvLines(text) {
+    return String(text || "").replace(/^\uFEFF/, "").split(/\r?\n/).filter(function (line) { return line.trim(); });
+  }
+
+  function inspectFileSep(lines) {
+    var candidates = ["\t", ",", ";", "|"].map(function (sep) {
+      var counts = Object.create(null);
+      lines.forEach(function (line) {
+        var width = splitLine(line, sep).length;
+        if (width > 1) counts[width] = (counts[width] || 0) + 1;
+      });
+      return { sep: sep, score: Math.max.apply(null, [0].concat(Object.keys(counts).map(function (width) { return counts[width]; }))) };
+    }).filter(function (candidate) { return candidate.score > 0; });
+    var best = candidates.reduce(function (score, candidate) { return Math.max(score, candidate.score); }, 0);
+    var winners = candidates.filter(function (candidate) { return candidate.score === best; });
+    if (winners.length) return { sep: winners[0].sep, ambiguous: winners.length > 1 && winners[0].sep !== "\t", alternatives: winners.length > 1, candidates: winners.map(function (candidate) { return candidate.sep; }), fewRows: lines.length < 2, inconsistent: best < lines.length };
+    var widths = lines.map(function (line) { return splitLine(line, " ").length; });
+    if (widths.length && widths[0] > 1 && widths.every(function (width) { return width === widths[0]; })) return { sep: " ", fewRows: lines.length < 2 };
+    return { sep: ",", singleColumn: true, fewRows: lines.length < 2 };
   }
 
   function splitLine(line, sep) {
-    if (sep === " ") return String(line).trim().split(/\s+/);
     var cells = [];
     var cell = "";
     var quoted = false;
     var closed = false;
-    var text = String(line);
+    var text = sep === " " ? String(line).trim() : String(line);
     for (var i = 0; i < text.length; i++) {
       var char = text[i];
       if (char === '"') {
@@ -167,8 +175,9 @@
         else if (quoted) { quoted = false; closed = true; }
         else if (!closed && cell === "") quoted = true;
         else cell += char; // A quote inside an unquoted cell is literal.
-      } else if (char === sep && !quoted) {
+      } else if ((sep === " " ? /\s/.test(char) : char === sep) && !quoted) {
         cells.push(cell); cell = ""; closed = false;
+        if (sep === " ") while (i + 1 < text.length && /\s/.test(text[i + 1])) i++;
       } else {
         // Junk after a closing quote must not turn e.g. "1"2 into 12.
         if (closed && !/\s/.test(char)) { cell += '"'; closed = false; }
@@ -267,7 +276,7 @@
   }
 
   function csvRowIntegrity(text, sep, cols) {
-    var lines = String(text).split(/\r?\n/);
+    var lines = String(text).replace(/^\uFEFF/, "").split(/\r?\n/);
     if (lines[lines.length - 1] === "") lines.pop(); // ordinary terminal newline
     var rows = lines.map(function (line) { return splitLine(line, sep); });
     var header = rows.length > 1 && rows[0].length === cols && isHeaderRow(rows[0]);
@@ -375,22 +384,55 @@
       : fmt(_("Using: %s (estimated)"), [SEP_NAMES[sep] || sep]);
   }
 
+  var importReturnFocus = null;
+  function openImportDialog() {
+    var dialog = $("statsImportDialog");
+    if (!dialog || dialog.open) return;
+    importReturnFocus = document.activeElement;
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+    var first = dialog.querySelector("select");
+    if (first) first.focus();
+  }
+  function closeImportDialog() {
+    var dialog = $("statsImportDialog");
+    if (!dialog) return;
+    if (typeof dialog.close === "function") dialog.close();
+    else { dialog.removeAttribute("open"); if (importReturnFocus) importReturnFocus.focus(); }
+  }
+  function csvError(message) {
+    var line = $("statsImportError");
+    line.textContent = message || ""; line.hidden = !message;
+    if (message) showError(message);
+  }
+
   var _lastImport = null;
 
   function loadCsvText(text, name) {
-    var lines = String(text).split(/\r?\n/).filter(function (l) { return l.trim(); });
+    var lines = csvLines(text);
     showError("");
-    // Operator 2026-10-23: estimate the file's delimiter from its first
-    // line (tab/comma/semicolon/pipe) instead of assuming comma. A .tsv
-    // keeps its tab contract; a delimiter-free single column falls back to
-    // comma, which is harmless (splitting a line without the delimiter
-    // returns the line itself).
-    // Operator 2026-10-24: file-level estimation adds whitespace tables
-    // (strict consistency, so prose cells never flip a comma file); a
-    // manual separator choice overrides estimation.
+    csvError("");
+    openImportDialog();
+    // Estimate from quote-aware record widths. An explicit separator wins;
+    // the documented .tsv tab default is labeled separately from inference.
     var forced = manualSep();
-    var sep = forced || ((name || "").toLowerCase().endsWith(".tsv") ? "\t" : (estimateFileSep(lines) || ","));
+    var detection = inspectFileSep(lines);
+    var filenameTab = (name || "").toLowerCase().endsWith(".tsv");
+    var sep = forced || (filenameTab ? "\t" : detection.sep);
     updateSepState(sep, Boolean(forced));
+    if (!forced && filenameTab) {
+      $("statsSepState").textContent = fmt(_("Using: %s (.tsv default)"), [SEP_NAMES[sep]]);
+    } else if (!forced && detection.ambiguous) {
+      $("statsSepState").textContent = fmt(_("Ambiguous separator: %s. Choose a separator to continue."), [detection.candidates.map(function (candidate) { return SEP_NAMES[candidate]; }).join(" / ")]);
+    } else if (!forced && detection.alternatives && !filenameTab) {
+      $("statsSepState").textContent += " " + _("Other separators also fit; Tab is the structured default.");
+    } else if (!forced && detection.singleColumn && !filenameTab) {
+      $("statsSepState").textContent = _("Single column — no separator detected.");
+    } else if (!forced && detection.fewRows) {
+      $("statsSepState").textContent += " " + _("Only one record; verify this choice.");
+    } else if (!forced && detection.inconsistent) {
+      $("statsSepState").textContent += " " + _("Column counts differ; review the preview.");
+    }
     _lastImport = { text: String(text), name: name || "" };
     var rows = lines.map(function (l) { return splitLine(l, sep); });
     var cols = rows.reduce(function (m, r) { return Math.max(m, r.length); }, 0);
@@ -398,6 +440,11 @@
     // not Column N, so the file-to-box mapping is explicit.
     var header = rows.length > 1 && rows[0].length === cols && isHeaderRow(rows[0]);
     renderPreview(name || "", sep, rows, cols);
+    if (!forced && !filenameTab && detection.ambiguous) {
+      hideColPick();
+      csvError(_("The separator is ambiguous. Choose one explicitly before importing."));
+      return;
+    }
     var numeric = [];
     for (var c = 0; c < cols; c++) {
       var col = rows
@@ -410,15 +457,9 @@
         .filter(function (n) { return Number.isFinite(n); });
       if (col.length) numeric.push({ label: fmt(header ? _("%s (%s values)") : _("Column %s (%s values)"), [header ? String(rows[0][c]).trim() : c + 1, col.length]), values: col });
     }
-    if (!numeric.length) return showError(_("No numeric columns found in this file."));
-    // Operator 2026-10-23: CSV upload with column specification — a single
-    // numeric column imports directly; several offer a chooser (all checked
-    // = the old import-everything in one click).
-    if (numeric.length === 1) {
-      hideColPick();
-      setGroups([numeric[0].values], csvRowIntegrity(text, sep, cols));
-      return;
-    }
+    if (!numeric.length) { hideColPick(); return csvError(_("No numeric columns found in this file.")); }
+    // Every numeric-column selection waits for explicit confirmation,
+    // including single-column files. Previewing never replaces group boxes.
     // Operator 2026-10-24: "Import selected" with every box checked is the
     // old import-everything, so the whole-file integrity snapshot travels
     // with it; a subset is manual input (decided in importColPick).
@@ -443,7 +484,7 @@
     var header = rows.length > 1 && rows[0].length === cols && isHeaderRow(rows[0]);
     var bodyRows = header ? rows.slice(1) : rows;
     $("statsPreviewTitle").textContent = _("Preview") + (name ? ": " + name : "");
-    $("statsPreviewMeta").textContent = fmt(_("Detected separator: %s · %s rows × %s columns"), [SEP_NAMES[sep] || sep, bodyRows.length, cols]);
+    $("statsPreviewMeta").textContent = fmt(_("Separator: %s · %s rows × %s columns"), [SEP_NAMES[sep] || sep, bodyRows.length, cols]);
     var table = $("statsPreviewTable");
     table.textContent = "";
     var el = document.createElement("table");
@@ -517,7 +558,7 @@
     $("statsColPickList").querySelectorAll("input[type=checkbox]").forEach(function (box) {
       if (box.checked && _colPickCols[Number(box.value)]) picked.push(_colPickCols[Number(box.value)].values);
     });
-    if (!picked.length) return showError(_("Select at least one column to import."));
+    if (!picked.length) return csvError(_("Select at least one column to import."));
     // All columns checked = the old import-everything: the whole-file
     // row-integrity snapshot still describes the boxes. A hand-picked
     // subset is manual input instead. Snapshot before hideColPick clears.
@@ -528,6 +569,8 @@
     if (!full) hidePreview();
     hideColPick();
     setGroups(picked, integrity);
+    $("statsImportSummary").textContent = fmt(_("%s · %s columns imported · %s"), [_lastImport ? _lastImport.name : _("CSV"), picked.length, $("statsSepState").textContent]);
+    closeImportDialog();
   }
 
   function loadCsv(file) {
@@ -575,6 +618,7 @@
   function applyMode() {
     var mode = currentMode();
     var hasProject = !!projectId();
+    $("statsOpenImport").textContent = hasProject ? _("Project data…") : _("Import CSV…");
     var app = document.querySelector("[data-stats-app]");
     if (app) app.setAttribute("data-stats-mode", mode);
     var panel = $("statsProjectFiles");
@@ -594,9 +638,9 @@
 
   async function importProjectFile(name) {
     var res = await api("/api/project-import?project=" + encodeURIComponent(projectId()) + "&name=" + encodeURIComponent(name));
-    if (!res.ok) { showError(_("That project file is not available.")); return; }
+    if (!res.ok) { csvError(_("That project file is not available.")); return; }
     loadCsvText(res.body.text, res.body.name);
-    setSaveStatus(fmt(_("Imported %s"), [res.body.name]));
+    setSaveStatus(fmt(_("Previewing %s — choose columns to import."), [res.body.name]));
   }
 
   function currentConfig() {
@@ -1067,6 +1111,13 @@
 
   async function init() {
     adoptCanonicalHeaderSlot();
+    $("statsOpenImport").addEventListener("click", function () {
+      openImportDialog();
+      if (_lastImport && $("statsColPick").hidden) loadCsvText(_lastImport.text, _lastImport.name);
+    });
+    $("statsImportClose").addEventListener("click", closeImportDialog);
+    $("statsImportDialog").addEventListener("close", function () { if (importReturnFocus && importReturnFocus.isConnected) importReturnFocus.focus(); });
+
     setGroups([[], []]);
     renderTests(null);
     document.addEventListener("stats:data-change", invalidateAnalysis);
@@ -1102,7 +1153,7 @@
       setGroups($("statsScale").value === "categorical" ? SAMPLE_COUNTS : SAMPLE);
     });
     $("statsColPickImport").addEventListener("click", importColPick);
-    $("statsColPickCancel").addEventListener("click", function () { hideColPick(); hidePreview(); });
+    $("statsColPickCancel").addEventListener("click", closeImportDialog);
     // Operator 2026-10-24: a hard separator choice re-parses the last
     // import in place, so a wrong guess is one click to fix.
     var sepSel = $("statsSep");
@@ -1120,14 +1171,7 @@
       if (this.files && this.files[0]) loadCsv(this.files[0]);
       this.value = "";
     });
-    var dropZone = $("statsDataDrop");
-    // The whole zone stays a click target; interactive children keep their own
-    // behaviour (the choose button, the group boxes), so forward only the rest.
-    dropZone.addEventListener("click", function (event) {
-      if (projectId()) return;  // project mode has no manual picker
-      if (event.target.closest("button, input, textarea, select, label, a")) return;
-      $("statsCsv").click();
-    });
+    var dropZone = $("statsImportDrop");
     ["dragenter", "dragover"].forEach(function (eventName) {
       dropZone.addEventListener(eventName, function (event) {
         event.preventDefault();
@@ -1139,7 +1183,7 @@
         dropZone.classList.remove("stats-dropzone--active");
       }
     });
-    dropZone.addEventListener("drop", function (event) {
+    function receiveDroppedFile(event) {
       event.preventDefault();
       dropZone.classList.remove("stats-dropzone--active");
       if (projectId()) { showError(_("In project mode data comes from the project. Use Quick analysis to drop a file.")); return; }
@@ -1150,7 +1194,10 @@
         return;
       }
       loadCsv(file);
-    });
+    }
+    dropZone.addEventListener("drop", receiveDroppedFile);
+    $("statsDataDrop").addEventListener("dragover", function (event) { event.preventDefault(); });
+    $("statsDataDrop").addEventListener("drop", receiveDroppedFile);
     $("statsCorrect").addEventListener("click", correct);
     $("statsPosthoc").addEventListener("click", posthoc);
     // Copy sits inside the Raw-result summary row (operator 2026-10-19: next

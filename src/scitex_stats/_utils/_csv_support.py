@@ -3,18 +3,18 @@
 
 from __future__ import annotations
 
+import csv
+from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
 
-# Separator estimation (operator 2026-10-24): file loads accept comma,
-# tab, semicolon, pipe, and whitespace-separated tables. Candidates are
-# tried in tab > comma > semicolon > pipe order (tab-first: columnar data
-# is the most structured); a bare space only wins on a strict consistency
-# check so prose cells containing spaces never flip a comma file. The
-# one-character contract mirrors the web UI selector (Auto + hard spec).
+# File candidates are scored by consistent multi-column record widths, not
+# punctuation in one header. Structured tabs retain their existing priority;
+# equally plausible punctuation requires an explicit override. Whitespace is
+# considered only when classic separators do not describe the records.
 _SEP_PRIORITY = ("\t", ",", ";", "|")
 
 
@@ -24,24 +24,47 @@ def detect_separator(text: str, *, filename: str = "") -> str:
     Returns one of ``"\\t"``, ``","``, ``";"``, ``"|"``, or ``" "``
     (whitespace: split on runs of whitespace). Falls back to ``","``.
     A ``.tsv`` filename keeps its tab contract without looking.
+    Equally plausible punctuation separators raise ``ValueError``; provide
+    an explicit ``sep`` to the file loader in that case.
     """
     if str(filename).lower().endswith(".tsv"):
         return "\t"
-    lines = [ln for ln in str(text).splitlines() if ln.strip()]
+    lines = [line for line in str(text).lstrip("\ufeff").splitlines() if line.strip()]
     if not lines:
         return ","
-    counts = {sep: 0 for sep in _SEP_PRIORITY}
-    quoted = False
-    for char in lines[0]:
-        if char == '"':
-            quoted = not quoted
-        elif not quoted and char in counts:
-            counts[char] += 1
-    for sep in _SEP_PRIORITY:
-        if counts[sep] > 0:
-            return sep
-    fields = [ln.split() for ln in lines]
-    if len(fields[0]) > 1 and all(len(f) == len(fields[0]) for f in fields):
+    candidates = []
+    for separator in _SEP_PRIORITY:
+        try:
+            widths = [
+                len(row) for row in csv.reader(lines, delimiter=separator, strict=True)
+            ]
+        except csv.Error:
+            continue
+        counts = Counter(width for width in widths if width > 1)
+        if counts:
+            candidates.append((max(counts.values()), separator))
+    if candidates:
+        score = max(count for count, _ in candidates)
+        winners = [separator for count, separator in candidates if count == score]
+        # Preserve the documented structured-tab preference over punctuation.
+        if "\t" in winners:
+            return "\t"
+        if len(winners) > 1:
+            raise ValueError("Ambiguous separator; specify sep explicitly.")
+        return winners[0]
+    # The space dialect collapses runs but respects quoted labels. Keep the
+    # existing strict consistency requirement for whitespace-only detection.
+    try:
+        fields = list(
+            csv.reader(lines, delimiter=" ", skipinitialspace=True, strict=True)
+        )
+    except csv.Error:
+        return ","
+    if (
+        fields
+        and len(fields[0]) > 1
+        and all(len(row) == len(fields[0]) for row in fields)
+    ):
         return " "
     return ","
 
@@ -64,8 +87,8 @@ def _load_file(path: str, sep: str | None = None) -> pd.DataFrame:
             with open(path, encoding="utf-8-sig") as f:
                 sep = detect_separator(f.read(65536))
     if sep == " ":
-        return pd.read_csv(path, sep=r"\s+", engine="python")
-    return pd.read_csv(path, sep=sep)
+        return pd.read_csv(path, sep=r"\s+", encoding="utf-8-sig")
+    return pd.read_csv(path, sep=sep, encoding="utf-8-sig")
 
 
 def resolve_columns(
