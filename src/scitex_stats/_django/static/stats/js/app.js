@@ -115,7 +115,7 @@
   // parsing happens client-side before any server round-trip.
   // SPEC: candidates are tab, comma, semicolon, pipe (whitespace, including
   // newlines, always splits). The winner is the candidate with the highest
-  // count in the sampled text; ties resolve tab > comma > semicolon > pipe
+  // count outside quoted cells; ties resolve tab > comma > semicolon > pipe
   // (tab-first: columnar pastes are the most structured); with no candidate
   // present the text is whitespace-separated. A single dominant separator
   // wins, so pathological mixed-separator input keeps only its winner's
@@ -124,8 +124,10 @@
     var text = String(sampled || "");
     var counts = { "\t": 0, ",": 0, ";": 0, "|": 0 };
     var i;
+    var quoted = false;
     for (i = 0; i < text.length; i++) {
-      if (Object.prototype.hasOwnProperty.call(counts, text[i])) counts[text[i]]++;
+      if (text[i] === '"') quoted = !quoted;
+      else if (!quoted && Object.prototype.hasOwnProperty.call(counts, text[i])) counts[text[i]]++;
     }
     var order = ["\t", ",", ";", "|"];
     var best = "";
@@ -153,7 +155,20 @@
 
   function splitLine(line, sep) {
     if (sep === " ") return String(line).trim().split(/\s+/);
-    return String(line).split(sep);
+    var cells = [];
+    var cell = "";
+    var quoted = false;
+    var text = String(line);
+    for (var i = 0; i < text.length; i++) {
+      var char = text[i];
+      if (char === '"') {
+        if (quoted && text[i + 1] === '"') { cell += '"'; i++; }
+        else quoted = !quoted;
+      } else if (char === sep && !quoted) { cells.push(cell); cell = ""; }
+      else cell += char;
+    }
+    cells.push(cell);
+    return cells;
   }
 
   var _SEP_ESCAPED = { "\t": "\\t", ",": ",", ";": ";", "|": "\\|" };
@@ -238,7 +253,7 @@
   function isHeaderRow(cells) {
     return cells.every(function (cell) {
       cell = String(cell).trim();
-      return /^[A-Za-z_][A-Za-z0-9_ .-]*$/.test(cell) && !/^(nan|inf|infinity|null|none|na)$/i.test(cell);
+      return /^[A-Za-z_][A-Za-z0-9_ .,-]*$/.test(cell) && !/^(nan|inf|infinity|null|none|na)$/i.test(cell);
     });
   }
 

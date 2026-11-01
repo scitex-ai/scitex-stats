@@ -9,7 +9,6 @@ from typing import Any, Dict, List, Tuple, Union
 import numpy as np
 import pandas as pd
 
-
 # Separator estimation (operator 2026-10-24): file loads accept comma,
 # tab, semicolon, pipe, and whitespace-separated tables. Candidates are
 # tried in tab > comma > semicolon > pipe order (tab-first: columnar data
@@ -31,7 +30,13 @@ def detect_separator(text: str, *, filename: str = "") -> str:
     lines = [ln for ln in str(text).splitlines() if ln.strip()]
     if not lines:
         return ","
-    counts = {sep: lines[0].count(sep) for sep in _SEP_PRIORITY}
+    counts = {sep: 0 for sep in _SEP_PRIORITY}
+    quoted = False
+    for char in lines[0]:
+        if char == '"':
+            quoted = not quoted
+        elif not quoted and char in counts:
+            counts[char] += 1
     for sep in _SEP_PRIORITY:
         if counts[sep] > 0:
             return sep
