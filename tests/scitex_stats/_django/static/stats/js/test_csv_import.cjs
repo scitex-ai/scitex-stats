@@ -637,3 +637,21 @@ test("selector shows which separator is being respected", async (t) => {
   setSep(ui, ",");
   assert.match(ui.document.getElementById("statsSepState").textContent, /Comma.*your choice/);
 });
+
+
+test("quoted separators and numeric cells retain their CSV values", async (t) => {
+  const ui = await page(t);
+  await ui.file('"signal, mean";reference\n"1";"10"\n"2";"20"\n');
+  assert.deepEqual(ui.groups(), ["1 2", "10 20"]);
+  assert.equal(ui.document.getElementById("statsSepState").textContent, "Using: Semicolon (estimated)");
+});
+
+for (const invalid of ['1"2"3', '"1"2', '"12']) {
+  test(`malformed quote cell remains invalid: ${invalid}`, async (t) => {
+    const ui = await page(t);
+    await ui.file(`signal,reference\n${invalid},10\n4,20\n`);
+    assert.equal(ui.groups()[0], "4", "quotes must not manufacture a numeric observation");
+    await calculate(ui, "ttest_rel");
+    assertRefused(ui);
+  });
+}

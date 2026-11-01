@@ -21,3 +21,7 @@ Python file-backed column resolution uses the same quote-aware separator
 estimation before loading through pandas. The functional regression in
 `tests/scitex_stats/_utils/test__csv_support.py` reads the example above and
 checks both named numeric columns.
+
+Malformed quoting does not turn text into a numeric observation. For example,
+`1"2"3` stays invalid rather than becoming `123`. Imports with invalid or
+missing observations cannot run analyses that require matching source rows.

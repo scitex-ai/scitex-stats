@@ -91,3 +91,7 @@ scitex-stats <command> [options]
 
 - [14_env-vars.md](14_env-vars.md) — SCITEX_* env vars read by scitex-stats at runtime
 - [20_env-vars.md](20_env-vars.md) — SCITEX_STATS_* env vars read by the standalone Django app (`scitex-stats gui`)
+
+## App data input
+
+- [23_csv-import.md](23_csv-import.md) — Auto/manual separators, column import, quoted cells, and source-row integrity.

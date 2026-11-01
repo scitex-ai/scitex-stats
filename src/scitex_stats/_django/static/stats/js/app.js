@@ -158,15 +158,24 @@
     var cells = [];
     var cell = "";
     var quoted = false;
+    var closed = false;
     var text = String(line);
     for (var i = 0; i < text.length; i++) {
       var char = text[i];
       if (char === '"') {
         if (quoted && text[i + 1] === '"') { cell += '"'; i++; }
-        else quoted = !quoted;
-      } else if (char === sep && !quoted) { cells.push(cell); cell = ""; }
-      else cell += char;
+        else if (quoted) { quoted = false; closed = true; }
+        else if (!closed && cell === "") quoted = true;
+        else cell += char; // A quote inside an unquoted cell is literal.
+      } else if (char === sep && !quoted) {
+        cells.push(cell); cell = ""; closed = false;
+      } else {
+        // Junk after a closing quote must not turn e.g. "1"2 into 12.
+        if (closed && !/\s/.test(char)) { cell += '"'; closed = false; }
+        cell += char;
+      }
     }
+    if (quoted) cell = '"' + cell; // Preserve invalid unterminated input.
     cells.push(cell);
     return cells;
   }
