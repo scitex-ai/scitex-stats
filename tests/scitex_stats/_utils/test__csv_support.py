@@ -706,9 +706,14 @@ def test_ambiguous_separator_requires_explicit_choice(tmp_path):
     # Arrange
     path = tmp_path / "ambiguous.csv"
     path.write_text("a,b;c\n1,2;3\n4,5;6\n")
-    # Act / Assert
-    with pytest.raises(ValueError, match="Ambiguous separator"):
+    error = None
+    # Act
+    try:
         _load_file(str(path))
+    except ValueError as observed:
+        error = observed
+    # Assert
+    assert isinstance(error, ValueError) and "Ambiguous separator" in str(error)
 
 
 def test_explicit_separator_resolves_ambiguous_input(tmp_path):
