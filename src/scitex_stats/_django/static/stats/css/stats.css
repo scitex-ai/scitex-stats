@@ -761,3 +761,15 @@
 .stats-project__empty {
   margin: 0;
 }
+
+
+/* The import form is app content in a native dialog; the SDK owns chrome. */
+.stats-import-entry { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.stats-import-entry .stats-hint { margin: 0; }
+.stats-import-dialog { margin: auto; padding: 0; inline-size: min(780px, calc(100vw - 24px)); max-inline-size: calc(100vw - 24px); max-block-size: calc(100dvh - 24px); color: var(--text-primary); background: var(--workspace-bg-primary); border: 1px solid var(--workspace-border-default); border-radius: 8px; overflow: auto; }
+.stats-import-dialog::backdrop { background: color-mix(in srgb, var(--bg-page, var(--workspace-bg-primary)) 65%, transparent); }
+.stats-import-dialog__header { position: sticky; inset-block-start: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; background: var(--workspace-bg-secondary); border-block-end: 1px solid var(--workspace-border-default); }
+.stats-import-dialog__header h2 { margin: 0; font-size: 16px; }
+.stats-import-dialog__body { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+.stats-import-dialog .stats-project__list { max-block-size: 180px; overflow: auto; }
+.stats-import-dialog .stats-preview__table { max-block-size: 220px; overflow: auto; }

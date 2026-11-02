@@ -40,46 +40,17 @@ base page (site header + dock), standalone uses the SDK UI shell.
       <h2 class="stats-pane__title">{% translate "1. Data Input" %}</h2>
     </header>
     <h2 class="stats-visually-hidden">{% translate "1. Data Input" %}</h2>
-    <input type="file" id="statsCsv" accept=".csv,.tsv,.txt,text/csv" hidden>
     <div class="stats-pane__body stats-dropzone" id="statsDataDrop">
       {% comment %}
       PROJECT-DEFAULT MODE. The active project's authorized CSV/TSV files come
       from the provider-backed endpoint, server-rendered here; Quick analysis
       (below) is the explicit stateless alternative.
       {% endcomment %}
-      <section class="stats-project" id="statsProjectFiles" data-stats-project-panel{% if not stats_current_project_id %} hidden{% endif %}>
-        <h3 class="stats-project__title">{% translate "Project data" %}</h3>
-        <ul class="stats-project__list" data-stats-project="{{ stats_current_project_id }}">
-          {% for f in project_files %}
-          <li class="stats-project__file">
-            <button type="button" class="stats-btn stats-btn--ghost stats-project__import" data-file="{{ f.name }}">{{ f.name }}</button>
-            <span class="stats-project__meta">{{ f.size }} B</span>
-          </li>
-          {% empty %}
-          <li class="stats-project__empty stats-hint">{% translate "No CSV or TSV files in this project yet." %}</li>
-          {% endfor %}
-        </ul>
-      </section>
-      <section class="stats-manual" id="statsManualData" data-stats-manual>
-        <p class="stats-hint">{% translate "One group per box. Paste numbers separated by spaces, commas or new lines." %}</p>
-        <button type="button" class="stats-btn stats-dropzone__button" id="statsChooseFile">{% translate "Drop a CSV or TSV file here, or choose a file" %}</button>
-        <label class="stats-field stats-sep"><span>{% translate "Separator" %}</span>
-          <select class="stx-select" id="statsSep">
-            <option value="auto" selected>{% translate "Auto" %}</option>
-            <option value=",">{% translate "Comma" %}</option>
-            <option value="&#9;">{% translate "Tab" %}</option>
-            <option value=";">{% translate "Semicolon" %}</option>
-            <option value="|">{% translate "Pipe" %}</option>
-            <option value=" ">{% translate "Space" %}</option>
-          </select>
-        </label>
-        <p class="stats-hint" id="statsSepState">{% translate "Auto — the separator is estimated on import." %}</p>
-        <section class="stats-source" aria-labelledby="statsSourceTitle" hidden>
-          <h3 class="stats-source__title" id="statsSourceTitle">{% translate "No dataset yet?" %}</h3>
-          <button type="button" class="stats-btn stats-btn--secondary stats-source__sample" id="statsSampleOld" tabindex="-1" aria-hidden="true" hidden>{% translate "Try with Sample Data" %}</button>
-          <p class="stats-hint" id="statsSampleHint">{% translate "Use the Try with Sample Data button at the right of the row below." %}</p>
-        </section>
-      </section>
+      <div class="stats-import-entry">
+        <button type="button" class="stats-btn stats-btn--secondary" id="statsOpenImport" aria-haspopup="dialog" aria-controls="statsImportDialog">{% translate "Import data…" %}</button>
+        <p class="stats-hint" id="statsImportSummary" aria-live="polite">{% translate "Choose a project file or CSV/TSV file to preview its columns." %}</p>
+      </div>
+      <p class="stats-hint">{% translate "One group per box. Paste numbers separated by spaces, commas or new lines." %}</p>
       <div class="stats-options">
         <label class="stats-field"><span>{% translate "Design" %}</span>
           <select class="stx-select" id="statsDesign">
@@ -96,20 +67,6 @@ base page (site header + dock), standalone uses the SDK UI shell.
         </label>
       </div>
       <div id="statsGroups" class="stats-groups"></div>
-      <section class="stats-preview" id="statsPreview" hidden>
-        <h3 class="stats-source__title" id="statsPreviewTitle">{% translate "Preview" %}</h3>
-        <p class="stats-hint stats-preview__meta" id="statsPreviewMeta"></p>
-        <div class="stats-preview__table" id="statsPreviewTable" role="region" aria-label="{% translate "Imported file preview" %}" tabindex="0"></div>
-      </section>
-      <section class="stats-colpick" id="statsColPick" hidden>
-        <h3 class="stats-source__title">{% translate "Choose columns to import" %}</h3>
-        <p class="stats-hint" id="statsColPickNote">{% translate "Not imported yet — the analysis still uses the boxes." %}</p>
-        <div class="stats-colpick__list" id="statsColPickList" role="group" aria-label="{% translate "CSV columns" %}"></div>
-        <div class="stats-row">
-          <button type="button" class="stats-btn stats-btn--secondary" id="statsColPickImport">{% translate "Import selected" %}</button>
-          <button type="button" class="stats-btn stats-btn--ghost" id="statsColPickCancel">{% translate "Cancel" %}</button>
-        </div>
-      </section>
       <div class="stats-row">
         <button type="button" class="stats-btn stats-btn--ghost" id="statsAddGroup">+ {% translate "Add group" %}</button>
         <button type="button" class="stats-btn stats-btn--danger" id="statsClear">{% translate "Clear" %}</button>
@@ -240,7 +197,61 @@ base page (site header + dock), standalone uses the SDK UI shell.
     </div>
   {% endscitex_pane %}
 {% endscitex_panes %}
+  <dialog id="statsImportDialog" class="stats-import-dialog" aria-labelledby="statsImportTitle" aria-describedby="statsImportHint">
+    <header class="stats-import-dialog__header">
+      <h2 id="statsImportTitle">{% translate "Import data" %}</h2>
+      <button type="button" class="stats-btn stats-btn--ghost" id="statsImportClose" aria-label="{% translate 'Close import dialog' %}">×</button>
+    </header>
+    <div class="stats-import-dialog__body" id="statsImportDrop">
+    <input type="file" id="statsCsv" accept=".csv,.tsv,.txt,text/csv" hidden>
+
+      <p class="stats-hint" id="statsImportHint">{% translate "Choose a file, review its separator and select the numeric columns to import." %}</p>
+      <p class="stats-error" id="statsImportError" role="alert" hidden></p>
+      <section class="stats-project" id="statsProjectFiles" data-stats-project-panel{% if not stats_current_project_id %} hidden{% endif %}>
+        <h3 class="stats-project__title">{% translate "Project data" %}</h3>
+        <ul class="stats-project__list" data-stats-project="{{ stats_current_project_id }}">
+          {% for f in project_files %}
+          <li class="stats-project__file">
+            <button type="button" class="stats-btn stats-btn--ghost stats-project__import" data-file="{{ f.name }}">{{ f.name }}</button>
+            <span class="stats-project__meta">{{ f.size }} B</span>
+          </li>
+          {% empty %}
+          <li class="stats-project__empty stats-hint">{% translate "No CSV or TSV files in this project yet." %}</li>
+          {% endfor %}
+        </ul>
+      </section>
+      <section class="stats-manual" id="statsManualData" data-stats-manual>
+        <button type="button" class="stats-btn stats-dropzone__button" id="statsChooseFile">{% translate "Drop a CSV or TSV file here, or choose a file" %}</button>
+      </section>
+        <label class="stats-field stats-sep"><span>{% translate "Separator" %}</span>
+          <select class="stx-select" id="statsSep">
+            <option value="auto" selected>{% translate "Auto" %}</option>
+            <option value=",">{% translate "Comma" %}</option>
+            <option value="&#9;">{% translate "Tab" %}</option>
+            <option value=";">{% translate "Semicolon" %}</option>
+            <option value="|">{% translate "Pipe" %}</option>
+            <option value=" ">{% translate "Space" %}</option>
+          </select>
+        </label>
+        <p class="stats-hint" id="statsSepState">{% translate "Auto — the separator is estimated on import." %}</p>
+      <section class="stats-preview" id="statsPreview" hidden>
+        <h3 class="stats-source__title" id="statsPreviewTitle">{% translate "Preview" %}</h3>
+        <p class="stats-hint stats-preview__meta" id="statsPreviewMeta"></p>
+        <div class="stats-preview__table" id="statsPreviewTable" role="region" aria-label="{% translate "Imported file preview" %}" tabindex="0"></div>
+      </section>
+      <section class="stats-colpick" id="statsColPick" hidden>
+        <h3 class="stats-source__title">{% translate "Choose columns to import" %}</h3>
+        <p class="stats-hint" id="statsColPickNote">{% translate "Not imported yet — the analysis still uses the boxes." %}</p>
+        <div class="stats-colpick__list" id="statsColPickList" role="group" aria-label="{% translate "CSV columns" %}"></div>
+        <div class="stats-row">
+          <button type="button" class="stats-btn stats-btn--secondary" id="statsColPickImport">{% translate "Import selected" %}</button>
+          <button type="button" class="stats-btn stats-btn--ghost" id="statsColPickCancel">{% translate "Cancel" %}</button>
+        </div>
+      </section>
+    </div>
+  </dialog>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}

@@ -85,7 +85,9 @@ print(result["formatted"])
 
 </details>
 
-For CSV/TSV imports, see [input separators and quoted cells](docs/csv-input.md).
+CSV/TSV imports open a dialog to review the separator, preview and selected
+columns before applying them; manual group boxes stay inline. See
+[input separators and quoted cells](docs/csv-input.md).
 
 ## Installation
 

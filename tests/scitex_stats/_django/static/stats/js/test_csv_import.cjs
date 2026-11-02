@@ -655,3 +655,84 @@ for (const invalid of ['1"2"3', '"1"2', '"12']) {
     assertRefused(ui);
   });
 }
+
+
+test("CSV controls live in a closed dialog while group boxes stay inline", async (t) => {
+  const ui = await page(t);
+  const dialog = ui.document.getElementById("statsImportDialog");
+  assert.equal(dialog.open, false);
+  assert.equal(dialog.contains(ui.document.getElementById("statsSep")), true);
+  assert.equal(dialog.contains(ui.document.getElementById("statsColPick")), true);
+  assert.equal(dialog.contains(ui.document.getElementById("statsGroups")), false);
+  ui.document.getElementById("statsOpenImport").click();
+  assert.equal(dialog.open, true);
+});
+
+test("cancel preserves preview, selected columns and previous input", async (t) => {
+  const ui = await page(t);
+  await ui.file("x,y\n1,2\n3,4\n");
+  const before = ui.groups();
+  await ui.fileRaw("a,b,c\n5,6,7\n8,9,10\n");
+  ui.document.querySelectorAll("#statsColPickList input")[1].checked = false;
+  ui.document.getElementById("statsColPickCancel").click();
+  assert.equal(ui.document.getElementById("statsImportDialog").open, false);
+  assert.deepEqual(ui.groups(), before);
+  ui.document.getElementById("statsOpenImport").click();
+  assert.equal(ui.document.querySelectorAll("#statsColPickList input")[1].checked, false);
+  assert.equal(ui.document.getElementById("statsPreview").hidden, false);
+});
+
+test("record consistency beats misleading header punctuation", async (t) => {
+  const ui = await page(t);
+  await ui.file('label, description;value\ncontrol;1\ncase;2\n');
+  assert.match(ui.document.getElementById("statsSepState").textContent, /Semicolon/);
+  assert.deepEqual(ui.groups()[0], "1 2");
+});
+
+test("ambiguous input keeps existing boxes until a manual separator is chosen", async (t) => {
+  const ui = await page(t);
+  await ui.file("x,y\n8,9\n10,11\n");
+  const before = ui.groups();
+  await ui.fileRaw("a,b;c\n1,2;3\n4,5;6\n");
+  assert.match(ui.document.getElementById("statsSepState").textContent, /Ambiguous/);
+  assert.deepEqual(ui.groups(), before);
+  assert.equal(ui.document.getElementById("statsColPick").hidden, true);
+  ui.document.getElementById("statsSep").value = ";";
+  ui.document.getElementById("statsSep").dispatchEvent(new ui.dom.window.Event("change"));
+  ui.document.getElementById("statsColPickImport").click();
+  assert.deepEqual(ui.groups()[0], "3 6");
+  assert.match(ui.document.getElementById("statsSepState").textContent, /your choice/);
+});
+
+test("BOM and quoted whitespace fields retain the two-column layout", async (t) => {
+  const ui = await page(t);
+  await ui.file('\ufefflabel value\n"control one"   1\n"case two"   2\n');
+  assert.match(ui.document.getElementById("statsSepState").textContent, /Space/);
+  assert.deepEqual(ui.groups()[0], "1 2");
+  assert.equal(ui.document.querySelector("#statsPreviewTable tbody tr td").textContent, "control one");
+});
+
+test("a single record is reported as weak evidence rather than certain detection", async (t) => {
+  const ui = await page(t);
+  await ui.fileRaw("1;2;3");
+  assert.match(ui.document.getElementById("statsSepState").textContent, /Only one record/);
+});
+
+
+test("one numeric column waits for explicit Import selected", async (t) => {
+  const ui = await page(t);
+  await ui.file("x,y\n8,9\n10,11\n");
+  const before = ui.groups();
+  await ui.fileRaw("value\n1\n2\n");
+  assert.deepEqual(ui.groups(), before);
+  assert.equal(ui.document.getElementById("statsColPick").hidden, false);
+  assert.match(ui.document.getElementById("statsSepState").textContent, /Single column/);
+  ui.document.getElementById("statsColPickImport").click();
+  assert.equal(ui.groups()[0], "1 2");
+});
+
+test("tab preference is disclosed when punctuation also fits", async (t) => {
+  const ui = await page(t);
+  await ui.fileRaw("a,b\tc\n1,2\t3\n4,5\t6\n");
+  assert.match(ui.document.getElementById("statsSepState").textContent, /Tab.*Other separators also fit/);
+});

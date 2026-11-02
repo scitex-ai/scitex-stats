@@ -50,5 +50,9 @@
         "name"
       ]
     }
+  },
+  "scope_capabilities": {
+    "user": false,
+    "project": true
   }
 }

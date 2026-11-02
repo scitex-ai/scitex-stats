@@ -94,4 +94,4 @@ scitex-stats <command> [options]
 
 ## App data input
 
-- [23_csv-import.md](23_csv-import.md) — Auto/manual separators, column import, quoted cells, and source-row integrity.
+- [23_csv-import.md](23_csv-import.md) — Import dialog, auto/manual separators, column preview, quoted cells, and source-row integrity.
