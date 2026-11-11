@@ -46,36 +46,53 @@ def failed_dependency_install(tmp_path):
 
 
 def test_dependency_failure_stops_the_release_job(failed_dependency_install):
+    # Arrange
     result, _ = failed_dependency_install
-    assert result.returncode == 37
+    # Act
+    code = result.returncode
+    # Assert
+    assert code == 37
 
 
 def test_dependency_failure_does_not_start_tests(failed_dependency_install):
+    # Arrange
     result, _ = failed_dependency_install
-    assert "TESTS_REACHED" not in result.stdout
+    # Act
+    output = result.stdout
+    # Assert
+    assert "TESTS_REACHED" not in output
 
 
 def test_dependency_failure_never_retries_a_reduced_profile(failed_dependency_install):
+    # Arrange
     _, calls = failed_dependency_install
-    assert len(calls) == 1
+    # Act
+    attempts = len(calls)
+    # Assert
+    assert attempts == 1
 
 
 def test_publisher_checkout_uses_the_artifact_source_commit():
+    # Arrange
     jobs = yaml.safe_load(WORKFLOW.read_text())["jobs"]
+    # Act
     checkout = next(
         s
         for s in jobs["publish"]["steps"]
         if s.get("uses", "").startswith("actions/checkout@")
     )
+    # Assert
     assert checkout["with"]["ref"] == "${{ needs.build.outputs.commit }}"
 
 
 def test_build_exports_a_commit_recorded_from_its_checkout(tmp_path):
+    # Arrange
     jobs = yaml.safe_load(WORKFLOW.read_text())["jobs"]
     build = jobs["build"]
     step = next(s for s in build["steps"] if s.get("id") == "source")
     output = tmp_path / "github-output"
-    result = subprocess.run(
+    # Act
+    subprocess.run(
         ["bash", "-e", "-c", step["run"]],
         cwd=ROOT,
         env=dict(os.environ, GITHUB_OUTPUT=str(output)),
@@ -83,10 +100,10 @@ def test_build_exports_a_commit_recorded_from_its_checkout(tmp_path):
         text=True,
         check=True,
     )
-    del result
     head = subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
     ).strip()
+    # Assert
     assert (build["outputs"]["commit"], output.read_text()) == (
         "${{ steps.source.outputs.commit }}",
         f"commit={head}\n",
