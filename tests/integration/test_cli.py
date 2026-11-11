@@ -120,31 +120,37 @@ class TestTopLevelCLI:
 class TestListPythonAPIs:
     """Test list-python-apis subcommand."""
 
+    # NOTE (2026-11-11): 180s budget, not 60s. `list-python-apis` shells out
+    # to a FRESH interpreter that cold-imports the full battery (~2000
+    # modules: scipy/pandas/matplotlib/seaborn/pingouin via PEP-562 lazy
+    # attrs fired by inspect.getmembers) while ~31 xdist siblings hammer the
+    # same disk: local 1.3s vs 27-60s+ on loaded runners. Same test flaked
+    # on py3.13 (#182, 2026-11-01) and py3.11+3.12 (#185, 2026-11-11) with
+    # zero product-code delta between green and red runs. TimeoutExpired
+    # still FAILS (a genuine hang >180s stays red) — this widens the
+    # cold-start allowance, it does not swallow failures.
+    _LIST_APIS_TIMEOUT = 180
+
     def test_list_python_apis_returncode(self):
         # Arrange
         # Act
-        # 60s like the --json variants: same cold-start flake guard (develop
-        # CI 2026-10-20: plain variant timed out at 30s on an overloaded
-        # runner while the suite itself ran 693s).
-        result = _run_cli("list-python-apis", timeout=60)
+        result = _run_cli("list-python-apis", timeout=self._LIST_APIS_TIMEOUT)
         # Assert
         assert result.returncode == 0
 
     def test_list_python_apis_scitex_stats_stdout_api(self):
         # Arrange
         # Act
-        result = _run_cli("list-python-apis", timeout=60)
+        result = _run_cli("list-python-apis", timeout=self._LIST_APIS_TIMEOUT)
         # Assert
         assert "scitex_stats" in result.stdout or "API" in result.stdout
 
     def test_list_python_apis_json_returncode(self):
         # Arrange
         # Act
-        # 60s, not 30s: same cold-start flake guard as mcp-doctor above —
-        # `list-python-apis --json` imports the full battery + serializes,
-        # and exceeded 30s on py3.11/org-06 under xdist load (develop CI
-        # 2026-10-20) while 3.12/3.13 passed; local single-run is ~2s.
-        result = _run_cli("list-python-apis", "--json", timeout=60)
+        result = _run_cli(
+            "list-python-apis", "--json", timeout=self._LIST_APIS_TIMEOUT
+        )
         # Assert
         assert result.returncode == 0
         import json
@@ -153,7 +159,9 @@ class TestListPythonAPIs:
 
     def test_list_python_apis_json_case_2(self):
         # Arrange
-        result = _run_cli("list-python-apis", "--json", timeout=60)
+        result = _run_cli(
+            "list-python-apis", "--json", timeout=self._LIST_APIS_TIMEOUT
+        )
         import json
 
         # Act
