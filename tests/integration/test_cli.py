@@ -178,6 +178,14 @@ class TestListPythonAPIs:
 class TestMCPCLI:
     """Test MCP-related CLI subcommands."""
 
+    # NOTE (2026-11-11): cold-start allowance for fresh-interpreter spawns.
+    # `mcp list-tools` cold-imports the full battery (scipy + FastMCP +
+    # handlers) while ~31 xdist siblings hammer the same disk: local ~2s vs
+    # 30s+ loaded (develop CI 2026-11-11: TimeoutExpired at 30s on py3.12
+    # while the same assertion passed on sibling workers). TimeoutExpired
+    # still FAILS — this widens the allowance, it does not swallow failures.
+    _MCP_SPAWN_TIMEOUT = 180
+
     def test_mcp_help_returncode(self):
         # Click groups invoked without a subcommand exit 2 by default
         # and print the help text to stderr; if the group is configured
@@ -223,7 +231,7 @@ class TestMCPCLI:
         # depends on FastMCP 2.x's `_tool_manager`.
         # Arrange
         # Act
-        result = _run_cli("mcp", "list-tools")
+        result = _run_cli("mcp", "list-tools", timeout=self._MCP_SPAWN_TIMEOUT)
         # Assert
         assert result.returncode == 0
 
@@ -233,14 +241,16 @@ class TestMCPCLI:
         # depends on FastMCP 2.x's `_tool_manager`.
         # Arrange
         # Act
-        result = _run_cli("mcp", "list-tools")
+        result = _run_cli("mcp", "list-tools", timeout=self._MCP_SPAWN_TIMEOUT)
         # Assert
         assert "recommend_tests" in result.stdout or "run_test" in result.stdout
 
     def test_mcp_list_tools_json_returncode(self):
         # Arrange
         # Act
-        result = _run_cli("mcp", "list-tools", "--json")
+        result = _run_cli(
+            "mcp", "list-tools", "--json", timeout=self._MCP_SPAWN_TIMEOUT
+        )
         # Assert
         assert result.returncode == 0
         import json
@@ -249,7 +259,9 @@ class TestMCPCLI:
 
     def test_mcp_list_tools_json_str(self):
         # Arrange
-        result = _run_cli("mcp", "list-tools", "--json")
+        result = _run_cli(
+            "mcp", "list-tools", "--json", timeout=self._MCP_SPAWN_TIMEOUT
+        )
         import json
 
         # Act
