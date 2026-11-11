@@ -57,6 +57,10 @@ scitex-stats list-python-apis -v --max-depth 3
 
 `list-python-apis` is a convenience alias for
 `python-api list scitex_stats`.
+Discovery descends into the requested module's namespace. Explicitly exported
+third-party callables and modules remain listed, but dependency module internals
+are not recursively enumerated. Request a dependency directly to inspect its API.
+
 
 ## skills — bundled agent-facing skills
 
