@@ -14,6 +14,7 @@ import os
 
 import numpy as np
 
+from ._backend import get_torch_backend as _get_torch_backend
 from ._backend import is_torch_tensor as _is_torch_tensor
 
 __FILE__ = __file__
@@ -94,7 +95,7 @@ def skewness(x, axis=-1, dim=None, keepdims=False):
     dim = _normalize_axis(axis, dim)
     zscores = zscore(x, dim=dim, keepdims=True)
     if _is_torch_tensor(x):
-        import torch
+        torch = _get_torch_backend()
 
         return torch.mean(torch.pow(zscores, 3.0), dim=dim, keepdim=keepdims)
     return np.mean(np.power(zscores, 3.0), axis=dim, keepdims=keepdims)
@@ -105,7 +106,7 @@ def kurtosis(x, axis=-1, dim=None, keepdims=False):
     dim = _normalize_axis(axis, dim)
     zscores = zscore(x, dim=dim, keepdims=True)
     if _is_torch_tensor(x):
-        import torch
+        torch = _get_torch_backend()
 
         return torch.mean(torch.pow(zscores, 4.0), dim=dim, keepdim=keepdims) - 3.0
     return np.mean(np.power(zscores, 4.0), axis=dim, keepdims=keepdims) - 3.0
@@ -135,7 +136,7 @@ def quantile(x, q, axis=-1, dim=None, keepdims=False):
     dim = _normalize_axis(axis, dim)
 
     if _is_torch_tensor(x):
-        import torch
+        torch = _get_torch_backend()
 
         if isinstance(dim, (tuple, list)):
             result = x

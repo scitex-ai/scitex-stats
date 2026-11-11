@@ -15,6 +15,7 @@ from typing import List, Optional, Tuple, Union
 
 import numpy as np
 
+from ._backend import get_torch_backend as _get_torch_backend
 from ._backend import is_torch_tensor as _is_torch_tensor
 
 __FILE__ = __file__
@@ -64,7 +65,7 @@ def verify_non_leakage(
     described_first, _ = describe(x_first, dim=dim)
 
     if _is_torch_tensor(x):
-        import torch
+        torch = _get_torch_backend()
 
         assert described_first.shape == described[:1].shape, (
             f"Shape mismatch: {described_first.shape} != {described[:1].shape}"
@@ -196,7 +197,7 @@ def describe(
     calculated = [ff(x, dim=dim, keepdims=keepdims) for ff in _funcs]
 
     if _is_torch_tensor(x):
-        import torch
+        torch = _get_torch_backend()
 
         return torch.stack(calculated, dim=-1), func_names
     else:

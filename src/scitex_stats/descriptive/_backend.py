@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from types import ModuleType
 
 
 def is_torch_tensor(value: object) -> bool:
@@ -13,3 +14,14 @@ def is_torch_tensor(value: object) -> bool:
     """
     backend = sys.modules.get("torch")
     return backend is not None and isinstance(value, getattr(backend, "Tensor", ()))
+
+
+def get_torch_backend() -> ModuleType:
+    """Load the optional engine only when a tensor operation requests it."""
+    try:
+        import torch
+    except ImportError as exc:
+        raise ImportError(
+            "Torch tensor operations require torch; install scitex-stats[all]."
+        ) from exc
+    return torch

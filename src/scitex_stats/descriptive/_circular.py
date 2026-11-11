@@ -16,6 +16,7 @@ from typing import List, Optional, Tuple, Union
 
 import numpy as np
 
+from ._backend import get_torch_backend as _get_torch_backend
 from ._backend import is_torch_tensor as _is_torch_tensor
 
 __FILE__ = __file__
@@ -38,7 +39,7 @@ def _ensure_more_than_2d(data) -> None:
 def _check_angle_units(angles) -> None:
     """Check if angles might be in degrees and warn user."""
     if _is_torch_tensor(angles):
-        import torch
+        torch = _get_torch_backend()
 
         max_val = torch.max(torch.abs(angles)).item()
     else:
@@ -113,7 +114,7 @@ def describe_circular(
     calculated = [ff(angles, values, dim=dim, keepdims=keepdims) for ff in _funcs]
 
     if _is_torch_tensor(angles):
-        import torch
+        torch = _get_torch_backend()
 
         return torch.stack(calculated, dim=-1), func_names
     else:
@@ -156,7 +157,7 @@ def circular_mean(
     dim = _normalize_axis(axis, dim)
 
     if _is_torch_tensor(angles):
-        import torch
+        torch = _get_torch_backend()
 
         assert angles.shape == values.shape, (
             f"angles shape {angles.shape} must match values shape {values.shape}"
@@ -230,7 +231,7 @@ def circular_concentration(
     dim = _normalize_axis(axis, dim)
 
     if _is_torch_tensor(angles):
-        import torch
+        torch = _get_torch_backend()
 
         assert angles.shape == values.shape
         cos_angles = torch.cos(angles)
@@ -290,7 +291,7 @@ def circular_skewness(
     dim = _normalize_axis(axis, dim)
 
     if _is_torch_tensor(angles):
-        import torch
+        torch = _get_torch_backend()
 
         assert angles.shape == values.shape
         cos_angles = torch.cos(angles)
@@ -362,7 +363,7 @@ def circular_kurtosis(
     dim = _normalize_axis(axis, dim)
 
     if _is_torch_tensor(angles):
-        import torch
+        torch = _get_torch_backend()
 
         assert angles.shape == values.shape
         cos_angles = torch.cos(angles)

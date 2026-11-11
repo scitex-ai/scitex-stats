@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from scitex_stats.descriptive._backend import is_torch_tensor
+from scitex_stats.descriptive._backend import get_torch_backend, is_torch_tensor
 
 
 def test_numpy_array_is_not_a_tensor():
@@ -46,3 +46,13 @@ def test_python_list_is_not_a_tensor():
     detected = is_torch_tensor(value)
     # Assert
     assert detected is False
+
+
+def test_requested_backend_is_the_actual_loaded_torch_module():
+    # Arrange
+    import torch
+
+    # Act
+    backend = get_torch_backend()
+    # Assert
+    assert backend is torch

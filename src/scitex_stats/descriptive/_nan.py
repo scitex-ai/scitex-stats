@@ -14,6 +14,7 @@ import os
 
 import numpy as np
 
+from ._backend import get_torch_backend as _get_torch_backend
 from ._backend import is_torch_tensor as _is_torch_tensor
 
 __FILE__ = __file__
@@ -34,7 +35,7 @@ def nanmax(x, axis=-1, dim=None, batch_size=None, keepdims=False):
     """Compute maximum ignoring NaN values."""
     dim = _normalize_axis(axis, dim)
     if _is_torch_tensor(x):
-        import torch
+        torch = _get_torch_backend()
 
         min_value = torch.finfo(x.dtype).min
         if isinstance(dim, (tuple, list)):
@@ -51,7 +52,7 @@ def nanmin(x, axis=-1, dim=None, batch_size=None, keepdims=False):
     """Compute minimum ignoring NaN values."""
     dim = _normalize_axis(axis, dim)
     if _is_torch_tensor(x):
-        import torch
+        torch = _get_torch_backend()
 
         max_value = torch.finfo(x.dtype).max
         if isinstance(dim, (tuple, list)):
@@ -68,7 +69,7 @@ def nansum(x, axis=-1, dim=None, batch_size=None, keepdims=False):
     """Compute sum ignoring NaN values."""
     dim = _normalize_axis(axis, dim)
     if _is_torch_tensor(x):
-        import torch
+        torch = _get_torch_backend()
 
         return torch.nansum(x, dim=dim, keepdim=keepdims)
     return np.nansum(np.asarray(x), axis=dim, keepdims=keepdims)
@@ -78,7 +79,7 @@ def nanmean(x, axis=-1, dim=None, batch_size=None, keepdims=False):
     """Compute mean ignoring NaN values."""
     dim = _normalize_axis(axis, dim)
     if _is_torch_tensor(x):
-        import torch
+        torch = _get_torch_backend()
 
         return torch.nanmean(x, dim=dim, keepdim=keepdims)
     return np.nanmean(np.asarray(x), axis=dim, keepdims=keepdims)
@@ -88,7 +89,7 @@ def nanvar(x, axis=-1, dim=None, batch_size=None, keepdims=False):
     """Compute variance ignoring NaN values."""
     dim = _normalize_axis(axis, dim)
     if _is_torch_tensor(x):
-        import torch
+        torch = _get_torch_backend()
 
         tensor_mean = torch.nanmean(x, dim=dim, keepdim=True)
         return (x - tensor_mean).square().nanmean(dim=dim, keepdim=keepdims)
@@ -101,7 +102,7 @@ def nanstd(x, axis=-1, dim=None, batch_size=None, keepdims=False):
     """Compute standard deviation ignoring NaN values."""
     dim = _normalize_axis(axis, dim)
     if _is_torch_tensor(x):
-        import torch
+        torch = _get_torch_backend()
 
         return torch.sqrt(nanvar(x, dim=dim, keepdims=keepdims))
     return np.nanstd(np.asarray(x), axis=dim, keepdims=keepdims)
@@ -111,7 +112,7 @@ def nanzscore(x, axis=-1, dim=None, batch_size=None, keepdims=True):
     """Compute z-scores ignoring NaN values."""
     dim = _normalize_axis(axis, dim)
     if _is_torch_tensor(x):
-        import torch
+        torch = _get_torch_backend()
 
         _mean = torch.nanmean(x, dim=dim, keepdim=True)
         _std = nanstd(x, dim=dim, keepdims=True)
@@ -132,7 +133,7 @@ def nankurtosis(x, axis=-1, dim=None, batch_size=None, keepdims=False):
     dim = _normalize_axis(axis, dim)
     zscores = nanzscore(x, dim=dim, keepdims=True)
     if _is_torch_tensor(x):
-        import torch
+        torch = _get_torch_backend()
 
         return torch.nanmean(torch.pow(zscores, 4.0), dim=dim, keepdim=keepdims) - 3.0
     return np.nanmean(np.power(zscores, 4.0), axis=dim, keepdims=keepdims) - 3.0
@@ -143,7 +144,7 @@ def nanskewness(x, axis=-1, dim=None, batch_size=None, keepdims=False):
     dim = _normalize_axis(axis, dim)
     zscores = nanzscore(x, dim=dim, keepdims=True)
     if _is_torch_tensor(x):
-        import torch
+        torch = _get_torch_backend()
 
         return torch.nanmean(torch.pow(zscores, 3.0), dim=dim, keepdim=keepdims)
     return np.nanmean(np.power(zscores, 3.0), axis=dim, keepdims=keepdims)
@@ -187,7 +188,7 @@ def nanargmin(x, axis=-1, dim=None, batch_size=None, keepdims=False):
     """Compute argmin ignoring NaN values."""
     dim = _normalize_axis(axis, dim)
     if _is_torch_tensor(x):
-        import torch
+        torch = _get_torch_backend()
 
         max_value = torch.finfo(x.dtype).max
         if isinstance(dim, (tuple, list)):
@@ -208,7 +209,7 @@ def nanargmax(x, axis=-1, dim=None, batch_size=None, keepdims=False):
     """Compute argmax ignoring NaN values."""
     dim = _normalize_axis(axis, dim)
     if _is_torch_tensor(x):
-        import torch
+        torch = _get_torch_backend()
 
         min_value = torch.finfo(x.dtype).min
         if isinstance(dim, (tuple, list)):
@@ -238,7 +239,7 @@ def nanquantile(x, q, axis=-1, dim=None, batch_size=None, keepdims=False):
     dim = _normalize_axis(axis, dim)
 
     if _is_torch_tensor(x):
-        import torch
+        torch = _get_torch_backend()
 
         if isinstance(dim, (tuple, list)):
             original_shape = x.shape
@@ -286,7 +287,7 @@ def nancount(x, axis=-1, dim=None, batch_size=None, keepdims=False):
     """Count non-NaN values along specified dimensions."""
     dim = _normalize_axis(axis, dim)
     if _is_torch_tensor(x):
-        import torch
+        torch = _get_torch_backend()
 
         mask = ~torch.isnan(x)
         if isinstance(dim, (tuple, list)):
