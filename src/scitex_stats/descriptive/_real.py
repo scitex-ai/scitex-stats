@@ -4,7 +4,8 @@
 """
 Descriptive statistics for real-valued data.
 
-Uses torch when available (preserves tensor type), falls back to numpy.
+Uses Torch for tensor inputs and NumPy otherwise. API discovery and NumPy
+operations do not initialize the optional tensor engine.
 """
 
 from __future__ import annotations
@@ -12,19 +13,11 @@ from __future__ import annotations
 import os
 
 import numpy as np
-from scitex_dev import try_import_optional
+
+from ._backend import is_torch_tensor as _is_torch_tensor
 
 __FILE__ = __file__
 __DIR__ = os.path.dirname(__FILE__)
-
-# Optional torch support (numpy fallback when absent)
-torch = try_import_optional("torch", extra="all", pkg="scitex-stats")
-HAS_TORCH = torch is not None
-
-
-def _is_torch_tensor(x):
-    """Check if x is a torch tensor."""
-    return HAS_TORCH and isinstance(x, torch.Tensor)
 
 
 def _normalize_axis(axis, dim):
@@ -101,6 +94,8 @@ def skewness(x, axis=-1, dim=None, keepdims=False):
     dim = _normalize_axis(axis, dim)
     zscores = zscore(x, dim=dim, keepdims=True)
     if _is_torch_tensor(x):
+        import torch
+
         return torch.mean(torch.pow(zscores, 3.0), dim=dim, keepdim=keepdims)
     return np.mean(np.power(zscores, 3.0), axis=dim, keepdims=keepdims)
 
@@ -110,6 +105,8 @@ def kurtosis(x, axis=-1, dim=None, keepdims=False):
     dim = _normalize_axis(axis, dim)
     zscores = zscore(x, dim=dim, keepdims=True)
     if _is_torch_tensor(x):
+        import torch
+
         return torch.mean(torch.pow(zscores, 4.0), dim=dim, keepdim=keepdims) - 3.0
     return np.mean(np.power(zscores, 4.0), axis=dim, keepdims=keepdims) - 3.0
 
@@ -138,6 +135,8 @@ def quantile(x, q, axis=-1, dim=None, keepdims=False):
     dim = _normalize_axis(axis, dim)
 
     if _is_torch_tensor(x):
+        import torch
+
         if isinstance(dim, (tuple, list)):
             result = x
             for d in sorted(dim, reverse=True):
