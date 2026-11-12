@@ -59,18 +59,14 @@ def test_theilsen(
     -------
     dict or pd.DataFrame
         Dictionary or DataFrame containing:
-        - slope : float
-            Theil-Sen slope estimate (median of pairwise slopes)
-        - intercept : float
-            Intercept of the regression line
-        - low_slope : float
-            Lower bound of slope confidence interval
-        - high_slope : float
-            Upper bound of slope confidence interval
-        - var_x : str
-            Name of independent variable
-        - var_y : str
-            Name of dependent variable
+
+        - ``slope`` (float): Theil-Sen slope estimate
+          (median of pairwise slopes).
+        - ``intercept`` (float): Intercept of the regression line.
+        - ``low_slope`` (float): Lower bound of the slope confidence interval.
+        - ``high_slope`` (float): Upper bound of the slope confidence interval.
+        - ``var_x`` (str): Name of the independent variable.
+        - ``var_y`` (str): Name of the dependent variable.
 
     Notes
     -----
@@ -81,11 +77,13 @@ def test_theilsen(
     - Has ~64% efficiency compared to OLS for normal data
     - Computational complexity: O(n²)
 
+    See [#theilsen-theil1950]_, [#theilsen-sen1968]_.
+
     References
     ----------
-    .. [1] Theil, H. (1950). "A rank-invariant method of linear and polynomial
+    .. [#theilsen-theil1950] Theil, H. (1950). "A rank-invariant method of linear and polynomial
            regression analysis". Indagationes Mathematicae, 12, 85-91.
-    .. [2] Sen, P.K. (1968). "Estimates of the regression coefficient based on
+    .. [#theilsen-sen1968] Sen, P.K. (1968). "Estimates of the regression coefficient based on
            Kendall's tau". Journal of the American Statistical Association, 63,
            1379-1389.
 
