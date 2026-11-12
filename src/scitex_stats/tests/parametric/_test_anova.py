@@ -117,15 +117,21 @@ def test_anova(  # noqa: C901
     **Alternative Hypothesis (H1)**: At least one group mean differs
 
     **Assumptions**:
+
     1. **Independence**: Observations within and between groups are independent
+
     2. **Normality**: Data in each group are normally distributed
+
        - Can be checked with test_shapiro()
        - Robust to moderate violations with large samples (n > 30 per group)
+
     3. **Homogeneity of variance**: Groups have equal population variances
+
        - Can be checked with Levene's test
        - If violated, consider Welch's ANOVA or non-parametric alternative
 
     **When assumptions are violated**:
+
     - Non-normality: Use test_kruskal() (Kruskal-Wallis test)
     - Unequal variances: Use Welch's ANOVA (not yet implemented)
     - Outliers present: Use test_kruskal() or remove outliers
@@ -136,6 +142,7 @@ def test_anova(  # noqa: C901
         F = \\frac{MS_{between}}{MS_{within}} = \\frac{SS_{between}/(k-1)}{SS_{within}/(N-k)}
 
     Where:
+
     - k: Number of groups
     - N: Total sample size
     - SS: Sum of squares
@@ -147,6 +154,7 @@ def test_anova(  # noqa: C901
         \\eta^2 = \\frac{SS_{between}}{SS_{total}}
 
     Interpretation:
+
     - η² < 0.01:  negligible
     - η² < 0.06:  small
     - η² < 0.14:  medium
@@ -154,17 +162,20 @@ def test_anova(  # noqa: C901
 
     **Post-hoc tests**:
     If significant, perform pairwise comparisons with correction:
+
     - test_ttest_ind() for all pairs (if assumptions met)
     - test_brunner_munzel() for all pairs (robust alternative)
     - correct_bonferroni() or correct_fdr() for multiple comparisons
 
+    See [#anova-fisher1925]_, [#anova-cohen1988]_, [#anova-maxwell2004]_.
+
     References
     ----------
-    .. [1] Fisher, R. A. (1925). Statistical Methods for Research Workers.
+    .. [#anova-fisher1925] Fisher, R. A. (1925). Statistical Methods for Research Workers.
            Oliver and Boyd.
-    .. [2] Cohen, J. (1988). Statistical Power Analysis for the Behavioral
+    .. [#anova-cohen1988] Cohen, J. (1988). Statistical Power Analysis for the Behavioral
            Sciences (2nd ed.). Routledge.
-    .. [3] Maxwell, S. E., & Delaney, H. D. (2004). Designing Experiments
+    .. [#anova-maxwell2004] Maxwell, S. E., & Delaney, H. D. (2004). Designing Experiments
            and Analyzing Data: A Model Comparison Perspective (2nd ed.).
            Psychology Press.
 

@@ -87,6 +87,7 @@ def test_mannwhitneyu(  # noqa: C901
     -------
     results : dict or DataFrame
         Test results including:
+
         - test_method: 'Mann-Whitney U test'
         - statistic: U-statistic value
         - pvalue: p-value
@@ -101,6 +102,8 @@ def test_mannwhitneyu(  # noqa: C901
 
     Notes
     -----
+    See [#mannwhitneyu-ref1]_, [#mannwhitneyu-ref2]_.
+
     The Mann-Whitney U test (also known as Wilcoxon rank-sum test) is a
     non-parametric test for comparing two independent samples.
 
@@ -113,6 +116,7 @@ def test_mannwhitneyu(  # noqa: C901
         U = n_1 n_2 + \frac{n_1(n_1+1)}{2} - R_1
 
     Where:
+
     - n_1, n_2: Sample sizes
     - R_1: Sum of ranks for sample 1
 
@@ -127,18 +131,21 @@ def test_mannwhitneyu(  # noqa: C901
         r = \frac{2(\bar{R}_1 - \bar{R}_2)}{n_1 + n_2}
 
     Interpretation:
-    - |r| < 0.1:  negligible
-    - |r| < 0.3:  small
-    - |r| < 0.5:  medium
-    - |r| ≥ 0.5:  large
+
+    - :math:`|r|` < 0.1:  negligible
+    - :math:`|r|` < 0.3:  small
+    - :math:`|r|` < 0.5:  medium
+    - :math:`|r|` ≥ 0.5:  large
 
     **Advantages**:
+
     - No normality assumption required
     - Robust to outliers
     - Works with ordinal data
     - More powerful than t-test for non-normal data
 
     **When to use**:
+
     - Comparing two independent groups
     - Data violate normality
     - Presence of outliers
@@ -146,6 +153,7 @@ def test_mannwhitneyu(  # noqa: C901
     - Small sample sizes
 
     **Comparison with other tests**:
+
     - vs t-test: More robust, less powerful when assumptions met
     - vs Brunner-Munzel: MWU assumes identical shape, BM does not
     - vs KS test: MWU tests location, KS tests entire distribution
@@ -157,10 +165,10 @@ def test_mannwhitneyu(  # noqa: C901
 
     References
     ----------
-    .. [1] Mann, H. B., & Whitney, D. R. (1947). "On a test of whether one
+    .. [#mannwhitneyu-ref1] Mann, H. B., & Whitney, D. R. (1947). "On a test of whether one
            of two random variables is stochastically larger than the other".
            Annals of Mathematical Statistics, 18(1), 50-60.
-    .. [2] Kerby, D. S. (2014). "The simple difference formula: An approach
+    .. [#mannwhitneyu-ref2] Kerby, D. S. (2014). "The simple difference formula: An approach
            to teaching nonparametric correlation". Comprehensive Psychology, 3, 11.
 
     Examples

@@ -7,6 +7,14 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Restore the original API-listing and MCP subprocess test budgets (60 and
+  30 seconds respectively). Preserve all test cases and assertions.
+
+- Repair statistical-test reference rendering across twelve functions: separate
+  nested lists, format the contingency-table example and absolute-value math,
+  and use referenced, uniquely named footnotes. Numerical implementations and
+  public signatures are unchanged.
+
 ## [1.0.0] — 2026-10-24
 
 First stable release: the beta UI batch toward SciTeX Cloud, hardened
