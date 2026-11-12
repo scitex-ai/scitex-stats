@@ -44,7 +44,7 @@ scitex-stats mcp start -t sse         # SSE for HTTP clients
 scitex-stats mcp start --dry-run      # preview launch plan
 ```
 
-Requires the `[mcp]` extra. `start` is mutating (long-running server) — use
+MCP support is included in the base install. `start` is mutating (long-running server) — use
 `-y/--yes` to skip the confirmation prompt in scripts.
 
 ## python-api / list-python-apis — package introspection
