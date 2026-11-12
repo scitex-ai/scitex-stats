@@ -8,7 +8,7 @@ version = "1.0.0"
 description = "Publication-ready statistical testing framework with 25 tests, effect sizes, power analysis, and MCP server"
 readme = "README.md"
 license = "AGPL-3.0-only"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [
     { name = "Yusuke Watanabe", email = "noreply@scitex.ai" },
 ]
@@ -30,7 +30,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -48,7 +47,7 @@ dependencies = [
     # CLI framework (scitex-stats <cmd>)
     "click>=8.0",
     # SciTeX ecosystem: linter plugin Rule class, skills installer, audit
-    "scitex-dev>=0.11.7",
+    "scitex-dev>=0.62.29",
     "scitex-config>=0.3.0",
     # SciTeX logger — _logging.py prefers it over stdlib logging
     "scitex-logging>=0.1",

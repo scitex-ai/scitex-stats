@@ -40,7 +40,7 @@ import scitex_stats as sst   # standalone form (same module)
 ## Optional extras
 
 ```bash
-pip install 'scitex-stats[server]'  # Statistics GUI app (django + scitex-app + scitex-ui)
+pip install 'scitex-stats[server]'  # Statistics GUI app (Django + scitex-sdk[gui])
 pip install 'scitex-stats[dev]'     # test/lint tooling
 ```
 
@@ -49,12 +49,25 @@ pip install 'scitex-stats[dev]'     # test/lint tooling
 ```bash
 scitex-stats --version
 scitex-stats tests list --no-json | head
-scitex-stats mcp doctor            # only if [mcp] extra is installed
+scitex-stats mcp doctor            # MCP support is included in the base install
 ```
+
+## Agent skills
+
+Install this package's skills into an agent-readable directory:
+
+```bash
+scitex-stats skills install --directory /path/to/agent/skills
+```
+
+The default destination remains ~/.scitex/dev/skills, unless overridden by
+SCITEX_STATS_SKILLS_DIR. Installation uses scitex-dev's managed projection
+and refuses unowned or modified destination files. Back up and move an
+unmanaged legacy export before installing into a fresh destination.
 
 ## Python / dependency requirements
 
-- Python ≥ 3.10
+- Python ≥ 3.11
 - `numpy`, `scipy`, `pandas`, `statsmodels` (installed automatically)
 
 See [SKILL.md](SKILL.md) for the package overview and entry points.
