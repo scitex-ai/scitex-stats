@@ -111,7 +111,9 @@ def test_ttest_1samp(
 
     References
     ----------
-    .. [1] Student (1908). "The Probable Error of a Mean". Biometrika, 6(1), 1-25.
+    Further reading: [#statstestttest1sampref1]_.
+
+    .. [#statstestttest1sampref1] Student (1908). "The Probable Error of a Mean". Biometrika, 6(1), 1-25.
 
     Examples
     --------

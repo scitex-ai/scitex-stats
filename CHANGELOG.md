@@ -7,6 +7,13 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Correct Kruskal-Wallis examples for result keys, explicit plot axes and
+  tabular output; link all three reference footnotes. Numerical behavior
+  and public signatures are unchanged.
+- Give the remaining seven statistical-test reference lists unique linked
+  footnotes. Remove broad docutils suppression and fail documentation builds
+  on warnings. No statistical implementations or signatures are changed.
+
 - Restore the original API-listing and MCP subprocess test budgets (60 and
   30 seconds respectively). Preserve all test cases and assertions.
 

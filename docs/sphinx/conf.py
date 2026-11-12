@@ -55,18 +55,6 @@ autodoc_mock_imports = [
 
 autosummary_generate = True
 
-# Pre-existing docstring backlog: ~65 ``Duplicate explicit target name``
-# warnings (the ``.. [1] Author …`` reference style used in every
-# ``_test_*.py`` collides across modules when autosummary stitches them
-# into one namespace) plus 2 ``Block quote ends without a blank line``
-# warnings. None of these are introduced by the
-# demos→examples / umbrella-strip work, but the PR docs build uses
-# ``-W`` so they go red as errors. ``suppress_warnings = ["docutils"]``
-# acknowledges the backlog at the config level (the warnings still
-# print in the build log) without weakening ``-W`` for newly-introduced
-# issues. Renaming every ``[1]`` / ``[2]`` to a unique key (e.g.
-# ``[Student1908]``) is tracked separately.
-suppress_warnings = ["docutils"]
 
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True

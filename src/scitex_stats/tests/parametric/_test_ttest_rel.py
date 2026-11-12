@@ -124,7 +124,9 @@ def test_ttest_rel(
 
     References
     ----------
-    .. [1] Student (1908). "The Probable Error of a Mean". Biometrika, 6(1), 1-25.
+    Further reading: [#statstestttestrelref1]_.
+
+    .. [#statstestttestrelref1] Student (1908). "The Probable Error of a Mean". Biometrika, 6(1), 1-25.
 
     Examples
     --------
