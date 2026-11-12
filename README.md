@@ -19,9 +19,7 @@
   <a href="https://scitex-stats.readthedocs.io/en/latest/"><img src="https://img.shields.io/readthedocs/scitex-stats?label=docs" alt="docs"></a>
 </p>
 <p align="center">
-  <a href="https://github.com/scitex-ai/scitex-stats/actions/workflows/pytest-matrix-on-ubuntu-py3-11-3-12-3-13.yml"><img src="https://img.shields.io/github/actions/workflow/status/scitex-ai/scitex-stats/pytest-matrix-on-ubuntu-py3-11-3-12-3-13.yml?branch=develop&label=tests" alt="tests"></a>
-  <a href="https://github.com/scitex-ai/scitex-stats/actions/workflows/import-smoke-on-ubuntu-py3-12.yml"><img src="https://img.shields.io/github/actions/workflow/status/scitex-ai/scitex-stats/import-smoke-on-ubuntu-py3-12.yml?branch=develop&label=install-check" alt="install-check"></a>
-  <a href="https://github.com/scitex-ai/scitex-stats/actions/workflows/newb-docs-quality-on-ubuntu-latest.yml"><img src="https://img.shields.io/github/actions/workflow/status/scitex-ai/scitex-stats/newb-docs-quality-on-ubuntu-latest.yml?branch=develop&label=quality" alt="quality"></a>
+  <a href="https://github.com/scitex-ai/scitex-stats/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/scitex-ai/scitex-stats/ci.yml?branch=develop&label=CI" alt="CI"></a>
   <a href="https://codecov.io/gh/scitex-ai/scitex-stats"><img src="https://img.shields.io/codecov/c/github/scitex-ai/scitex-stats/develop?label=cov" alt="cov"></a>
 </p>
 <!-- scitex-badges:end -->
@@ -103,7 +101,7 @@ uv pip install "scitex-stats[all]"
 | Extra | Pulls in |
 |---|---|
 | `all` | everything below (recommended) |
-| `server` | django + scitex-app + scitex-ui (Statistics GUI app) |
+| `server` | Django + scitex-sdk[gui] (Statistics GUI app) |
 | `report` | weasyprint (PDF report output; HTML and Markdown need nothing extra) |
 | `figrecipe` | figrecipe (publication figures + auto CSV export) |
 | `bundle` | scitex-io (Stats ↔ SciTeX bundle I/O) |
