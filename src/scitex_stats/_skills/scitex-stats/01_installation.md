@@ -67,7 +67,7 @@ unmanaged legacy export before installing into a fresh destination.
 
 ## Python / dependency requirements
 
-- Python ≥ 3.11
+- Python ≥ 3.10
 - `numpy`, `scipy`, `pandas`, `statsmodels` (installed automatically)
 
 See [SKILL.md](SKILL.md) for the package overview and entry points.

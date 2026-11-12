@@ -10,7 +10,7 @@ versions follow [Semantic Versioning](https://semver.org/).
 - Delegate skills installation to scitex-dev's managed projection, refusing
   unowned or modified destinations instead of deleting caller files. Add the
   vendor-neutral --directory option while retaining --dest compatibility.
-  Require scitex-dev 0.62.29 and its Python 3.11 minimum.
+  Require scitex-dev 0.62.29 for managed export support.
 
 - Correct Kruskal-Wallis examples for result keys, explicit plot axes and
   tabular output; link all three reference footnotes. Numerical behavior
