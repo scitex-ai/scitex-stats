@@ -85,6 +85,7 @@ def main(ctx, as_json):
     Configuration:
       Commands use explicit arguments and built-in defaults.
       Package-wide YAML defaults are not currently loaded.
+      config.yaml and SCITEX_STATS_CONFIG do not supply command defaults.
       See each command's --help for its options.
 
     \b
