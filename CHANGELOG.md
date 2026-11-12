@@ -7,9 +7,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-- Repair ANOVA, Brunner-Munzel and Theil-Sen docstring rendering: separate
-  nested lists, mark absolute values as math, and use referenced, uniquely named
-  footnotes. Numerical implementations and public signatures are unchanged.
+- Repair statistical-test reference rendering across twelve functions: separate
+  nested lists, format the contingency-table example and absolute-value math,
+  and use referenced, uniquely named footnotes. Numerical implementations and
+  public signatures are unchanged.
 
 ## [1.0.0] — 2026-10-24
 
