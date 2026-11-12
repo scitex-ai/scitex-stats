@@ -7,6 +7,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Correct CLI help and skills to describe actual configuration support,
+  portable skills destinations, GUI environment variables and port options.
+  Package-wide YAML defaults remain unimplemented.
+
 - Match statsmodels in the no-backend correction path: apply BY adjustment,
   preserve tiny Sidak values and handle rejection at the alpha boundary.
 
