@@ -62,62 +62,79 @@ async def correct_pvalues_handler(
     except ImportError:
         # Fallback implementation without statsmodels
         try:
-            n = len(pvalues)
-            pvals = np.array(pvalues)
-
-            # Unknown methods fall back to fdr_bh, mirroring the
-            # statsmodels path's method_map default
-            # (test_unknown_method_falls_back_to_fdr_bh). The requested
-            # name is still echoed in the output's "method" field.
-            correct_method = (
-                method
-                if method in ("bonferroni", "holm", "fdr_bh", "fdr_by", "sidak")
-                else "fdr_bh"
-            )
-
-            if correct_method == "bonferroni":
-                corrected = np.minimum(pvals * n, 1.0)
-            elif correct_method == "holm":
-                sorted_idx = np.argsort(pvals)
-                corrected = np.empty(n)
-                cummax = 0.0
-                for rank, idx in enumerate(sorted_idx, start=1):
-                    adj = min((n - rank + 1) * pvals[idx], 1.0)
-                    adj = max(adj, cummax)
-                    corrected[idx] = adj
-                    cummax = adj
-            elif correct_method == "fdr_bh":
-                sorted_idx = np.argsort(pvals)
-                corrected = np.empty(n)
-                prev = 1.0
-                for rank in range(n, 0, -1):
-                    idx = sorted_idx[rank - 1]
-                    bh = pvals[idx] * n / rank
-                    val = min(bh, prev, 1.0)
-                    corrected[idx] = val
-                    prev = val
-            elif correct_method == "sidak":
-                corrected = 1 - (1 - pvals) ** n
-            else:
-                corrected = pvals
-
-            return {
-                "success": True,
-                "method": method,
-                "alpha": alpha,
-                "original_pvalues": pvalues,
-                "corrected_pvalues": corrected.tolist(),
-                "reject_null": (corrected < alpha).tolist(),
-                "n_significant": int((corrected < alpha).sum()),
-                "n_tests": n,
-                "timestamp": datetime.now().isoformat(),
-            }
+            return _correct_without_statsmodels(pvalues, method, alpha)
 
         except Exception as e:
             return {"success": False, "error": str(e)}
 
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+def _correct_without_statsmodels(
+    pvalues: list[float], method: str, alpha: float
+) -> dict:
+    """Apply the retained NumPy-only corrections without importing a backend."""
+    n = len(pvalues)
+    pvals = np.array(pvalues)
+
+    # Unknown methods fall back to fdr_bh, mirroring the
+    # statsmodels path's method_map default
+    # (test_unknown_method_falls_back_to_fdr_bh). The requested
+    # name is still echoed in the output's "method" field.
+    correct_method = (
+        method
+        if method in ("bonferroni", "holm", "fdr_bh", "fdr_by", "sidak")
+        else "fdr_bh"
+    )
+
+    if correct_method == "bonferroni":
+        corrected = np.minimum(pvals * n, 1.0)
+    elif correct_method == "holm":
+        sorted_idx = np.argsort(pvals)
+        corrected = np.empty(n)
+        cummax = 0.0
+        for rank, idx in enumerate(sorted_idx, start=1):
+            adj = min((n - rank + 1) * pvals[idx], 1.0)
+            adj = max(adj, cummax)
+            corrected[idx] = adj
+            cummax = adj
+    elif correct_method in ("fdr_bh", "fdr_by"):
+        factor = (
+            np.sum(1.0 / np.arange(1, n + 1))
+            if correct_method == "fdr_by"
+            else 1.0
+        )
+        sorted_idx = np.argsort(pvals)
+        corrected = np.empty(n)
+        prev = 1.0
+        for rank in range(n, 0, -1):
+            idx = sorted_idx[rank - 1]
+            bh = pvals[idx] * n / rank * factor
+            val = min(bh, prev, 1.0)
+            corrected[idx] = val
+            prev = val
+    elif correct_method == "sidak":
+        corrected = np.ones(n, dtype=float)
+        not_one = pvals != 1.0
+        corrected[not_one] = -np.expm1(
+            n * np.log1p(-pvals[not_one])
+        )
+    else:
+        raise ValueError(f"Unsupported correction method: {correct_method}")
+
+    reject_null = corrected <= alpha
+    return {
+        "success": True,
+        "method": method,
+        "alpha": alpha,
+        "original_pvalues": pvalues,
+        "corrected_pvalues": corrected.tolist(),
+        "reject_null": reject_null.tolist(),
+        "n_significant": int(reject_null.sum()),
+        "n_tests": n,
+        "timestamp": datetime.now().isoformat(),
+    }
 
 
 # EOF

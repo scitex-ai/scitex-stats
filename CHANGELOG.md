@@ -7,6 +7,9 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Match statsmodels in the no-backend correction path: apply BY adjustment,
+  preserve tiny Sidak values and handle rejection at the alpha boundary.
+
 - Delegate skills installation to scitex-dev's managed projection, refusing
   unowned or modified destinations instead of deleting caller files. Add the
   vendor-neutral --directory option while retaining --dest compatibility.
