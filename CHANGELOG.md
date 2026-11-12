@@ -7,6 +7,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Delegate skills installation to scitex-dev's managed projection, refusing
+  unowned or modified destinations instead of deleting caller files. Add the
+  vendor-neutral --directory option while retaining --dest compatibility.
+  Require scitex-dev 0.62.29 and its Python 3.11 minimum.
+
 - Restore the original API-listing and MCP subprocess test budgets (60 and
   30 seconds respectively). Preserve all test cases and assertions.
 
