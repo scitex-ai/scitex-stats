@@ -352,7 +352,11 @@ import scitex_stats as ss
 from scitex_stats import effect_sizes, power, correct, posthoc
 
 ss.run_test("ttest_ind", data=g1, data2=g2)             # one dispatcher, 25 tests
-ss.recommend_tests(ss.StatContext(n_groups=2, ...))     # design-driven test selection
+ctx = ss.StatContext(
+    n_groups=2, sample_sizes=[30, 30],
+    outcome_type="continuous", design="between", paired=False,
+)
+ss.recommend_tests(ctx)                                # design-driven test selection
 effect_sizes.cohens_d(g1, g2)                           # standalone effect size
 power.sample_size_ttest(effect_size=0.5,
                         alpha=0.05, power=0.8)          # power / sample size
