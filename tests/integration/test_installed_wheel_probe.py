@@ -24,7 +24,10 @@ def test_probe_runs_public_numerical_and_file_interfaces(tmp_path):
 
 def test_probe_refuses_source_import(tmp_path):
     # Arrange
-    env = {"PATH": os.defpath, "HOME": str(tmp_path),
+    env = {
+        **{key: value for key, value in os.environ.items()
+           if key in {"COVERAGE_PROCESS_START", "COVERAGE_FILE"}},
+        "PATH": os.defpath, "HOME": str(tmp_path),
            "SCITEX_DIR": str(tmp_path / "state"),
            "PYTHONPATH": str(PROBE.parents[2] / "src") + os.pathsep
            + os.environ.get("PYTHONPATH", "")}

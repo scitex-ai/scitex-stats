@@ -85,6 +85,7 @@ def isolated_environment(root):
         "HOME": str(root),
         "SCITEX_DIR": str(root / "state"),
         "MPLBACKEND": "Agg",
+        "FASTMCP_CHECK_FOR_UPDATES": "off",
     }
 
 

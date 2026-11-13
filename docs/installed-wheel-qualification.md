@@ -12,7 +12,9 @@ and Benjamini–Hochberg correction. It also checks the actual CLI version,
 a real local MCP stdio catalog, valid and empty-input responses, p-value
 correction, and on-demand skill content against the installed owning file.
 Synthetic inputs and isolated subprocess state keep it independent of user
-projects and hosted services. MCP and CLI actions retain 30-second bounds.
+projects. The owned MCP subprocess disables FastMCP’s automatic PyPI update
+check; this is not a network-isolation guarantee. MCP and CLI actions retain
+30-second bounds.
 
 Source controls live in `tests/integration/test_installed_wheel_probe.py`.
 They exercise the public numerical/file checks and deliberately inject the
