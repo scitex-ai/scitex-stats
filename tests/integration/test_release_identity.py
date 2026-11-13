@@ -17,6 +17,14 @@ ROOT = Path(__file__).resolve().parents[2]
 ADAPTER = ROOT / ".github/ci/release-identity.py"
 
 
+def _capture_error(action):
+    try:
+        action()
+    except (ValueError, OSError) as error:
+        return error
+    return None
+
+
 @pytest.fixture
 def identity():
     return runpy.run_path(str(ADAPTER))
@@ -53,8 +61,13 @@ def test_identity_refuses_wrong_source_or_version(tmp_path, change, message):
     assert (result.returncode != 0, message in result.stderr) == (True, True)
 
 
-@pytest.mark.parametrize("case", ["empty", "one-archive", "extra-file", "foreign-name"])
-def test_identity_refuses_ambiguous_archive_set(identity, tmp_path, case):
+@pytest.mark.parametrize("members", [
+    (),
+    ("scitex_stats-{version}-py3-none-any.whl",),
+    ("scitex_stats-{version}-py3-none-any.whl", "scitex_stats-{version}.tar.gz", "foreign.txt"),
+    ("foreign-{version}-py3-none-any.whl", "scitex_stats-{version}.tar.gz"),
+])
+def test_identity_refuses_ambiguous_archive_set(identity, tmp_path, members):
     # Arrange
     import tomllib
 
@@ -62,16 +75,14 @@ def test_identity_refuses_ambiguous_archive_set(identity, tmp_path, case):
         ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
     ).strip()
     version = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["version"]
-    if case != "empty":
-        name = "foreign" if case == "foreign-name" else "scitex_stats"
-        (tmp_path / f"{name}-{version}-py3-none-any.whl").write_bytes(b"not a wheel")
-    if case in {"extra-file", "foreign-name"}:
-        (tmp_path / f"scitex_stats-{version}.tar.gz").write_bytes(b"not an sdist")
-    if case == "extra-file":
-        (tmp_path / "foreign.txt").write_bytes(b"unreviewed")
-    # Act / Assert
-    with pytest.raises(ValueError, match="Expected exactly"):
-        identity["artifact_proof"](tmp_path, commit, version, ROOT)
+    for member in members:
+        (tmp_path / member.format(version=version)).write_bytes(b"unreviewed input")
+    # Act
+    error = _capture_error(
+        lambda: identity["artifact_proof"](tmp_path, commit, version, ROOT)
+    )
+    # Assert
+    assert (isinstance(error, ValueError), "Expected exactly" in str(error)) == (True, True)
 
 
 def test_identity_refuses_replaced_core_bytes(identity, tmp_path):
@@ -79,9 +90,10 @@ def test_identity_refuses_replaced_core_bytes(identity, tmp_path):
     (tmp_path / "release_core").mkdir()
     for name in identity["CORE_FILES"]:
         (tmp_path / name).write_bytes(b"foreign core bytes")
-    # Act / Assert
-    with pytest.raises(ValueError, match="fixed commit"):
-        identity["verified_core"](tmp_path)
+    # Act
+    error = _capture_error(lambda: identity["verified_core"](tmp_path))
+    # Assert
+    assert (isinstance(error, ValueError), "fixed commit" in str(error)) == (True, True)
 
 
 def test_identity_refuses_extra_core_file(identity, tmp_path):
@@ -90,9 +102,10 @@ def test_identity_refuses_extra_core_file(identity, tmp_path):
     for name in identity["CORE_FILES"]:
         (tmp_path / name).write_bytes(b"foreign core bytes")
     (tmp_path / "extra.py").write_bytes(b"foreign")
-    # Act / Assert
-    with pytest.raises(ValueError, match="closure"):
-        identity["verified_core"](tmp_path)
+    # Act
+    error = _capture_error(lambda: identity["verified_core"](tmp_path))
+    # Assert
+    assert (isinstance(error, ValueError), "closure" in str(error)) == (True, True)
 
 
 def test_identity_refuses_symlink_inputs(identity, tmp_path):
@@ -101,6 +114,7 @@ def test_identity_refuses_symlink_inputs(identity, tmp_path):
     target.write_text(json.dumps({"foreign": True}))
     link = tmp_path / "proof.json"
     link.symlink_to(target)
-    # Act / Assert
-    with pytest.raises(OSError):
-        identity["regular"](link)
+    # Act
+    error = _capture_error(lambda: identity["regular"](link))
+    # Assert
+    assert isinstance(error, OSError)
