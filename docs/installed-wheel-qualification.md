@@ -41,6 +41,31 @@ They exercise the public numerical/file checks and deliberately inject the
 source tree to prove that it cannot pass as an installed-wheel result. Fresh-wheel
 execution remains a separate required qualification.
 
+The retained SIF can run the normal fresh-install sequence with the leaf-owned
+wrapper from the reviewed checkout:
+
+```bash
+bash .github/ci/exec-in-sif.sh probe-wheel-in-sif.sh 3.12 \
+    --dist /absolute/path/to/reviewed-dist \
+    --expected-version "$CANDIDATE_VERSION"
+```
+
+The dist directory must contain exactly one wheel whose package and version
+match the requested candidate. The wrapper creates a temporary environment,
+installs the wheel with its normal dependencies, runs `uv pip check`, and invokes
+the unchanged owning probe with `-I` outside the checkout. It uses private HOME,
+config and cache directories and excludes inherited credentials, Python paths
+and coverage hooks. Normal dependency installation needs package-index access;
+this is not a network sandbox. Creation, installation, dependency checking and
+probe execution have 30-, 180-, 30- and 60-second limits respectively. Failure
+stops the sequence; it never falls back to another installer. Temporary files
+are removed afterwards, so retain stdout/stderr in the calling job.
+
+The caller still owns image/runtime and source/archive identity verification.
+The wrapper neither registers a release profile nor changes the publisher.
+Runner refusal controls live in `tests/integration/test_wheel_probe_runner.py`;
+real fresh-wheel execution remains a separate required qualification.
+
 This probe is a release prerequisite building block. It does not register a
 release runtime, publish artifacts or modify the existing release workflow.
 It does not replace the full retained-SIF suite with its original extras,
