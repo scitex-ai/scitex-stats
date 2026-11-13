@@ -1,94 +1,57 @@
 #!/usr/bin/env bash
-# Outer apptainer-exec wrapper for scitex-tex's self-hosted (Spartan) CI.
-#
-# Runs ON THE RUNNER (outside the SIF). Resolves the apptainer shim + SIF image
-# from the repo Actions Variables, then `apptainer exec`s the SIF and hands off
-# to an INNER script (run inside the container). Keeps every workflow job's YAML
-# down to one line — `bash .github/ci/exec-in-sif.sh <inner-script> [args...]` —
-# and concentrates all the HPC/SIF plumbing (shim PATH, ~-expansion, scratch,
-# binds) in one version-controlled place.
-#
-# Required env (set by the workflow from repo Actions Variables):
-#   SCITEX_CI_APPTAINER   path to the apptainer shim   (e.g. ~/.env-3.11/bin/apptainer)
-#   SCITEX_CI_SIF         path to the CI SIF image     (e.g. ~/.scitex/dev/containers/ci-cpu.sif)
-#
-# Usage:
-#   bash .github/ci/exec-in-sif.sh run-in-sif.sh 3.12
-#
-# Fail-loud (operator directive): a missing shim or SIF is a HARD error — never
-# a silent fallback to a bare-runner install.
+# Execute a retained Stats CI script only with the configured runtime/image bytes.
+# The expected digests come from reviewed runtime admission, not a live-file
+# checksum used to bless an unknown runtime. These checks grant no admission.
 set -euo pipefail
 
 INNER="${1:?inner script name required (relative to .github/ci/)}"
-shift || true
-
-# The runner's job shell is --noprofile --norc (no Lmod), so the apptainer shim
-# must be put on PATH explicitly; it execs the real Apptainer binary directly.
-# ~-expand the Actions-Variable paths: a quoted "~/…" is NOT tilde-expanded by
-# the shell, so substitute a leading ~ with $HOME ourselves.
-SIF="${SCITEX_CI_SIF:?SCITEX_CI_SIF not set (repo Actions Variable)}"
-SIF="${SIF/#\~/$HOME}"
-export PATH="$HOME/.env-3.11/bin:$PATH"
-
-# Resolve apptainer PORTABLY. The configured shim is preferred, but the org
-# runner pool is heterogeneous: `~/.env-3.11/bin/apptainer` exists on some
-# nodes (scitex-04 cpu-04, repaired 2026-09-17) and is missing on others, so
-# the same tag passed on 3.11 + 3.12 and died on 3.13 with
-# `apptainer shim not executable at /home/ywatanabe/.env-3.11/bin/apptainer`
-# (run 35180305493) — a per-node lottery, not a defect in the change under
-# test. Fall back to PATH, then the usual absolute locations.
-# Fail-loud is preserved: no usable apptainer at all is still a HARD error.
-_resolve_apptainer() {
-    local candidate
-    for candidate in \
-        "${SCITEX_CI_APPTAINER:-}" \
-        "$(command -v apptainer 2>/dev/null || true)" \
-        "$(command -v singularity 2>/dev/null || true)" \
-        /usr/bin/apptainer /usr/local/bin/apptainer /usr/bin/singularity; do
-        [ -n "$candidate" ] || continue
-        candidate="${candidate/#\~/$HOME}"
-        if [ -x "$candidate" ]; then
-            printf '%s' "$candidate"
-            return 0
-        fi
-    done
-    return 1
-}
-
-APPTAINER="$(_resolve_apptainer)" || {
-    echo "::error::no usable apptainer found (checked SCITEX_CI_APPTAINER='${SCITEX_CI_APPTAINER:-}', PATH, /usr/bin, /usr/local/bin) — install it or fix the repo Actions Variable"
+shift
+[[ "$INNER" =~ ^[a-z][a-z0-9._-]*[.]sh$ ]] && [ -f ".github/ci/$INNER" ] || {
+    echo "::error::inner script must be an existing .github/ci/ shell basename" >&2
     exit 1
 }
-echo "exec-in-sif: apptainer=$APPTAINER"
+
+APPTAINER="${SCITEX_CI_APPTAINER:?SCITEX_CI_APPTAINER must name the reviewed runtime}"
+SIF="${SCITEX_CI_SIF:?SCITEX_CI_SIF must name the reviewed image}"
+RUNTIME_SHA256="${SCITEX_CI_APPTAINER_SHA256:?SCITEX_CI_APPTAINER_SHA256 is required}"
+SIF_SHA256="${SCITEX_CI_SIF_SHA256:?SCITEX_CI_SIF_SHA256 is required}"
+case "$APPTAINER" in "~/"*) APPTAINER="$HOME/${APPTAINER:2}" ;; esac
+case "$SIF" in "~/"*) SIF="$HOME/${SIF:2}" ;; esac
+[[ "$APPTAINER" == /* && "$SIF" == /* ]] || {
+    echo "::error::configured runtime and image paths must be absolute" >&2
+    exit 1
+}
+[[ "$RUNTIME_SHA256" =~ ^[a-f0-9]{64}$ && "$SIF_SHA256" =~ ^[a-f0-9]{64}$ ]] || {
+    echo "::error::runtime and image digests must be lowercase SHA-256 values" >&2
+    exit 1
+}
+[ -f "$APPTAINER" ] && [ -x "$APPTAINER" ] || {
+    echo "::error::configured runtime is not executable: $APPTAINER" >&2
+    exit 1
+}
 [ -f "$SIF" ] || {
-    echo "::error::CI SIF missing at $SIF — rebuild it: scitex-container apptainer build ci-cpu"
+    echo "::error::configured image is missing: $SIF" >&2
+    exit 1
+}
+ACTUAL_RUNTIME_SHA256="$(sha256sum "$APPTAINER" | awk '{print $1}')"
+[ "$ACTUAL_RUNTIME_SHA256" = "$RUNTIME_SHA256" ] || {
+    echo "::error::configured runtime digest mismatch" >&2
+    exit 1
+}
+ACTUAL_SIF_SHA256="$(sha256sum "$SIF" | awk '{print $1}')"
+[ "$ACTUAL_SIF_SHA256" = "$SIF_SHA256" ] || {
+    echo "::error::configured image digest mismatch" >&2
     exit 1
 }
 
-# apptainer scratch: NODE-LOCAL, derived from the runner's own scratch.
-# The previous hardcoded /data/gpfs/projects/punim0264/... exists only on the
-# Spartan nodes; on any other runner `mkdir -p` dies with "Permission denied"
-# and, because this line runs before anything else, it took the whole build
-# stage down AFTER every test leg had passed (measured 2026-09-17 on
-# actions-runner-org-04: three green test legs, build dead at
-# `mkdir: cannot create directory '/data': Permission denied`).
-# RUNNER_TEMP is the runner's own scratch dir (GitHub sets it on both hosted
-# and self-hosted runners); /tmp is the fallback for a bare shell run.
+# Retain the existing scratch and optional GPFS bindings. Private job state,
+# capacity and runner/image admission remain separate caller responsibilities.
 export APPTAINER_TMPDIR="${RUNNER_TEMP:-/tmp}/apptainer-tmp-$$"
-mkdir -p "$APPTAINER_TMPDIR" || {
-    echo "::error::cannot create apptainer scratch at $APPTAINER_TMPDIR"
-    exit 1
-}
-
-# --bind punim0264 ONLY where it exists: $HOME/.scitex is a symlink into
-# punim0264 on the Spartan nodes, so the bind is what makes it resolve inside
-# the container. On a node without that tree there is no symlink to resolve and
-# binding a non-existent path is at best noise, at worst a hard failure.
+mkdir -p "$APPTAINER_TMPDIR"
 BIND_ARGS=()
 if [ -d /data/gpfs/projects/punim0264 ]; then
     BIND_ARGS=(--bind /data/gpfs/projects/punim0264)
 fi
-
-# --pwd "$PWD" keeps the checkout as cwd.
+echo "exec-in-sif: configured runtime and image SHA-256 verified"
 exec "$APPTAINER" exec --pwd "$PWD" "${BIND_ARGS[@]+"${BIND_ARGS[@]}"}" \
     "$SIF" bash ".github/ci/$INNER" "$@"
