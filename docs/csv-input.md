@@ -48,4 +48,6 @@ Regression evidence:
   with `--chromium /path/to/chrome --output-dir /tmp/stats-dialog-proof` in an
   environment with the server stack and Playwright installed. It uses a
   disposable project root and synthetic files, and writes screenshots and
-  a JSON receipt; it does not access a live project or database.
+  a JSON receipt with installed versions, dialog corners and observed static
+  response hashes. Critical Stats CSS/JavaScript must match the installed files.
+  It does not access a live project or database.

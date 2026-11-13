@@ -7,6 +7,9 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Use square corners for import dialogs, figure frames and input fields.
+  Record served asset identity and geometry in the native browser check.
+
 - Report failed descriptive-statistics MCP results for empty or all-NaN
   inputs, retaining the existing error message and tool name.
 
