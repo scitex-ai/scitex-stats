@@ -396,8 +396,8 @@ results autonomously.
 
 | Tool | Description |
 |------|-------------|
-| `recommend_tests` | Recommend appropriate tests from a `StatContext` |
-| `run_test` | Execute the test battery by name (see `available_tests()`) |
+| `recommend_tests` | Recommend tests from group counts, sample sizes, and study design |
+| `run_test` | Run a named statistical test on arrays or selected file columns |
 | `format_results` | Format results in journal style (APA, Nature, LaTeX) |
 | `power_analysis` | Compute statistical power or required sample size |
 | `correct_pvalues` | Apply multiple-comparison correction |
