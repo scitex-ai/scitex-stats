@@ -7,6 +7,9 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Use package-owned subprocess coverage support instead of writing startup
+  hooks into shared Python environments during test collection.
+
 - Add a leaf-owned installed-wheel probe for numerical, file, CLI, MCP and
   skill behavior; source imports cannot qualify a wheel.
 

@@ -69,3 +69,15 @@ licensing under AGPL-3.0 (see [LICENSE](LICENSE)) and the dual-licensing
 provisions described therein.
 
 For release artifact acceptance, see the [installed-wheel qualification guide](docs/installed-wheel-qualification.md). Its leaf-owned checks complement the full retained-container suite.
+
+
+### Subprocess coverage
+
+Install the declared `dev` extra before running tests. The coverage configuration
+uses `patch = ["subprocess"]`; coverage.py supplies its startup hook as an
+installed package file. Tests do not write hooks into system or user
+site-packages. Keep `COVERAGE_PROCESS_CONFIG` when a test explicitly builds a
+child environment, so the child retains the active coverage settings.
+The integration regression checks actual child lines with both inherited and
+explicit environments. It also checks that loading the root fixture leaves
+site directories and caller-owned coverage variables unchanged.

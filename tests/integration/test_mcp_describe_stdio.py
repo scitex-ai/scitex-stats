@@ -19,11 +19,12 @@ def test_stdio_describe_rejects_empty_data_and_accepts_numbers(tmp_path):
             **{
                 key: value
                 for key, value in os.environ.items()
-                if key in {"COVERAGE_PROCESS_START", "COVERAGE_FILE"}
+                if key in {"COVERAGE_PROCESS_START", "COVERAGE_PROCESS_CONFIG", "COVERAGE_FILE"}
             },
             "PATH": os.environ.get("PATH", os.defpath),
             "HOME": str(tmp_path),
             "SCITEX_DIR": str(tmp_path / "state"),
+            "FASTMCP_CHECK_FOR_UPDATES": "off",
             "PYTHONPATH": str(Path(__file__).resolve().parents[2] / "src"),
         },
         cwd=tmp_path,
