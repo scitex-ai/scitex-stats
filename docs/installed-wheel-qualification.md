@@ -130,3 +130,33 @@ no runtime or publishing admission and do not replace private state/scratch,
 capacity and source/archive verification. The legacy release caller reads the
 digests from Actions variables; missing configuration remains a release hold.
 No release dispatch or variable change is performed by this source change.
+
+## Private state policy building block
+
+`.github/ci/release-context.sh` provides `stats_release_context SCRATCH VENV`
+and `stats_release_run COMMAND ...` for a dedicated strict Bash release driver.
+The caller supplies an existing absolute, writable, mode-0700 scratch root owned
+by its user, plus an absolute interpreter environment with `bin/python`. The
+helper refuses a symlinked or nonprivate root and exclusively creates
+`SCRATCH/stats-state`; it never reuses or overwrites an existing state directory.
+
+The child receives private HOME, SciTeX, XDG, installer and Matplotlib paths,
+headless Matplotlib, explicit tool paths and database-refusal settings through
+`env -i`. Ambient provider credentials, Python paths, coverage startup hooks and
+virtual environments are not inherited. The calling shell's HOME is unchanged.
+Explicit arguments to `stats_release_run` remain the trusted driver's
+responsibility. Normal installers can still use network access; this is not a
+network sandbox.
+
+The PostgreSQL host is a nonexistent Unix socket directory beneath private
+state, with `port=1` and `connect_timeout=1` settings. URL encoding preserves
+spaces and reserved characters in its path. Controls in
+`tests/integration/test_release_private_state.py` exercise the actual child
+environment, source-store DSN resolution and libpq connection refusal, plus
+unsafe-root and occupied-state refusals. They do not connect to a live store.
+
+This helper is not yet invoked by the retained release scripts. The outer
+caller must first deliver the pinned shared `scitex-dev` ownership/cancellation
+resource, create and bind owned scratch, and connect this policy to every
+release application. Full native-suite, cleanup/cancellation, source/runtime
+closure and publisher qualification remain required before release admission.
