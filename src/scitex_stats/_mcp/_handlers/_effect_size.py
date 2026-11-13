@@ -20,7 +20,16 @@ async def effect_size_handler(
     measure: str = "cohens_d",
     pooled: bool = True,
 ) -> dict:
-    """Calculate effect size between groups."""
+    """Calculate effect size using the selected measure's fixed definition.
+
+    Alternative pooling is not implemented. Refuse an explicit false option
+    before importing a backend or scheduling a calculation.
+    """
+    if pooled is not True:
+        return {
+            "success": False,
+            "error": "pooled=False is not supported; choose an explicit effect-size measure",
+        }
     try:
         from scitex_stats.effect_sizes import (
             cliffs_delta,

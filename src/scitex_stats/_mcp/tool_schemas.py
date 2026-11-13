@@ -363,7 +363,8 @@ def get_tool_schemas() -> list[types.Tool]:
                     },
                     "pooled": {
                         "type": "boolean",
-                        "description": "Use pooled standard deviation",
+                        "description": "Compatibility option; only true is supported. Select the effect-size measure explicitly.",
+                        "enum": [True],
                         "default": True,
                     },
                 },

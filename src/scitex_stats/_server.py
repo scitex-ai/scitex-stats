@@ -9,7 +9,7 @@ This is the main server entry point. Tools are defined here using FastMCP.
 from __future__ import annotations
 
 import json
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from fastmcp import FastMCP
 
@@ -285,9 +285,9 @@ async def effect_size(
     group1: List[float],
     group2: List[float],
     measure: str = "cohens_d",
-    pooled: bool = True,
+    pooled: Literal[True] = True,
 ) -> str:
-    """Calculate effect size between groups."""
+    """Calculate the selected effect-size measure; pooled=False is unsupported."""
     from scitex_stats._mcp.handlers import effect_size_handler
 
     result = await effect_size_handler(
