@@ -11,6 +11,7 @@ import sys
 import tempfile
 import zipfile
 from pathlib import Path
+from urllib.parse import quote
 
 
 def select_wheel(directory, expected_version):
@@ -57,6 +58,7 @@ def main():
         root = Path(directory)
         home = root / "home"
         home.mkdir()
+        refused = str(root / "refused-postgres")
         # No inherited Python paths, coverage hooks, credentials or user config.
         env = {
             "PATH": os.defpath,
@@ -67,6 +69,12 @@ def main():
             "UV_CACHE_DIR": str(root / "uv-cache"),
             "UV_NO_CONFIG": "1",
             "SCITEX_DIR": str(root / "state"),
+            "PGHOST": refused, "PGPORT": "1",
+            "PGUSER": "release-refused", "PGDATABASE": "release-refused",
+            "SCITEX_STORE_DSN": (
+                "postgresql://release-refused@/release-refused?host="
+                + quote(refused, safe="") + "&port=1&connect_timeout=1"
+            ),
             "MPLBACKEND": "Agg",
             "MPLCONFIGDIR": str(root / "matplotlib"),
             "FASTMCP_CHECK_FOR_UPDATES": "off",

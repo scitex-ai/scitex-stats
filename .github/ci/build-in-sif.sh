@@ -17,6 +17,8 @@
 # Fail-loud (operator directive): a missing interpreter or a failed build is a
 # HARD error, never a silent fallback.
 set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/release-context.sh"
+stats_release_require_owned_root
 
 V="${1:-3.12}"
 VENV="/opt/venv-$V"
@@ -35,9 +37,7 @@ export TMPDIR
 rm -rf "$TMPDIR"
 mkdir -p "$TMPDIR/site" "$TMPDIR/uv-cache"
 
-# The compute-node $HOME is RO inside the container — point every cache the
-# installer might touch at the writable scratch (else uv/pip die creating
-# ~/.cache).
+# Keep installer caches below the dispatcher-owned temporary root.
 export UV_CACHE_DIR="$TMPDIR/uv-cache"
 export XDG_CACHE_HOME="$TMPDIR"
 export PIP_CACHE_DIR="$TMPDIR/pip-cache"
@@ -49,16 +49,15 @@ unset VIRTUAL_ENV || true
 export PATH="$VENV/bin:$PATH"
 echo "build: py=$("$PY" -V) target=$TMPDIR/site"
 
-# Install the PEP 517 build frontend into the writable target (uv fast path,
-# pip safety net), then build with it. Clean dist/ first so only the freshly
+# Install the PEP 517 build frontend into the writable target with uv,
+# then build with its uv installer. A failed installation stops the job. Clean dist/ first so only the freshly
 # built artifacts are uploaded.
-uv pip install --python "$PY" --target="$TMPDIR/site" build ||
-    "$PY" -m pip install --target="$TMPDIR/site" build
+uv pip install --python "$PY" --target="$TMPDIR/site" build
 
 export PYTHONPATH="$TMPDIR/site${PYTHONPATH:+:$PYTHONPATH}"
 
 rm -rf dist
-"$PY" -m build --outdir dist
+"$PY" -m build --installer uv --outdir dist
 
 echo "=== built artifacts ==="
 ls -l dist

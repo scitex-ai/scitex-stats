@@ -16,6 +16,8 @@
 #
 # Fail-loud: a missing interpreter or a failed install is a hard error.
 set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/release-context.sh"
+stats_release_require_owned_root
 
 V="${1:?python version arg required (3.11/3.12/3.13)}"
 VENV="/opt/venv-$V"
@@ -34,10 +36,7 @@ export TMPDIR="/tmp/ci-scitex_stats-${GITHUB_RUN_ID:-0}-${GITHUB_RUN_ATTEMPT:-0}
 rm -rf "$TMPDIR"
 mkdir -p "$TMPDIR/site" "$TMPDIR/uv-cache"
 
-# The HPC compute-node $HOME is READ-ONLY inside the container, so uv/pip cannot
-# create their default caches under ~/.cache — point them at the writable
-# scratch instead (else `uv pip install` dies: "failed to create directory
-# ~/.cache/uv: File exists / read-only").
+# Keep installer caches below the dispatcher-owned temporary root.
 export UV_CACHE_DIR="$TMPDIR/uv-cache"
 export XDG_CACHE_HOME="$TMPDIR"
 export PIP_CACHE_DIR="$TMPDIR/pip-cache"

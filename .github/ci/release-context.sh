@@ -48,3 +48,19 @@ stats_release_run() {
     }
     /usr/bin/env -i "${STATS_RELEASE_ENV[@]}" "$@"
 }
+
+# Shared by the dispatcher and every retained inner application. A normal host
+# /tmp is not an acceptable release root, even when its identity is supplied.
+stats_release_require_owned_root() {
+    local expected="${SCITEX_STATS_JOB_ROOT_ID:-}" actual=''
+    [[ "$expected" =~ ^[0-9]+:[0-9]+:[0-9]+:700$ ]] || {
+        echo "::error::outer owned scratch identity required" >&2
+        return 1
+    }
+    actual="$(/usr/bin/stat -c '%d:%i:%u:%a' -- /tmp)" || return 1
+    [[ ! -L /tmp && "$actual" == "$expected" && "${actual##*:}" == 700 &&
+       "$(/usr/bin/stat -c '%u' -- /tmp)" == "$(id -u)" ]] || {
+        echo "::error::container temporary root identity mismatch (expected=$expected actual=$actual)" >&2
+        return 1
+    }
+}
