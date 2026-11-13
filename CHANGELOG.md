@@ -7,6 +7,9 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Add a leaf-owned installed-wheel probe for numerical, file, CLI, MCP and
+  skill behavior; source imports cannot qualify a wheel.
+
 - Use square corners for import dialogs, figure frames and input fields.
   Record served asset identity and geometry in the native browser check.
 
