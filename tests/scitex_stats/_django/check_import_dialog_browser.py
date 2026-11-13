@@ -3,6 +3,9 @@
 import argparse
 import json
 import os
+from hashlib import sha256
+from importlib.metadata import version
+from urllib.parse import parse_qs, unquote, urlsplit
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from threading import Thread
@@ -24,6 +27,7 @@ def main():
         os.environ["SCITEX_STATS_APP_MODE"] = "standalone"
         os.environ["DJANGO_SETTINGS_MODULE"] = "scitex_stats._django.settings"
         from django.core.wsgi import get_wsgi_application
+        from django.contrib.staticfiles import finders
         from playwright.sync_api import sync_playwright
 
         class QuietHandler(WSGIRequestHandler):
@@ -46,6 +50,29 @@ def main():
                     errors = []
                     page.on("pageerror", lambda error: errors.append(str(error)))
                     origin = f"http://127.0.0.1:{server.server_port}"
+                    asset_responses = []
+
+                    def record_static_asset(response):
+                        parsed = urlsplit(response.url)
+                        path = parsed.path
+                        if response.url.startswith(origin) and "/static/" in path:
+                            asset = {
+                                "path": path, "status": response.status,
+                                "version": parse_qs(parsed.query).get("v", [None])[0],
+                            }
+                            if response.status == 200:
+                                asset["sha256"] = sha256(response.body()).hexdigest()
+                                local = finders.find(unquote(path.split("/static/", 1)[1]))
+                                if local:
+                                    asset["installed_sha256"] = sha256(
+                                        Path(local).read_bytes()
+                                    ).hexdigest()
+                                    asset["matches_installed_file"] = (
+                                        asset["sha256"] == asset["installed_sha256"]
+                                    )
+                            asset_responses.append(asset)
+
+                    page.on("response", record_static_asset)
                     page.route(
                         "**/*",
                         lambda route: (
@@ -57,6 +84,20 @@ def main():
                     response = page.goto(origin + "/?quick=1")
                     assert response.status == 200
                     page.wait_for_selector('[data-stats-ready="1"]')
+                    critical_assets = {
+                        urlsplit(
+                            page.locator(selector).get_attribute(attribute)
+                        ).path
+                        for selector, attribute in [
+                            ('link[href*="stats/css/stats.css"]', "href"),
+                            ('script[src*="stats/js/app.js"]', "src"),
+                        ]
+                    }
+                    verified_assets = {
+                        item["path"] for item in asset_responses
+                        if item.get("matches_installed_file") is True
+                    }
+                    assert critical_assets <= verified_assets, asset_responses
                     dialog = page.locator("#statsImportDialog")
                     trigger = page.locator("#statsOpenImport")
                     assert not dialog.is_visible()
@@ -123,6 +164,7 @@ def main():
                         and box["height"] <= height
                     )
                     theme_colors = []
+                    theme_corners = []
                     for theme in ["light", "dark"]:
                         page.evaluate(
                             '(theme) => document.documentElement.setAttribute("data-theme", theme)',
@@ -131,6 +173,13 @@ def main():
                         theme_colors.append(
                             dialog.evaluate(
                                 "(node) => getComputedStyle(node).backgroundColor"
+                            )
+                        )
+                        theme_corners.append(
+                            dialog.evaluate(
+                                "(node) => {const s = getComputedStyle(node); return "
+                                "[s.borderTopLeftRadius, s.borderTopRightRadius, "
+                                "s.borderBottomRightRadius, s.borderBottomLeftRadius];}"
                             )
                         )
                         page.screenshot(
@@ -176,6 +225,15 @@ def main():
                             "selected_columns_imported": True,
                             "dialog_fits_viewport": True,
                             "light_dark_backgrounds": theme_colors,
+                            "dialog_corners_by_theme": theme_corners,
+                            "critical_assets_verified": sorted(critical_assets),
+                            "static_http_responses": asset_responses,
+                            "package_versions": {
+                                package: version(package)
+                                for package in [
+                                    "scitex-stats", "scitex-sdk", "django", "playwright"
+                                ]
+                            },
                             "page_errors": errors,
                         }
                     )
