@@ -26,7 +26,7 @@ def test_probe_refuses_source_import(tmp_path):
     # Arrange
     env = {
         **{key: value for key, value in os.environ.items()
-           if key in {"COVERAGE_PROCESS_START", "COVERAGE_FILE"}},
+           if key in {"COVERAGE_PROCESS_START", "COVERAGE_PROCESS_CONFIG", "COVERAGE_FILE"}},
         "PATH": os.defpath, "HOME": str(tmp_path),
            "SCITEX_DIR": str(tmp_path / "state"),
            "PYTHONPATH": str(PROBE.parents[2] / "src") + os.pathsep
