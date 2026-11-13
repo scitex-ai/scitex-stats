@@ -8,12 +8,18 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from scitex_stats._utils._csv_support import resolve_columns, resolve_groups
+from scitex_stats._utils._csv_support import (
+    _load_file,
+    detect_separator,
+    resolve_columns,
+    resolve_groups,
+)
 
 
 @pytest.fixture
 def paired_column_source(tmp_path):
     """Keep DataFrame/CSV source arrangement outside the shared test intent."""
+
     def select_source(frame, source_kind):
         if source_kind == "csv":
             source = tmp_path / "paired.csv"
@@ -27,7 +33,13 @@ def paired_column_source(tmp_path):
 @pytest.mark.parametrize("source_kind", ["dataframe", "csv"])
 @pytest.mark.parametrize(
     "engine_name",
-    ["test_ttest_rel", "test_wilcoxon", "test_pearson", "test_spearman", "test_kendall"],
+    [
+        "test_ttest_rel",
+        "test_wilcoxon",
+        "test_pearson",
+        "test_spearman",
+        "test_kendall",
+    ],
 )
 def test_paired_columns_keep_original_observation_positions(
     engine_name, source_kind, tmp_path, paired_column_source
@@ -52,9 +64,7 @@ def test_unpaired_columns_keep_independent_missing_value_removal(engine_name):
     # Arrange
     import scitex_stats
 
-    frame = pd.DataFrame(
-        {"x": [1, np.nan, 3, 4, 7, 9], "y": [8, 2, np.nan, 5, 6, 10]}
-    )
+    frame = pd.DataFrame({"x": [1, np.nan, 3, 4, 7, 9], "y": [8, 2, np.nan, 5, 6, 10]})
     engine = getattr(scitex_stats, engine_name)
     expected = engine(frame["x"].dropna().to_numpy(), frame["y"].dropna().to_numpy())
     # Act
@@ -343,6 +353,7 @@ class TestTwoSampleDataParam:
     def test_ttest_ind_with_data(self, sample_df):
         # Arrange
         from scitex_stats import test_ttest_ind
+
         # Act
         result = test_ttest_ind(x="before", y="after", data=sample_df)
         # Assert
@@ -351,6 +362,7 @@ class TestTwoSampleDataParam:
     def test_ttest_rel_with_data(self, sample_df):
         # Arrange
         from scitex_stats import test_ttest_rel
+
         # Act
         result = test_ttest_rel(x="before", y="after", data=sample_df)
         # Assert
@@ -359,6 +371,7 @@ class TestTwoSampleDataParam:
     def test_pearson_with_data(self, sample_df):
         # Arrange
         from scitex_stats import test_pearson
+
         # Act
         result = test_pearson(x="before", y="after", data=sample_df)
         # Assert
@@ -367,6 +380,7 @@ class TestTwoSampleDataParam:
     def test_mannwhitneyu_with_data(self, sample_df):
         # Arrange
         from scitex_stats import test_mannwhitneyu
+
         # Act
         result = test_mannwhitneyu(x="before", y="after", data=sample_df)
         # Assert
@@ -376,6 +390,7 @@ class TestTwoSampleDataParam:
         # Arrange
         _skip_without_scitex_io()
         from scitex_stats import test_ttest_ind
+
         # Act
         result = test_ttest_ind(x="before", y="after", data=csv_path)
         # Assert
@@ -384,6 +399,7 @@ class TestTwoSampleDataParam:
     def test_backward_compat_arrays(self, sample_df):
         # Arrange
         from scitex_stats import test_ttest_ind
+
         # Act
         result = test_ttest_ind(sample_df["before"].values, sample_df["after"].values)
         # Assert
@@ -396,6 +412,7 @@ class TestOneSampleDataParam:
     def test_shapiro_with_data(self, sample_df):
         # Arrange
         from scitex_stats import test_shapiro
+
         # Act
         result = test_shapiro(x="before", data=sample_df)
         # Assert
@@ -404,6 +421,7 @@ class TestOneSampleDataParam:
     def test_ttest_1samp_with_data(self, sample_df):
         # Arrange
         from scitex_stats import test_ttest_1samp
+
         # Act
         result = test_ttest_1samp(x="before", popmean=100, data=sample_df)
         # Assert
@@ -412,6 +430,7 @@ class TestOneSampleDataParam:
     def test_backward_compat_array(self, sample_df):
         # Arrange
         from scitex_stats import test_shapiro
+
         # Act
         result = test_shapiro(sample_df["before"].values)
         # Assert
@@ -424,6 +443,7 @@ class TestMultiGroupDataParam:
     def test_anova_with_data(self, sample_df):
         # Arrange
         from scitex_stats import test_anova
+
         # Act
         result = test_anova(data=sample_df, value_col="score", group_col="group")
         # Assert
@@ -432,6 +452,7 @@ class TestMultiGroupDataParam:
     def test_kruskal_with_data(self, sample_df):
         # Arrange
         from scitex_stats import test_kruskal
+
         # Act
         result = test_kruskal(data=sample_df, value_col="score", group_col="group")
         # Assert
@@ -440,6 +461,7 @@ class TestMultiGroupDataParam:
     def test_anova_backward_compat(self, sample_df):
         # Arrange
         from scitex_stats import test_anova
+
         groups = [
             sample_df[sample_df["group"] == g]["score"].values for g in ["A", "B", "C"]
         ]
@@ -449,5 +471,268 @@ class TestMultiGroupDataParam:
         assert "pvalue" in result
 
 
+# ---------------------------------------------------------------------------
+# Separator estimation + loading (operator 2026-10-24)
+# ---------------------------------------------------------------------------
+
+
+class TestDetectSeparator:
+    def test_comma_delimiter_detected(self):
+        # Arrange
+        text = "a,b\n1,2\n"
+        # Act
+        observed = detect_separator(text)
+        # Assert
+        assert observed == ","
+
+    def test_tab_beats_comma(self):
+        # Arrange
+        text = "a\tb,c\n1\t2,3\n"
+        # Act
+        observed = detect_separator(text)
+        # Assert
+        assert observed == "\t"
+
+    def test_semicolon_delimiter_detected(self):
+        # Arrange
+        text = "a;b\n1;10\n"
+        # Act
+        observed = detect_separator(text)
+        # Assert
+        assert observed == ";"
+
+    def test_pipe_delimiter_detected(self):
+        # Arrange
+        text = "a|b\n1|10\n"
+        # Act
+        observed = detect_separator(text)
+        # Assert
+        assert observed == "|"
+
+    def test_space_table_detected(self):
+        # Arrange
+        text = "a b\n1 10\n2 20\n"
+        # Act
+        observed = detect_separator(text)
+        # Assert
+        assert observed == " "
+
+    def test_prose_cells_keep_comma(self):
+        # Arrange
+        text = "city,note\nNew York,NY\nBoston,MA\n"
+        # Act
+        observed = detect_separator(text)
+        # Assert
+        assert observed == ","
+
+    def test_trailing_space_single_column_stays_comma(self):
+        # Arrange
+        text = "a\n1 \n2\n"
+        # Act
+        observed = detect_separator(text)
+        # Assert
+        assert observed == ","
+
+    def test_ragged_space_falls_back_to_comma(self):
+        # Arrange
+        text = "a b c\n1 2\n3 4 5\n"
+        # Act
+        observed = detect_separator(text)
+        # Assert
+        assert observed == ","
+
+    def test_tsv_filename_keeps_tab_contract(self):
+        # Arrange
+        text = "a b\n1 2\n"
+        # Act
+        observed = detect_separator(text, filename="data.tsv")
+        # Assert
+        assert observed == "\t"
+
+    def test_quoted_header_comma_does_not_override_semicolon(self):
+        # Arrange: punctuation belongs to the column name, not the delimiter.
+        text = '"signal, mean";reference\n"1";"10"\n"2";"20"\n'
+        # Act
+        observed = detect_separator(text)
+        # Assert
+        assert observed == ";"
+
+    def test_quoted_header_tab_does_not_override_comma(self):
+        # Arrange
+        text = '"signal\tmean",reference\n1,10\n2,20\n'
+        # Act
+        observed = detect_separator(text)
+        # Assert
+        assert observed == ","
+
+    def test_empty_sample_falls_back_to_comma(self):
+        # Arrange
+        text = ""
+        # Act
+        observed = detect_separator(text)
+        # Assert
+        assert observed == ","
+
+
+def _write(tmp_path, name, text):
+    path = tmp_path / name
+    path.write_text(text)
+    return str(path)
+
+
+class TestLoadFileSep:
+    def test_semicolon_file_resolves_first_column(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "s.csv", "x;y\n1;10\n2;20\n")
+        # Act
+        resolved = resolve_columns(path, x="x", y="y")
+        # Assert
+        assert list(resolved["x"]) == [1, 2]
+
+    def test_semicolon_file_resolves_second_column(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "s.csv", "x;y\n1;10\n2;20\n")
+        # Act
+        resolved = resolve_columns(path, x="x", y="y")
+        # Assert
+        assert list(resolved["y"]) == [10, 20]
+
+    def test_pipe_file_resolves_first_column(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "p.csv", "x|y\n1|10\n2|20\n")
+        # Act
+        resolved = resolve_columns(path, x="x", y="y")
+        # Assert
+        assert list(resolved["x"]) == [1, 2]
+
+    def test_space_table_resolves_first_column(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "w.csv", "x y\n1 10\n2 20\n")
+        # Act
+        resolved = resolve_columns(path, x="x", y="y")
+        # Assert
+        assert list(resolved["x"]) == [1, 2]
+
+    def test_space_table_resolves_second_column(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "w.csv", "x y\n1 10\n2 20\n")
+        # Act
+        resolved = resolve_columns(path, x="x", y="y")
+        # Assert
+        assert list(resolved["y"]) == [10, 20]
+
+    def test_tab_without_extension_resolves_columns(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "t.txt", "x\ty\n1\t10\n2\t20\n")
+        # Act
+        frame = _load_file(path)
+        # Assert
+        assert list(frame.columns) == ["x", "y"]
+
+    def test_tsv_extension_keeps_tab(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "t.tsv", "x\ty\n1\t10\n")
+        # Act
+        resolved = resolve_columns(path, x="x", y="y")
+        # Assert
+        assert list(resolved["x"]) == [1]
+
+    def test_hard_sep_overrides_estimation(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "s.csv", "x;y\n1;10\n2;20\n")
+        # Act
+        resolved = resolve_columns(path, sep=";", x="x", y="y")
+        # Assert
+        assert list(resolved["y"]) == [10, 20]
+
+    def test_wrong_hard_sep_surfaces_columns(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "s.csv", "x;y\n1;10\n")
+        # Act
+        # Assert
+        with pytest.raises(ValueError, match="Column 'x' not found"):
+            resolve_columns(path, sep=",", x="x")
+
+    def test_resolve_groups_with_semicolon_names(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "g.csv", "score;group\n1;A\n2;B\n3;A\n")
+        # Act
+        groups, names = resolve_groups(path, "score", "group")
+        # Assert
+        assert names == ["A", "B"]
+
+    def test_resolve_groups_with_semicolon_values(self, tmp_path):
+        # Arrange
+        path = _write(tmp_path, "g.csv", "score;group\n1;A\n2;B\n3;A\n")
+        # Act
+        groups, names = resolve_groups(path, "score", "group")
+        # Assert
+        assert [list(g) for g in groups] == [[1, 3], [2]]
+
+
 if __name__ == "__main__":
     pytest.main([os.path.abspath(__file__)])
+
+
+def test_quoted_semicolon_file_preserves_named_numeric_columns(tmp_path):
+    # Arrange
+    path = tmp_path / "quoted.csv"
+    path.write_text('"signal, mean";reference\n"1";"10"\n"2";"20"\n')
+    # Act
+    columns = resolve_columns(str(path), x="signal, mean", y="reference")
+    # Assert
+    assert (columns["x"].tolist(), columns["y"].tolist()) == ([1.0, 2.0], [10.0, 20.0])
+
+
+@pytest.mark.parametrize("separator", [",", "\t", ";", "|"])
+def test_detect_separator_uses_records_not_misleading_header_punctuation(separator):
+    # Arrange
+    text = (
+        "label, description"
+        + separator
+        + "value\ncontrol"
+        + separator
+        + "1\ncase"
+        + separator
+        + "2\n"
+    )
+    # Act
+    actual = detect_separator(text)
+    # Assert
+    assert actual == separator
+
+
+def test_ambiguous_separator_requires_explicit_choice(tmp_path):
+    # Arrange
+    path = tmp_path / "ambiguous.csv"
+    path.write_text("a,b;c\n1,2;3\n4,5;6\n")
+    error = None
+    # Act
+    try:
+        _load_file(str(path))
+    except ValueError as observed:
+        error = observed
+    # Assert
+    assert isinstance(error, ValueError) and "Ambiguous separator" in str(error)
+
+
+def test_explicit_separator_resolves_ambiguous_input(tmp_path):
+    # Arrange
+    path = tmp_path / "ambiguous.csv"
+    path.write_text("a,b;c\n1,2;3\n4,5;6\n")
+    # Act
+    frame = _load_file(str(path), sep=";")
+    # Assert
+    assert list(frame["c"]) == [3, 6]
+
+
+def test_quoted_whitespace_labels_and_bom_keep_numeric_columns(tmp_path):
+    # Arrange
+    path = tmp_path / "quoted.txt"
+    path.write_text('\ufefflabel value\n"control one"   1\n"case two"   2\n')
+    # Act
+    frame = _load_file(str(path))
+    # Assert
+    assert frame["label"].tolist() == ["control one", "case two"] and frame[
+        "value"
+    ].tolist() == [1, 2]

@@ -78,16 +78,15 @@ def _get_version() -> str:
 )
 @click.pass_context
 def main(ctx, as_json):
-    """SciTeX Stats — publication-ready statistical testing (23 tests, effect sizes,
+    """SciTeX Stats — publication-ready statistical testing (25 tests, effect sizes,
     power analysis, MCP server).
 
     \b
-    Configuration precedence (highest -> lowest):
-      1. Explicit CLI flags
-      2. ./config.yaml (project-local)
-      3. $SCITEX_STATS_CONFIG (path to a YAML file)
-      4. ~/.scitex/stats/config.yaml (user-wide)
-      5. Built-in defaults
+    Configuration:
+      Commands use explicit arguments and built-in defaults.
+      Package-wide YAML defaults are not currently loaded.
+      config.yaml and SCITEX_STATS_CONFIG do not supply command defaults.
+      See each command's --help for its options.
 
     \b
     Example:
@@ -322,8 +321,9 @@ main.add_command(_report_cmd, name="generate-report")
 deprecated_alias(main, "report", target="generate-report", remove_in="0.3.0")
 
 
-# §1a install-shell-completion/print-shell-completion + optional scitex-dev
-# docs/skills subcommands — both best-effort, see _integrations.py.
+# Fleet standard completion drop-in v1 (`completion install` / `status`,
+# plus §1a `install-shell-completion` / `print-shell-completion` shims) +
+# optional scitex-dev docs/skills subcommands — see _integrations.py.
 attach_scitex_dev_integrations(main)
 
 

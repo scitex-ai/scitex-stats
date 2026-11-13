@@ -5,8 +5,8 @@
 
 Functionalities
 ---------------
-- `run_test(name, ...)` — single dispatcher across 23 tests (parametric,
-  nonparametric, correlation, categorical, normality) returning a unified
+- `run_test(name, ...)` — single dispatcher across 25 tests (parametric,
+  nonparametric, correlation, categorical, normality, agreement) returning a unified
   result dict (statistic, pvalue, effect_size, power, formatted, ...).
 - `recommend_tests(StatContext(...))` — design-driven test selection from
   number of groups, sample sizes, outcome type, paired vs between.
@@ -47,7 +47,7 @@ Standalone import::
     result = ss.run_test("ttest_ind", data=g1, data2=g2)
     print(result["formatted"])  # APA-style summary
 
-CLI: ``scitex-stats <command>``. MCP: 10 tools for AI agents.
+CLI: ``scitex-stats <command>``. MCP: 18 tools for AI agents.
 """
 
 from __future__ import annotations

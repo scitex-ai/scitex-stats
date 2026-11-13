@@ -133,7 +133,7 @@ def _drive_browser(base: str) -> dict:
             ".some(area => area.value.trim().length > 0)",
             timeout=30_000,
         )
-        page.locator("#statsCalculate").click()
+        # No Calculate button: importing data auto-runs the recommended test.
         page.wait_for_selector("#statsResult:not([hidden])", timeout=60_000)
 
         for button, expected in (

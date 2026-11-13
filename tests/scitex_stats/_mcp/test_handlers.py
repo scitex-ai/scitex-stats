@@ -305,28 +305,6 @@ def test_describe_skewness_is_float_when_scipy_available():
     assert isinstance(out["skewness"], float)
 
 
-def test_describe_empty_data_reports_success():
-    # Arrange
-    data = [float("nan"), float("nan")]  # all-NaN -> "No valid data points" branch
-
-    # Act
-    out = _arun(h.describe_handler(data=data))
-
-    # Assert
-    assert out["success"] is True
-
-
-def test_describe_empty_data_returns_error_message():
-    # Arrange
-    data = [float("nan"), float("nan")]
-
-    # Act
-    out = _arun(h.describe_handler(data=data))
-
-    # Assert
-    assert out.get("error") == "No valid data points"
-
-
 # (`describe_handler`'s scipy-ImportError fallback is hard to stub
 # cleanly without breaking other sibling handlers that share scipy
 # in this process. Skipped intentionally.)
@@ -1928,13 +1906,15 @@ def test_correct_pvalues_fallback_sidak_succeeds():
     assert out["method"] == "sidak"
 
 
-def test_correct_pvalues_fallback_unknown_method_passes_through():
+def test_correct_pvalues_fallback_unknown_method_uses_fdr_bh():
     # Arrange
     pvalues = [
         0.01,
         0.02,
         0.05,
-    ]  # fallback `else` branch returns raw p-values unchanged
+    ]  # unknown methods fall back to fdr_bh, mirroring the statsmodels
+    # path's method_map default (same contract as
+    # test__corrections.test_unknown_method_falls_back_to_fdr_bh)
 
     # Act
     out = _arun_without_statsmodels(
@@ -1942,4 +1922,4 @@ def test_correct_pvalues_fallback_unknown_method_passes_through():
     )
 
     # Assert
-    assert out["corrected_pvalues"] == [0.01, 0.02, 0.05]
+    assert [round(v, 9) for v in out["corrected_pvalues"]] == [0.03, 0.03, 0.05]

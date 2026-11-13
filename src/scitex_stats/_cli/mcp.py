@@ -25,7 +25,7 @@ def _list_tool_objects():
 
     The one accessor stable across every major is the in-memory
     ``fastmcp.Client`` transport, which returns MCP wire ``Tool`` objects
-    exposing ``.name`` / ``.description`` / ``.inputSchema``. Prefer the
+    exposing ``.name`` / ``.description`` / ``.input_schema``. Prefer the
     richer in-process ``get_tools()`` when present (keeps return-type
     annotations in signatures), and fall back to the client otherwise.
     """
@@ -110,8 +110,13 @@ def _format_tool_signature(tool, compact: bool = False, indent: str = "  ") -> s
     params = []
     # The JSON-schema attribute name differs across FastMCP majors:
     # 2.x exposes ``parameters`` on the internal Tool; the MCP wire Tool
-    # (and some 3.x objects) expose ``inputSchema``. Accept either.
-    schema = getattr(tool, "parameters", None) or getattr(tool, "inputSchema", None)
+    # exposes ``input_schema`` (2.x canonical; ``inputSchema`` on 1.x).
+    # Accept any.
+    schema = (
+        getattr(tool, "parameters", None)
+        or getattr(tool, "input_schema", None)
+        or getattr(tool, "inputSchema", None)
+    )
     if schema:
         props = schema.get("properties", {})
         required = schema.get("required", [])

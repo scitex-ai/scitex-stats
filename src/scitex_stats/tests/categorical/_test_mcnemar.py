@@ -123,10 +123,8 @@ def test_mcnemar(  # noqa: C901
     Parameters
     ----------
     observed : array-like, shape (2, 2)
-        2×2 contingency table:
-        [[a, b],
-         [c, d]]
-        where:
+        2×2 contingency table ``[[a, b], [c, d]]``, where:
+
         - a: both conditions negative (0,0)
         - b: before negative, after positive (0,1)
         - c: before positive, after negative (1,0)
@@ -154,6 +152,7 @@ def test_mcnemar(  # noqa: C901
     -------
     result : dict or DataFrame
         Test results including:
+
         - test_method: Name of test
         - statistic: χ² statistic
         - pvalue: p-value
@@ -168,6 +167,8 @@ def test_mcnemar(  # noqa: C901
 
     Notes
     -----
+    See [#mcnemar-ref1]_, [#mcnemar-ref2]_.
+
     McNemar's test is used for paired nominal data, testing whether row and column
     marginal frequencies are equal (marginal homogeneity).
 
@@ -189,6 +190,7 @@ def test_mcnemar(  # noqa: C901
 
     **Effect size (Odds Ratio):**
     OR = b / c
+
     - OR = 1: no change
     - OR > 1: increase (more transitions from 0→1 than 1→0)
     - OR < 1: decrease (more transitions from 1→0 than 0→1)
@@ -212,9 +214,9 @@ def test_mcnemar(  # noqa: C901
 
     References
     ----------
-    .. [1] McNemar, Q. (1947). "Note on the sampling error of the difference between
+    .. [#mcnemar-ref1] McNemar, Q. (1947). "Note on the sampling error of the difference between
            correlated proportions or percentages". Psychometrika, 12(2), 153-157.
-    .. [2] Edwards, A. L. (1948). "Note on the correction for continuity in testing
+    .. [#mcnemar-ref2] Edwards, A. L. (1948). "Note on the correction for continuity in testing
            the significance of the difference between correlated proportions".
            Psychometrika, 13(3), 185-187.
 

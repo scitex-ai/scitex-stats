@@ -117,7 +117,7 @@ def index(request):
 
     from . import _projects
 
-    context = shell_context("Statistics", panes=SHELL_PANES)
+    context = shell_context("Stats", panes=SHELL_PANES)
     context["stx_mount"] = mount_prefix(request)
     # App-header identity: OUR package version (never the host's) and the
     # project this request resolves to, so the shared picker renders the

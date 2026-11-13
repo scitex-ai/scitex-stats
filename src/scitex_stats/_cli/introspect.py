@@ -118,7 +118,12 @@ def _format_python_signature(func, multiline: bool = True, indent: str = "  ") -
 
 
 def _get_api_tree(module, max_depth: int = 5, docstring: bool = False) -> list:
-    """Get API tree for a module."""
+    """List public members, descending only into the requested namespace.
+
+    Explicit dependency re-exports remain entries. Enumerating their entire
+    implementation is outside this package's API and can trigger lazy imports.
+    """
+    namespace = module.__name__
     results = []
 
     def _visit(obj, name: str, depth: int, visited: set):
@@ -143,7 +148,10 @@ def _get_api_tree(module, max_depth: int = 5, docstring: bool = False) -> list:
             entry["Docstring"] = inspect.getdoc(obj) or ""
         results.append(entry)
 
-        if inspect.ismodule(obj) and depth < max_depth:
+        owned_module = inspect.ismodule(obj) and (
+            obj.__name__ == namespace or obj.__name__.startswith(namespace + ".")
+        )
+        if owned_module and depth < max_depth:
             if hasattr(obj, "__all__"):
                 members = [(n, getattr(obj, n, None)) for n in obj.__all__]
             else:

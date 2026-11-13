@@ -125,11 +125,15 @@ def test_index_contains_stx_mount_marker(client):
 
 
 def test_index_contains_app_header(client):
-    # Arrange
+    # Arrange — the header names the full product label (operator
+    # 2026-10-22: in-content label is "SciTeX Stats"; the launcher tile
+    # stays "Stats"). The tab title flows through shell_title, which
+    # strips any brand prefix; asserting the literal header keeps this
+    # test independent of the installed SDK.
     # Act
     html = client.get("/").content.decode()
     # Assert
-    assert "SciTeX Statistics" in html
+    assert 'data-app-title="SciTeX Stats"' in html
 
 
 def test_index_links_app_stylesheet(client):
@@ -138,6 +142,28 @@ def test_index_links_app_stylesheet(client):
     html = client.get("/").content.decode()
     # Assert
     assert "stats/css/stats.css" in html
+
+
+def test_index_links_sdk_canonical_app_header(client):
+    # Arrange — the header row chrome is the SDK single source of truth.
+    # Act
+    html = client.get("/").content.decode()
+    # Assert
+    assert "scitex_sdk/ui/css/app/app-header.css" in html
+
+
+def test_header_row_has_no_leaf_fork():
+    # Arrange — stats.css must not redefine the SDK row/typography/actions.
+    # Act
+    css = _stats_css()
+    # Assert
+    assert (
+        ".stats-app-header__title {" not in css
+        and ".stats-app-header__version {" not in css
+        and ".stats-app-header__actions {" not in css
+        and "@media (max-width: 480px)" not in css
+        and "@media (max-width: 600px), (pointer: coarse)" in css
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -187,6 +213,15 @@ def test_wizard_tab_bar_is_flat():
     block = _wizard_tab_rule(css, ".stats-app .stx-panes--single > .stx-panes__tabs")
     # Assert
     assert "gap: 0" in block
+
+
+def test_wizard_tab_hover_brightens_text_without_box():
+    # Arrange — underline-only idiom: hover may brighten text, never box it.
+    css = _stats_css()
+    # Act
+    block = _wizard_tab_rule(css, ".stats-app .stx-panes__tab:hover")
+    # Assert
+    assert "color: var(--text-primary)" in block
 
 
 def test_index_stx_mount_is_root_prefix(client):
@@ -445,26 +480,31 @@ def test_index_has_data_test_results_panes(client):
 
 
 def test_index_shows_the_leaf_title_and_package_version_once(client):
-    # Arrange
+    # Arrange — the canonical SDK AppHeader renders the row client-side from
+    # the mount root; the server emits identity only (product name, bare
+    # package version — the component prepends the "v" badge itself).
     import scitex_stats
     # Act
     html = client.get("/").content.decode()
     # Assert
     assert (
-        html.count('<header class="stats-app-header"') == 1
-        and html.count('<h1 class="stats-app-header__title">Stats</h1>') == 1
-        and html.count('class="stats-app-header__version"') == 1
-        and f"v{scitex_stats.__version__}" in html
+        html.count("data-stx-app-header") == 1
+        and 'data-app-title="SciTeX Stats"' in html
+        and f'data-app-version="{scitex_stats.__version__}"' in html
+        and "<h1" not in html
+        and 'id="statsModeToggle"' not in html
+        and '<header class="stx-app-header' not in html
     )
 
 
 def test_index_puts_the_shared_picker_in_the_canonical_slot(client):
-    # Arrange
+    # Arrange — the server-rendered picker starts inside the mount root; leaf
+    # JS moves it into the component slot after mount (covered in Chromium).
     # Act
     html = client.get("/").content.decode()
     # Assert
     assert (
-        '<div class="stx-app-header__slot--project-selector">' in html
+        "data-stx-app-header" in html
         and "data-stx-project-picker" in html
         and 'data-provider-url="/api/project-scope"' in html
     )

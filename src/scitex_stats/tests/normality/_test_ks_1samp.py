@@ -138,9 +138,11 @@ def test_ks_1samp(  # noqa: C901
 
     References
     ----------
-    .. [1] Kolmogorov, A. (1933). "Sulla determinazione empirica di una legge
+    Further reading: [#statstestks1sampref1]_, [#statstestks1sampref2]_.
+
+    .. [#statstestks1sampref1] Kolmogorov, A. (1933). "Sulla determinazione empirica di una legge
            di distribuzione". Giornale dell'Istituto Italiano degli Attuari, 4, 83-91.
-    .. [2] Smirnov, N. (1948). "Table for estimating the goodness of fit of
+    .. [#statstestks1sampref2] Smirnov, N. (1948). "Table for estimating the goodness of fit of
            empirical distributions". Annals of Mathematical Statistics, 19(2), 279-281.
 
     Examples

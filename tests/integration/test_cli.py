@@ -123,21 +123,28 @@ class TestListPythonAPIs:
     def test_list_python_apis_returncode(self):
         # Arrange
         # Act
-        result = _run_cli("list-python-apis")
+        # 60s like the --json variants: same cold-start flake guard (develop
+        # CI 2026-10-20: plain variant timed out at 30s on an overloaded
+        # runner while the suite itself ran 693s).
+        result = _run_cli("list-python-apis", timeout=60)
         # Assert
         assert result.returncode == 0
 
     def test_list_python_apis_scitex_stats_stdout_api(self):
         # Arrange
         # Act
-        result = _run_cli("list-python-apis")
+        result = _run_cli("list-python-apis", timeout=60)
         # Assert
         assert "scitex_stats" in result.stdout or "API" in result.stdout
 
     def test_list_python_apis_json_returncode(self):
         # Arrange
         # Act
-        result = _run_cli("list-python-apis", "--json")
+        # 60s, not 30s: same cold-start flake guard as mcp-doctor above —
+        # `list-python-apis --json` imports the full battery + serializes,
+        # and exceeded 30s on py3.11/org-06 under xdist load (develop CI
+        # 2026-10-20) while 3.12/3.13 passed; local single-run is ~2s.
+        result = _run_cli("list-python-apis", "--json", timeout=60)
         # Assert
         assert result.returncode == 0
         import json
@@ -146,7 +153,7 @@ class TestListPythonAPIs:
 
     def test_list_python_apis_json_case_2(self):
         # Arrange
-        result = _run_cli("list-python-apis", "--json")
+        result = _run_cli("list-python-apis", "--json", timeout=60)
         import json
 
         # Act
@@ -245,14 +252,19 @@ class TestMCPCLI:
     def test_mcp_doctor_returncode(self):
         # Arrange
         # Act
-        result = _run_cli("mcp", "doctor", timeout=15)
+        # 60s, not 15s: under xdist's 20-way parallel load on self-hosted
+        # runners a cold `mcp doctor` (fresh interpreter + scipy import) can
+        # exceed 15s (CI 2026-10-19: TimeoutExpired on py3.11 while
+        # 3.12/3.13 passed the same assertion; local single-run is ~1.4s).
+        result = _run_cli("mcp", "doctor", timeout=60)
         # Assert
         assert result.returncode in (0, 1)
 
     def test_mcp_doctor_health_check_stdout_fastmcp(self):
         # Arrange
         # Act
-        result = _run_cli("mcp", "doctor", timeout=15)
+        # Same 60s budget as above: cold-start flake guard, not a slow CLI.
+        result = _run_cli("mcp", "doctor", timeout=60)
         # Assert
         assert "Health Check" in result.stdout or "fastmcp" in result.stdout
 

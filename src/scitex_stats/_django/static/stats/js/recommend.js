@@ -59,7 +59,7 @@
     raw.forEach(function (g, i) {
       if (g.length) { groups.push(g); names.push(app.groupName(i)); }
     });
-    if (groups.length < 2) return null;
+    if (groups.length < 1) return null;
     return { groups: groups, group_names: names, design: $("statsDesign").value, scale: $("statsScale").value };
   }
 
@@ -72,13 +72,38 @@
     return app.rowIntegrityError(testName, payload.design === "paired" ? "within" : payload.design);
   }
 
+  function resetPickerStates() {
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="statsTest"]'), function (radio) {
+      var label = radio.closest("label.stats-test");
+      radio.disabled = false;
+      radio.setAttribute("aria-disabled", "false");
+      if (label) {
+        label.classList.remove("is-disabled");
+        label.removeAttribute("title");
+      }
+    });
+  }
+
+  // The rec notes list lives inside the rec card (single verdict block), so
+  // clearing the card must preserve it; renderNotes owns its content.
+  function clearRecCard() {
+    var card = $("statsRecCard");
+    Array.prototype.slice.call(card.children).forEach(function (child) {
+      if (child.id !== "statsRecNotes") card.removeChild(child);
+    });
+  }
+
   function invalidateRecommendation() {
     generation += 1;
     lastPayload = null;
     lastRec = null;
+    resetPickerStates();
     renderNotes([]);
-    $("statsApplicRows").textContent = "";
-    $("statsRecCard").textContent = "";
+    // statsApplicRows was removed with the Applicable-tests rail (#147);
+    // applicability survives only as picker dim/disable + hover tooltips.
+    var applicRows = $("statsApplicRows");
+    if (applicRows) applicRows.textContent = "";
+    clearRecCard();
     $("statsAssumptions").textContent = "";
     $("statsRunAll").hidden = true;
     $("statsRunAllOut").hidden = true;
@@ -106,7 +131,11 @@
   }
 
   function renderApplicability(rec) {
+    // Operator 2026-10-18 (CCT4437): the rail is removed from the template.
+    // Keep the function harmless for any lingering callers; the picker
+    // states below remain the live surface.
     var body = $("statsApplicRows");
+    if (!body) return;
     body.textContent = "";
     var primaryId = rec.primary && rec.primary.test_id;
     var rows = rec.applicability.slice().sort(function (a, b) {
@@ -122,11 +151,17 @@
       name.appendChild(labelNode("span", row.label));
       if (row.test_id === primaryId) name.appendChild(el("span", "stats-badge stats-badge--primary", _("Recommended")));
       var reasons = el("td", "stats-applic__reasons");
+      // Operator 2026-10-18 (CCT4288/4292): no long-form reasons rail.
+      // Reasons collapse into a closed details expander; the picker
+      // tooltips (applyPickerStates) carry the same text on hover.
+      var why = el("details", "stats-reasons-acc");
+      why.appendChild(el("summary", "", _("Why")));
       var ul = el("ul", "stats-reasons");
       row.reason_items
         .filter(function (i) { return row.applicable ? i.status !== "fail" : i.status !== "ok"; })
         .forEach(function (i) { ul.appendChild(itemNode("li", i, "is-" + i.status)); });
-      reasons.appendChild(ul);
+      why.appendChild(ul);
+      reasons.appendChild(why);
       tr.append(mark, name, reasons);
       body.appendChild(tr);
     });
@@ -134,7 +169,7 @@
 
   function renderCard(rec) {
     var card = $("statsRecCard");
-    card.textContent = "";
+    clearRecCard();
     if (!rec.primary) {
       card.appendChild(el("p", "stats-rec__title", _("No test can be recommended for these data.")));
     } else {
@@ -145,7 +180,8 @@
     var path = el("ol", "stats-rec__path");
     rec.decision_path.forEach(function (i) { path.appendChild(itemNode("li", i, "is-" + i.status)); });
     var pathBox = el("details", "stx-acc stats-acc");
-    pathBox.open = true;
+    // Closed by default (operator 2026-10-19 results-column cleanup): the
+    // verdict is the title + reason; the path is reference one click away.
     pathBox.append(el("summary", "", _("Decision path")), path);
     card.appendChild(pathBox);
     if (rec.alternatives.length) {
@@ -159,6 +195,10 @@
       alts.append(el("summary", "", app.fmt(_("Alternatives (%s), secondary"), [rec.alternatives.length])), list);
       card.appendChild(alts);
     }
+    // Notes read as a footnote to the verdict, not a second verdict block:
+    // keep them inside the single card but after title/reason/evidence.
+    var notes = $("statsRecNotes");
+    if (notes) card.appendChild(notes);
   }
 
   function checkSegments(r) {
@@ -206,7 +246,11 @@
     box.textContent = "";
     var sec = rec.assumption_checks;
     if (!sec || !sec.rows.length) return;
-    box.appendChild(el("h3", "stats-summary__title", _("Assumption checks")));
+    var acc = el("details", "stx-acc stats-acc");
+    // Closed by default (operator 2026-10-19 results-column cleanup): the
+    // reason sentence carries the verdict; the table is evidence one click away.
+    acc.appendChild(el("summary", "", _("Assumption checks")));
+    var body = el("div", "stx-acc__body");
     var table = el("table", "stats-applic stats-applic--checks");
     var head = el("tr");
     [_("Check"), _("Sample"), _("Result"), _("Threshold"), _("Decision")].forEach(function (h) {
@@ -225,13 +269,46 @@
     table.append(thead, tbody);
     var wrap = el("div", "stats-applic-wrap");
     wrap.appendChild(table);
-    box.appendChild(wrap);
-    sec.notes.forEach(function (n) { box.appendChild(itemNode("p", n, "stats-check-note")); });
+    body.appendChild(wrap);
+    sec.notes.forEach(function (n) { body.appendChild(itemNode("p", n, "stats-check-note")); });
     if (sec.qq.length) {
       var grid = el("div", "stats-qq-grid");
       sec.qq.forEach(function (q) { grid.appendChild(qqPlot(q)); });
-      box.appendChild(grid);
+      body.appendChild(grid);
     }
+    acc.appendChild(body);
+    box.appendChild(acc);
+  }
+
+  // Dim + disable inapplicable tests right in the picker; the failing
+  // reason rides the native hover tooltip, so no panel trip is needed.
+  function applyPickerStates(rec) {
+    var states = {};
+    (rec.applicability || []).forEach(function (a) { states[a.test_id] = a; });
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="statsTest"]'), function (radio) {
+      var a = states[radio.value];
+      var label = radio.closest("label.stats-test");
+      var reasons = a && !a.applicable
+        ? (a.reason_items || []).filter(function (i) { return i.status !== "ok"; })
+        : [];
+      var text = reasons.map(itemText).join(" · ");
+      radio.disabled = !!(a && !a.applicable);
+      radio.setAttribute("aria-disabled", radio.disabled ? "true" : "false");
+      if (label) {
+        label.classList.toggle("is-disabled", radio.disabled);
+        if (text) label.setAttribute("title", text);
+        else label.removeAttribute("title");
+      }
+    });
+    // A manual pick survives while it still applies; otherwise — or until the
+    // user has picked at all — the primary takes over. Either way the
+    // checked, applicable test auto-calculates.
+    var checked = document.querySelector('input[name="statsTest"]:checked');
+    var primaryId = rec.primary && rec.primary.test_id;
+    var primaryRadio = primaryId && document.querySelector('input[name="statsTest"][value="' + primaryId + '"]');
+    if ((!app.manualTestPick || !checked || checked.disabled) && primaryRadio && !primaryRadio.disabled) primaryRadio.checked = true;
+    var sel = document.querySelector('input[name="statsTest"]:checked');
+    if (sel && !sel.disabled) document.dispatchEvent(new CustomEvent("stats:auto-calculate"));
   }
 
   async function recommend(opts) {
@@ -252,8 +329,9 @@
     if (!r.ok) {
       lastRec = null;
       renderNotes([{ msg: (r.body && r.body.error) || "Request failed (HTTP %s).", args: r.body && r.body.error ? [] : [r.status] }]);
-      $("statsApplicRows").textContent = "";
-      $("statsRecCard").textContent = "";
+      var applicRows = $("statsApplicRows");
+      if (applicRows) applicRows.textContent = "";
+      clearRecCard();
       $("statsAssumptions").textContent = "";
       $("statsRunAll").hidden = true;
       setVisible(true);
@@ -264,18 +342,13 @@
     renderApplicability(lastRec);
     renderCard(lastRec);
     renderAssumptions(lastRec);
+    applyPickerStates(lastRec);
     $("statsRunAll").hidden = !lastRec.applicability.some(function (t) { return t.applicable; });
     $("statsRunAllOut").hidden = true;
     setVisible(true);
     document.dispatchEvent(new CustomEvent("stats:recommendation", {
       detail: { payload: payload, recommendation: lastRec, slot: $("statsPlotSlot") },
     }));
-    if (opts && opts.show) {
-      // Calculate then runs the recommended test, not whatever was checked before.
-      var radio = lastRec.primary && document.querySelector('input[name="statsTest"][value="' + lastRec.primary.test_id + '"]');
-      if (radio) { radio.checked = true; radio.dispatchEvent(new Event("change")); }
-      if (window.stxPanes) window.stxPanes.show("results", "stats");
-    }
   }
 
   function num(v) {
@@ -324,10 +397,13 @@
       out.hidden = false;
       if (!r.ok) { out.appendChild(el("p", "stats-error", (r.body && r.body.error) || "HTTP " + r.status)); return; }
       var res = r.body;
-      out.appendChild(el("h3", "stats-summary__title", _("Sensitivity analyses")));
+      var acc = el("details", "stx-acc stats-acc");
+      acc.open = true;
+      acc.appendChild(el("summary", "", _("Sensitivity analyses")));
+      var accBody = el("div", "stx-acc__body");
       var warn = itemNode("p", res.warning_item, "stats-warning");
       warn.setAttribute("role", "note");
-      out.appendChild(warn);
+      accBody.appendChild(warn);
       var table = el("table", "stats-applic stats-applic--results");
       var head = el("tr");
       [_("Role"), _("Test"), _("Result")].forEach(function (h) { var th = el("th", "", h); th.scope = "col"; head.appendChild(th); });
@@ -346,7 +422,9 @@
       table.append(thead, tbody);
       var wrap = el("div", "stats-applic-wrap");
       wrap.appendChild(table);
-      out.append(wrap, itemNode("p", res.agreement.summary_item, "stats-agreement is-" + res.agreement.status));
+      accBody.append(wrap, itemNode("p", res.agreement.summary_item, "stats-agreement is-" + res.agreement.status));
+      acc.appendChild(accBody);
+      out.appendChild(acc);
     } catch (e) {
       if (!current()) return;
       out.hidden = false;
@@ -364,16 +442,14 @@
   }
 
   function init() {
-    $("statsRecommend").addEventListener("click", function () { recommend({ force: true, show: true }); });
+    // No buttons: data and option input re-derives the recommendation
+    // (debounced) and the checked test calculates automatically.
     $("statsRunAll").addEventListener("click", runAll);
     document.addEventListener("stats:data-change", soon);
     $("statsGroups").addEventListener("input", soon);
     new MutationObserver(soon).observe($("statsGroups"), { childList: true });
     $("statsDesign").addEventListener("change", soon);
     $("statsScale").addEventListener("change", soon);
-    $("statsSample").addEventListener("click", function () {
-      setTimeout(function () { recommend({ force: true, show: true }); }, 0);
-    });
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

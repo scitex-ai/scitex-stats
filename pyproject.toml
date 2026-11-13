@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "scitex-stats"
-version = "0.2.30"
+version = "1.0.0"
 description = "Publication-ready statistical testing framework with 25 tests, effect sizes, power analysis, and MCP server"
 readme = "README.md"
 license = "AGPL-3.0-only"
@@ -25,7 +25,7 @@ keywords = [
     "mcp-server",
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 3 - Alpha",
     "Environment :: Console",
     "Intended Audience :: Science/Research",
     "Operating System :: OS Independent",
@@ -48,7 +48,7 @@ dependencies = [
     # CLI framework (scitex-stats <cmd>)
     "click>=8.0",
     # SciTeX ecosystem: linter plugin Rule class, skills installer, audit
-    "scitex-dev>=0.11.7",
+    "scitex-dev>=0.62.29",
     "scitex-config>=0.3.0",
     # SciTeX logger — _logging.py prefers it over stdlib logging
     "scitex-logging>=0.1",
@@ -98,11 +98,14 @@ bundle = [
 # The gui extra provides Django for both standalone and mounted operation.
 server = [
     "django>=4.2",
-    "scitex-sdk[gui]>=0.3.1",
-]
+    "scitex-sdk[gui]>=0.3.12",
+ ]
 dev = [
     "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
+    "pytest-cov>=7.0.0",
+    # Packaged startup hook + configuration-driven child tracing; no test-time
+    # writes into shared/user site-packages. 7.13 retains Python 3.10 support.
+    "coverage[toml]>=7.13.0",
     "pytest-xdist>=3.0.0",
     "pre-commit>=3.5.0",
     # Optional features whose tests live in the suite — installed in [dev]
@@ -124,7 +127,7 @@ dev = [
     # [server] extra: shared SDK App/UI contracts and Django boot/mount
     # tests, at the same released floor as [server] (PS-210).
     "django>=4.2",
-    "scitex-sdk[gui]>=0.3.1",
+    "scitex-sdk[gui]>=0.3.12",
     # Note: fastmcp / mcp / scitex-dev / scitex-logging / pingouin come in via [project.dependencies].
     "weasyprint>=60",
 ]
@@ -173,10 +176,9 @@ markers = [
 ]
 
 [tool.coverage.run]
-# parallel + multiprocessing concurrency so child Python interpreters
-# (test_demos spawns demos via `python -m`, test_examples_smoke runs
-# `jupyter nbconvert --execute`) emit their own `.coverage.<host>.<pid>`
-# data files. pytest-cov combines them at session end.
+# Coverage owns its installed startup hook. The subprocess patch carries the
+# active configuration into Python children without test-time .pth writes.
+patch = ["subprocess"]
 parallel = true
 source = ["scitex_stats"]
 concurrency = ["multiprocessing", "thread"]

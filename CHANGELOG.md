@@ -7,6 +7,181 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Use package-owned subprocess coverage support instead of writing startup
+  hooks into shared Python environments during test collection.
+
+- Add a leaf-owned installed-wheel probe for numerical, file, CLI, MCP and
+  skill behavior; source imports cannot qualify a wheel.
+
+- Use square corners for import dialogs, figure frames and input fields.
+  Record served asset identity and geometry in the native browser check.
+
+- Report failed descriptive-statistics MCP results for empty or all-NaN
+  inputs, retaining the existing error message and tool name.
+
+- Correct CLI help and skills to describe actual configuration support,
+  portable skills destinations, GUI environment variables and port options.
+  Package-wide YAML defaults remain unimplemented.
+
+- Match statsmodels in the no-backend correction path: apply BY adjustment,
+  preserve tiny Sidak values and handle rejection at the alpha boundary.
+
+- Delegate skills installation to scitex-dev's managed projection, refusing
+  unowned or modified destinations instead of deleting caller files. Add the
+  vendor-neutral --directory option while retaining --dest compatibility.
+  Require scitex-dev 0.62.29 for managed export support.
+
+- Correct Kruskal-Wallis examples for result keys, explicit plot axes and
+  tabular output; link all three reference footnotes. Numerical behavior
+  and public signatures are unchanged.
+- Give the remaining seven statistical-test reference lists unique linked
+  footnotes. Remove broad docutils suppression and fail documentation builds
+  on warnings. No statistical implementations or signatures are changed.
+
+- Restore the original API-listing and MCP subprocess test budgets (60 and
+  30 seconds respectively). Preserve all test cases and assertions.
+
+- Repair statistical-test reference rendering across twelve functions: separate
+  nested lists, format the contingency-table example and absolute-value math,
+  and use referenced, uniquely named footnotes. Numerical implementations and
+  public signatures are unchanged.
+
+## [1.0.0] — 2026-10-24
+
+First stable release: the beta UI batch toward SciTeX Cloud, hardened
+after operator review (separator estimation + hard spec + live indicator,
+column-spec import with preview and pending-vs-active clarity, alert-red
+Clear, header-named chooser).
+
+### Added
+- Active-separator indicator: a live hint under the Separator selector
+  (Using: X, estimated/your choice), updated on every import and choice.
+- Pending-vs-active clarity: the column chooser states the analysis still
+  uses the boxes until Import; the preview shows only while boxes match the
+  last import (hides on any edit or partial import); chooser lists real
+  header names instead of Column N.
+- CSV import preview: filename, detected separator, shape and first rows
+  render under the drop zone on every import (hidden on Clear/sample/
+  chooser-cancel); wrong parses are visible before any test runs.
+- Clear button wears the alert red (`--status-error`, the same SDK token
+  `.stats-error` uses) via a new `stats-btn--danger` variant.
+- Space-separated tables: separator estimation and the hard Separator
+  selector accept whitespace tables (strict consistency, so prose cells
+  never flip a comma file); Python `data=` file loading, MCP `run_test`
+  (`sep`), and the CLI estimate instead of assuming comma.
+
+### Changed
+- `scitex-sdk[gui]` floor raised to >=0.3.12 (server + dev; identical-row
+  pack + layout doctrine).
+
+### Fixed
+- Bundled skill docs now match the measured surface: MCP tool table
+  lists all 18 served tools (was 10, missing report/verify/skills/APA
+  rows) and `tests list` notes 22 names (was 23).
+- Skill Python-API page now states 25 `test_*` functions with the
+  Agreement pair (`test_kendalls_w`, `test_icc`) in the examples
+  (was 23, pair omitted).
+
+## [1.0.0-beta] — 2026-10-23
+
+Beta: operator UI batch toward SciTeX Cloud beta (close to beta).
+
+### Added
+- Hard separator specification for CSV import: Separator selector
+  (Auto default + Comma/Tab/Semicolon/Pipe) under the drop zone;
+  overrides estimation for file imports only, paste boxes keep
+  estimation. Single-column files import directly, multi-column
+  files open the checked-by-default column chooser.
+- Dispatcher coverage note in the skill test catalog: `run_test()`
+  routes 22 aliases, MCP `run_test` 23 names; 8 public tests
+  (agreement family, anova_rm/2way, theilsen, mcnemar, cochran_q,
+  normality) go direct — documented limitation, not a silent gap.
+
+### Changed
+- "Load sample dataset" renamed to "Try with Sample Data",
+  right-aligned in the data-input action row (operator).
+- Sample data fits the current design/measurement scale: categorical
+  loads an integer-count twin so applicable tests auto-run and
+  results show (operator).
+- In-content title "SciTeX Stats", professional "No results yet"
+  empty-state copy, alternative hypothesis leads the test pane.
+- `scitex-sdk[gui]` floor raised to >=0.3.12 (server + dev).
+
+### Fixed
+- Bundled skill docs match the measured surface: MCP tool table
+  lists all 18 served tools (was 10); skill Python-API page states
+  25 `test_*` functions with the Agreement pair in the examples
+  (was 23, pair omitted).
+- `__init__` docstring MCP count 10 -> 18.
+- MCP 2.x compat: `input_schema` canonical kwarg + readers.
+- CLI `list-python-apis` 60s timeout guard against xdist cold-start
+  flake; plain-command 60s budget in tests.
+
+## [1.0.0-alpha] — 2026-10-20
+
+First alpha toward 1.0.0: whole-package professional-grade pass
+(stats-pro-grade-audit-20261020).
+
+### Fixed
+- Results column cleanup follow-ups: straight result card and
+  assumption-check highlight, no rounding (operator, #160, #161).
+- DATA INPUT full-height fill: panes stretch, pane fills column height,
+  body flexes (operator CCT4792, #161).
+- MCP `correct_pvalues` no-statsmodels fallback: unknown methods now
+  correct via fdr_bh like the statsmodels path (was: raw p-values
+  returned as corrected); requested name still echoed (#162).
+
+### Changed
+- Test count standardized on 25 public `test_*` functions across
+  README, sphinx docs, CLI/MCP descriptions, and skill catalog;
+  agreement family (Kendall's W, ICC) added to README Figure 2 and
+  the catalog (#162).
+- `scitex-sdk[gui]` floor raised to >=0.3.8 (server + dev, #161).
+
+### Known limitations (beta scope)
+- `run_test()` dispatches 22 names; MCP `run_test` accepts 23; both
+  short of the 25 public functions — tracked as
+  stats-dispatch-parity-20261020.
+- Test-count-sensitive wording: MCP `run_test` description stays at 23
+  (its enum truth) until parity lands.
+
+## [0.2.40] — 2026-10-19
+
+### Fixed
+- Results column cleanup: dedupe notes/decision-path/assumptions, flat
+  verdict card, Copy-by-contents inline in the Raw-result row, desktop pane
+  titles (operator order, #158).
+- Wrap assumption checks and sensitivity output in collapsible details
+  (open-by-default, #156).
+
+### Changed
+- Migrate stale frontend tests to the debounced auto-calculate flow
+  (CI-only, #157).
+
+## [0.2.39] — 2026-10-19
+
+### Fixed
+- Separate picker verdict kicker and tooltip reasons (operator CCT4715,
+  #152).
+- Drop Quick analysis header toggle (operator element report, #153).
+- Adopt SDK canonical AppHeader component (operator standing rule); raise
+  scitex-sdk floor to >=0.3.7 (#154).
+
+## [0.2.38] — 2026-10-19
+
+### Fixed
+- Unbreak stats auto-calculate, guard quick-analysis leave, bound PDF build
+  (#150).
+- Raise mcp-doctor CLI timeout 15s to 60s against xdist cold-start flake
+  (CI-only, #149).
+
+## [0.2.37] — 2026-10-18
+
+### Fixed
+- Remove the Applicable-tests rail from the results pane (operator order):
+  applicability survives as picker dim/disable plus hover tooltips only.
+- Collapse right-rail reasons behind closed details (prior slice).
+
 ## [0.2.30] — 2026-10-04
 
 ### Added

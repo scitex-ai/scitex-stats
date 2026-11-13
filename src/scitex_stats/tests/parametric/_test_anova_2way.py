@@ -95,6 +95,7 @@ def test_anova_2way(  # noqa: C901
     -------
     result : dict or DataFrame
         Test results including for each effect (A, B, interaction):
+
         - effect: Name of effect
         - statistic: F-statistic
         - pvalue: p-value
@@ -108,20 +109,25 @@ def test_anova_2way(  # noqa: C901
 
     Notes
     -----
+    See [#anova-2way-ref1]_, [#anova-2way-ref2]_.
+
     Two-way ANOVA tests the effects of two independent categorical variables
     (factors) on a continuous dependent variable, including their interaction.
 
     **Three Hypotheses Tested**:
+
     1. **Main effect of Factor A**: Marginal means of A levels differ
     2. **Main effect of Factor B**: Marginal means of B levels differ
     3. **Interaction A×B**: Effect of A depends on level of B (and vice versa)
 
     **Null Hypotheses**:
+
     - H0_A: All marginal means of Factor A are equal
     - H0_B: All marginal means of Factor B are equal
     - H0_AB: No interaction between Factors A and B
 
     **Assumptions**:
+
     1. **Independence**: Observations are independent
     2. **Normality**: Residuals are normally distributed within each cell
     3. **Homogeneity of variance**: Equal variances across all cells
@@ -132,6 +138,7 @@ def test_anova_2way(  # noqa: C901
         SS_{total} = SS_A + SS_B + SS_{AB} + SS_{error}
 
     Where:
+
     - SS_A: Sum of squares for main effect A
     - SS_B: Sum of squares for main effect B
     - SS_AB: Sum of squares for interaction A×B
@@ -148,16 +155,19 @@ def test_anova_2way(  # noqa: C901
         \\eta_p^2 = \\frac{SS_{effect}}{SS_{effect} + SS_{error}}
 
     **Interpreting Results**:
+
     - **Significant interaction**: Main effects should be interpreted cautiously.
       Use simple effects analysis or interaction plots.
     - **Non-significant interaction**: Main effects can be interpreted directly.
 
     **Post-hoc tests**:
     If main effects are significant:
+
     - Pairwise comparisons with test_ttest_ind()
     - Apply corrections: correct_bonferroni(), correct_holm()
 
     If interaction is significant:
+
     - Simple effects: test effect of A at each level of B
     - Pairwise comparisons within each level
 
@@ -195,8 +205,8 @@ def test_anova_2way(  # noqa: C901
 
     References
     ----------
-    .. [1] Fisher, R. A. (1925). Statistical Methods for Research Workers.
-    .. [2] Montgomery, D. C. (2017). Design and Analysis of Experiments (9th ed.).
+    .. [#anova-2way-ref1] Fisher, R. A. (1925). Statistical Methods for Research Workers.
+    .. [#anova-2way-ref2] Montgomery, D. C. (2017). Design and Analysis of Experiments (9th ed.).
 
     See Also
     --------

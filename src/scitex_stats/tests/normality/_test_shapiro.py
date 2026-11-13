@@ -119,9 +119,11 @@ def test_shapiro(  # noqa: C901
 
     References
     ----------
-    .. [1] Shapiro, S. S., & Wilk, M. B. (1965). "An analysis of variance test
+    Further reading: [#statstestshapiroref1]_, [#statstestshapiroref2]_.
+
+    .. [#statstestshapiroref1] Shapiro, S. S., & Wilk, M. B. (1965). "An analysis of variance test
            for normality (complete samples)". Biometrika, 52(3-4), 591-611.
-    .. [2] Razali, N. M., & Wah, Y. B. (2011). "Power comparisons of
+    .. [#statstestshapiroref2] Razali, N. M., & Wah, Y. B. (2011). "Power comparisons of
            Shapiro-Wilk, Kolmogorov-Smirnov, Lilliefors and Anderson-Darling
            tests". Journal of Statistical Modeling and Analytics, 2(1), 21-33.
 
