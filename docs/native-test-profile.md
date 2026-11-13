@@ -6,8 +6,9 @@ Its default is false; pushes, pull requests and schedules do not select this job
 The job inherits no secrets and grants only contents read permission.
 
 The additional job calls the pinned shared leaf test workflow with the current
-workflow source commit. Shared admission requires the original trusted actor
-and organization membership. The Stats profile binds compute-03, the measured
+workflow source commit. Shared admission checks the original trusted actor
+allowlist and matching triggering actor identity. The Stats profile binds
+compute-03, the measured
 image/runtime bytes, all ten leaf helpers and the immutable Dev lifecycle
 resource. The complete Python 3.11–3.13 matrix runs sequentially, preserving the
 owning all/dev installation, worker policy and coverage. Each job has the

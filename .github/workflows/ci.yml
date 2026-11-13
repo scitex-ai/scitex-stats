@@ -9,8 +9,8 @@ name: ci
 # the retired consolidated pr-ci.yml/release-ci.yml pair). This file carries
 # only triggers, concurrency, and thin `uses:` calls.
 #
-# Shared workflows admit native runners from the original event identity and
-# confirmed organization membership. Hosted fallback is allowed by current
+# Shared workflows admit native runners from trusted original actor identity
+# and matching triggering actor identity. Hosted fallback is allowed by current
 # policy. The optional qualified native test job additionally binds compute-03,
 # image/runtime/helper bytes and the shared lifecycle resource.
 #
