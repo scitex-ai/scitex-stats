@@ -13,6 +13,7 @@ import sys
 import sysconfig
 import tempfile
 from pathlib import Path
+from urllib.parse import quote
 
 
 def require(condition, message):
@@ -79,13 +80,27 @@ def verify_python(root):
             "input_unchanged": True}
 
 
-def isolated_environment(root):
+def isolated_environment(root, *, home=None):
+    """Own every probe child's state, including CLI and MCP store resolution."""
+    refused = str(root / "refused-postgres")
     return {
         "PATH": os.defpath,
-        "HOME": str(root),
+        "HOME": str(root if home is None else home),
+        "TMPDIR": str(root),
         "SCITEX_DIR": str(root / "state"),
+        "XDG_CACHE_HOME": str(root / "cache"),
+        "XDG_CONFIG_HOME": str(root / "config"),
+        "UV_CACHE_DIR": str(root / "uv-cache"),
+        "UV_NO_CONFIG": "1",
         "MPLBACKEND": "Agg",
+        "MPLCONFIGDIR": str(root / "matplotlib"),
         "FASTMCP_CHECK_FOR_UPDATES": "off",
+        "PGHOST": refused, "PGPORT": "1",
+        "PGUSER": "release-refused", "PGDATABASE": "release-refused",
+        "SCITEX_STORE_DSN": (
+            "postgresql://release-refused@/release-refused?host="
+            + quote(refused, safe="") + "&port=1&connect_timeout=1"
+        ),
     }
 
 
