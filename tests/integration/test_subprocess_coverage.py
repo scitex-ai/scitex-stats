@@ -17,7 +17,8 @@ PROJECT = Path(__file__).resolve().parents[2]
 def test_root_fixture_leaves_sites_and_coverage_environment_untouched(tmp_path):
     # Arrange
     environment = tmp_path / "environment"
-    venv.EnvBuilder(with_pip=False).create(environment)
+    # POSIX links keep relocatable Python distributions connected to their stdlib.
+    venv.EnvBuilder(with_pip=False, symlinks=os.name != "nt").create(environment)
     python = environment / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
     env = {key: value for key, value in os.environ.items()
            if not key.startswith("COVERAGE_")}
@@ -43,7 +44,8 @@ def test_root_fixture_leaves_sites_and_coverage_environment_untouched(tmp_path):
         capture_output=True, text=True, timeout=30,
     )
     # Assert
-    assert (result.returncode, json.loads(result.stdout)) == (
+    observed = json.loads(result.stdout) if result.returncode == 0 else None
+    assert (result.returncode, observed) == (
         0, [True, "caller-owned-config", "caller-owned-data"]
     ), result.stderr
 
