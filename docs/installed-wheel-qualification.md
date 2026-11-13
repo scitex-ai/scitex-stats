@@ -174,11 +174,19 @@ commas, colons and newlines. Ambient provider/OIDC credentials and
 then applies the private state policy before launching the retained test,
 build or fresh-wheel driver. Those inner scripts also require the owned-root
 identity, so direct execution against a host's ordinary `/tmp` fails before
-installation or deletion. The nested fresh-wheel runner supplies its own
-private database-refusal settings when it reconstructs child environments.
+installation or deletion. The owning probe supplies one environment factory
+for the installer and its CLI/MCP children. Each phase receives private state and database-refusal
+settings when constructing its child environment.
 Build installation uses uv and stops on failure, with no pip fallback.
 
 The supported routes are non-publishing applications. The legacy manual OIDC
 publisher is refused. Automatic shared-caller staging, full current native-suite
 and cancellation/cleanup qualification, source/runtime registration, and the
 qualified shared publisher remain prerequisites for release admission.
+
+The probe environment controls in `tests/integration/test_installed_wheel_probe.py`
+exercise both HOME modes with real store resolution and a missing owned Unix
+socket, including rejection of ambient environment state. Connection parameters
+are checked against the fixture's exact private socket before any libpq call.
+The numerical, CLI, MCP result and skill-content assertions are separate from
+this environment policy and retain their existing bounds.

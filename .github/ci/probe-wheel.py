@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import argparse
 import email.parser
-import os
+import runpy
 import shutil
 import subprocess
 import sys
 import tempfile
 import zipfile
 from pathlib import Path
-from urllib.parse import quote
 
 
 def select_wheel(directory, expected_version):
@@ -58,27 +57,9 @@ def main():
         root = Path(directory)
         home = root / "home"
         home.mkdir()
-        refused = str(root / "refused-postgres")
-        # No inherited Python paths, coverage hooks, credentials or user config.
-        env = {
-            "PATH": os.defpath,
-            "HOME": str(home),
-            "TMPDIR": str(root),
-            "XDG_CACHE_HOME": str(root / "cache"),
-            "XDG_CONFIG_HOME": str(root / "config"),
-            "UV_CACHE_DIR": str(root / "uv-cache"),
-            "UV_NO_CONFIG": "1",
-            "SCITEX_DIR": str(root / "state"),
-            "PGHOST": refused, "PGPORT": "1",
-            "PGUSER": "release-refused", "PGDATABASE": "release-refused",
-            "SCITEX_STORE_DSN": (
-                "postgresql://release-refused@/release-refused?host="
-                + quote(refused, safe="") + "&port=1&connect_timeout=1"
-            ),
-            "MPLBACKEND": "Agg",
-            "MPLCONFIGDIR": str(root / "matplotlib"),
-            "FASTMCP_CHECK_FOR_UPDATES": "off",
-        }
+        # Reuse the owning probe's policy for installers, CLI and MCP children.
+        policy = runpy.run_path(str(helper))["isolated_environment"]
+        env = policy(root, home=home)
         fresh = root / "env"
         python = fresh / "bin/python"
         run([uv, "venv", "--python", sys.executable, str(fresh)],
