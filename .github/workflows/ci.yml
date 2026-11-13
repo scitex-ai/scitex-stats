@@ -9,13 +9,10 @@ name: ci
 # the retired consolidated pr-ci.yml/release-ci.yml pair). This file carries
 # only triggers, concurrency, and thin `uses:` calls.
 #
-# Runner policy: SELF-HOSTED ONLY — GitHub-hosted runners are forbidden
-# (PS-169). Runner selection is the Actions Variable CI_RUNS_ON (repo ->
-# org precedence),
-# resolved from THIS repo's context by the called workflows via
-#   runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '["self-hosted","Linux","X64","scitex-ci"]') }}
-# (`vars` in a reusable workflow resolve against the CALLER repo/org, so a
-# per-repo CI_RUNS_ON override still works through the shared bodies).
+# Shared workflows admit native runners from trusted original actor identity
+# and matching triggering actor identity. Hosted fallback is allowed by current
+# policy. The optional qualified native test job additionally binds compute-03,
+# image/runtime/helper bytes and the shared lifecycle resource.
 #
 # Required-status-check contexts (branch protection must reference these;
 # under workflow_call GitHub renders "<caller-job-id> / <reusable job name>"):
@@ -33,6 +30,12 @@ on:
   schedule:
     - cron: "0 17 * * *" # nightly 17:00 UTC (~02:00 JST), off-peak
   workflow_dispatch:
+    inputs:
+      native_test_profile:
+        description: Run the qualified native test matrix (no artifacts or publication)
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -64,3 +67,14 @@ jobs:
     secrets: inherit
     with:
       fail_on_warning: true
+
+  native-qualified-test:
+    if: github.event_name == 'workflow_dispatch' && inputs.native_test_profile
+    permissions:
+      contents: read
+    uses: scitex-ai/.github/.github/workflows/leaf-release-sif.yml@4b2175758b236d57a90918a196f723b7400f0bbd
+    with:
+      operation: test
+      source_commit: ${{ github.sha }}
+      # Required test-plan label only: this job never creates a tag or artifact.
+      release_tag: v1.0.0
