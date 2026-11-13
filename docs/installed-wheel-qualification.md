@@ -73,3 +73,39 @@ worker count, coverage and deadlines. Archive/source identity, installed-file
 integrity, image/runtime qualification, publisher settings and public delivery
 remain separate checks. Hosted GUI, authentication and physical Safari are
 outside this probe's scope.
+
+## Source and archive identity
+
+The release-image adapter `.github/ci/release-identity.py` uses the shared
+artifact verifier from a fixed commit. It fetches the bounded public core files
+and verifies their SHA-256 hashes before executing them with isolated Python.
+This step requires POSIX, Python3.11 or newer, Git, and access to the public
+source host. It does not request credentials.
+
+From the reviewed checkout, select the exact commit, the version declared in
+its `pyproject.toml` (without a leading `v`), and an owned archive directory:
+
+```bash
+REVIEWED_COMMIT="$(git rev-parse HEAD)"
+REVIEWED_DIST=/absolute/path/to/reviewed-dist
+
+python3.12 -I .github/ci/release-identity.py write-proof \
+    --commit "$REVIEWED_COMMIT" --version "$CANDIDATE_VERSION" \
+    --dist "$REVIEWED_DIST"
+python3.12 -I .github/ci/release-identity.py verify-proof \
+    --commit "$REVIEWED_COMMIT" --version "$CANDIDATE_VERSION" \
+    --dist "$REVIEWED_DIST"
+```
+
+The directory must contain exactly the versioned Stats wheel and source
+archive. `write-proof` creates `release-proof.json` exclusively; it refuses an
+existing proof. `verify-proof` recomputes the source/archive checks and compares
+the saved proof. Wrong commits or versions, changed or missing package payloads,
+extra archives, symlinked inputs and changed verifier bytes fail.
+
+The shared core checks archive membership and source bytes against Git,
+including the required skills, built documentation and application files.
+The proof is verification evidence; it grants no runtime, tag or publishing
+admission. The existing release workflow does not invoke this adapter yet.
+Archive identity and the fresh installed-wheel behavioral probe are separate
+requirements, and neither replaces the full retained-image suite.
