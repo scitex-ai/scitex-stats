@@ -118,3 +118,35 @@ def test_identity_refuses_symlink_inputs(identity, tmp_path):
     error = _capture_error(lambda: identity["regular"](link))
     # Assert
     assert isinstance(error, OSError)
+
+
+@pytest.mark.parametrize("commit_override, version_override", [
+    (None, None), ("0" * 40, None), (None, "9.9.9"),
+])
+def test_source_preflight_does_not_need_archives_or_fetch_core(
+    tmp_path, commit_override, version_override,
+):
+    # Arrange: no archives exist; a successful source check cannot fetch core.
+    import tomllib
+
+    commit = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True,
+    ).strip()
+    version = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["version"]
+    sentinel = tmp_path / "keep-existing-dist"
+    sentinel.write_text("unchanged")
+    # Act
+    result = subprocess.run(
+        [sys.executable, "-I", str(ADAPTER), "verify-source",
+         "--commit", commit_override or commit, "--version", version_override or version,
+         "--dist", str(tmp_path)],
+        cwd=ROOT, capture_output=True, text=True, timeout=15,
+    )
+    # Assert
+    assert (result.returncode == 0) == (commit_override is None and version_override is None)
+    assert list(tmp_path.iterdir()) == [sentinel]
+    assert sentinel.read_text() == "unchanged"
+    if result.returncode == 0:
+        assert json.loads(result.stdout) == {
+            "repository": "scitex-ai/scitex-stats", "commit": commit, "version": version,
+        }

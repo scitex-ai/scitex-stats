@@ -84,7 +84,8 @@ def fetch_core(directory):
             stream.write(raw)
     verified_core(directory)
 
-def artifact_proof(directory, commit, version, source_root):
+def source_identity(commit, version, source_root):
+    """Check caller-resolved identity before building or contacting installers."""
     if not SHA.fullmatch(commit) or not VERSION.fullmatch(version):
         raise ValueError("Malformed expected source or version")
     actual = subprocess.check_output(
@@ -97,6 +98,11 @@ def artifact_proof(directory, commit, version, source_root):
     ))["project"]
     if project["name"] != "scitex-stats" or project["version"] != version:
         raise ValueError("Expected version and Git project metadata differ")
+    return {"repository": REPOSITORY, "commit": commit, "version": version}
+
+
+def artifact_proof(directory, commit, version, source_root):
+    source_identity(commit, version, source_root)
     if directory.is_symlink() or not directory.is_dir():
         raise ValueError("Unsafe artifact directory")
     files = sorted(path for path in directory.iterdir() if path.name != PROOF)
@@ -138,11 +144,15 @@ def artifact_proof(directory, commit, version, source_root):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=["write-proof", "verify-proof"])
+    parser.add_argument("mode", choices=["verify-source", "write-proof", "verify-proof"])
     parser.add_argument("--commit", required=True)
     parser.add_argument("--version", required=True)
     parser.add_argument("--dist", type=Path, default=Path("dist"))
     args = parser.parse_args()
+    if args.mode == "verify-source":
+        json.dump(source_identity(args.commit, args.version, Path.cwd().resolve()), sys.stdout)
+        sys.stdout.write("\n")
+        return
     proof = artifact_proof(
         args.dist, args.commit, args.version, Path.cwd().resolve(),
     )

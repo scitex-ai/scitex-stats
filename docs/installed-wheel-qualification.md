@@ -106,7 +106,20 @@ extra archives, symlinked inputs and changed verifier bytes fail.
 The shared core checks archive membership and source bytes against Git,
 including the required skills, built documentation and application files.
 The proof is verification evidence; it grants no runtime, tag or publishing
-admission. The existing release workflow does not invoke this adapter yet.
+admission. The build application now requires three arguments: the baked Python
+minor, the independently resolved expected commit, and the expected version.
+It checks source identity before dependency installation or deleting `dist/`,
+then builds normally, writes the archive proof, runs the fresh installed-wheel
+probe, and verifies the archive proof again. A failure stops the application.
+`verify-source` is also available as a local, archive-free identity check; it
+does not fetch the shared core or authorize a build.
+
+This helper integration does not enable the shared Stats build profile. Its
+registration still admits tests only. The legacy release caller does not supply
+the required independent identity arguments and must not be dispatched as a
+shortcut. Shared source-closure updates, actual complete SIF build qualification
+at an unused version, protected promotion and publisher admission remain release
+prerequisites. Every existing private 1.0.0 archive remains ineligible for upload.
 Archive identity and the fresh installed-wheel behavioral probe are separate
 requirements, and neither replaces the full retained-image suite.
 
