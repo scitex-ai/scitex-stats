@@ -149,7 +149,7 @@ responsibility. Normal installers can still use network access; this is not a
 network sandbox.
 
 The PostgreSQL host is a nonexistent Unix socket directory beneath private
-state, with port1 and a one-second connection timeout. URL encoding preserves
+state, with `port=1` and `connect_timeout=1` settings. URL encoding preserves
 spaces and reserved characters in its path. Controls in
 `tests/integration/test_release_private_state.py` exercise the actual child
 environment, source-store DSN resolution and libpq connection refusal, plus
