@@ -82,12 +82,11 @@ def main(ctx, as_json):
     power analysis, MCP server).
 
     \b
-    Configuration precedence (highest -> lowest):
-      1. Explicit CLI flags
-      2. ./config.yaml (project-local)
-      3. $SCITEX_STATS_CONFIG (path to a YAML file)
-      4. ~/.scitex/stats/config.yaml (user-wide)
-      5. Built-in defaults
+    Configuration:
+      Commands use explicit arguments and built-in defaults.
+      Package-wide YAML defaults are not currently loaded.
+      config.yaml and SCITEX_STATS_CONFIG do not supply command defaults.
+      See each command's --help for its options.
 
     \b
     Example:

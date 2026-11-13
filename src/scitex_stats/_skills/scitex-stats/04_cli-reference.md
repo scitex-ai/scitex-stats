@@ -68,8 +68,8 @@ are not recursively enumerated. Request a dependency directly to inspect its API
 scitex-stats skills list
 scitex-stats skills get 02_quick-start
 scitex-stats skills install                  # symlink to ~/.scitex/dev/skills/
-scitex-stats skills install --claude-symlink # also expose to ~/.claude/skills/scitex/
-scitex-stats skills install --no-link --dest /tmp/skills
+scitex-stats skills install --directory /path/to/agent/skills
+scitex-stats skills install --no-link --directory /path/to/agent/skills
 scitex-stats skills install --dry-run
 ```
 
@@ -80,15 +80,17 @@ scitex-stats format-pvalue 0.001    # → ***
 scitex-stats format-pvalue 0.5      # → ns
 ```
 
-## Configuration precedence
+## Configuration
 
-Highest → lowest:
+Commands use their explicit arguments and built-in defaults. A package-wide
+YAML configuration loader is not currently wired into the CLI:
+`./config.yaml`, `SCITEX_STATS_CONFIG` and
+`~/.scitex/stats/config.yaml` do not supply command defaults.
 
-1. Explicit CLI flags
-2. `./config.yaml` (project-local)
-3. `$SCITEX_STATS_CONFIG` (path to a YAML file)
-4. `~/.scitex/stats/config.yaml` (user-wide)
-5. Built-in defaults
+For skills installation, `--directory` takes precedence over
+`SCITEX_STATS_SKILLS_DIR`; otherwise the destination is
+`~/.scitex/dev/skills/`. The shared installer protects caller-owned files.
+The optional `--claude-symlink` compatibility flag remains available.
 
 See [14_env-vars.md](14_env-vars.md) for the env vars `scitex-stats`
 reads at runtime.
