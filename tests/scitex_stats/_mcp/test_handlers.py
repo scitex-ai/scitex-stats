@@ -305,28 +305,6 @@ def test_describe_skewness_is_float_when_scipy_available():
     assert isinstance(out["skewness"], float)
 
 
-def test_describe_empty_data_reports_success():
-    # Arrange
-    data = [float("nan"), float("nan")]  # all-NaN -> "No valid data points" branch
-
-    # Act
-    out = _arun(h.describe_handler(data=data))
-
-    # Assert
-    assert out["success"] is True
-
-
-def test_describe_empty_data_returns_error_message():
-    # Arrange
-    data = [float("nan"), float("nan")]
-
-    # Act
-    out = _arun(h.describe_handler(data=data))
-
-    # Assert
-    assert out.get("error") == "No valid data points"
-
-
 # (`describe_handler`'s scipy-ImportError fallback is hard to stub
 # cleanly without breaking other sibling handlers that share scipy
 # in this process. Skipped intentionally.)

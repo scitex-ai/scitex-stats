@@ -267,7 +267,10 @@ async def describe(
     data: List[float],
     percentiles: Optional[List[float]] = None,
 ) -> str:
-    """Calculate descriptive statistics for data."""
+    """Calculate descriptive statistics for data.
+
+    Empty or all-NaN input returns a failed result with an error message.
+    """
     from scitex_stats._mcp.handlers import describe_handler
 
     result = await describe_handler(

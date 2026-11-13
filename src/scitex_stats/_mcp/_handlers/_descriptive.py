@@ -27,7 +27,7 @@ async def describe_handler(
             arr = arr[~np.isnan(arr)]  # Remove NaN
 
             if len(arr) == 0:
-                return {"error": "No valid data points"}
+                raise ValueError("No valid data points")
 
             percs = percentiles or [25, 50, 75]
             percentile_values = np.percentile(arr, percs)

@@ -7,6 +7,9 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Report failed descriptive-statistics MCP results for empty or all-NaN
+  inputs, retaining the existing error message and tool name.
+
 - Correct CLI help and skills to describe actual configuration support,
   portable skills destinations, GUI environment variables and port options.
   Package-wide YAML defaults remain unimplemented.

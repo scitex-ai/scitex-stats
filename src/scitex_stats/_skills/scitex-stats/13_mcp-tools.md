@@ -32,6 +32,9 @@ All tools are prefixed `stats_` under the scitex MCP server
 | `stats_recommend_test` | Recommend ONE primary test with reason |
 | `stats_run_all_applicable` | Run every applicable test (primary + sensitivity) |
 
+Descriptive statistics require at least one non-NaN observation. Empty or
+all-NaN input returns `success: false` and `error: "No valid data points"`.
+
 ## Handler Organization
 
 MCP handlers are in `scitex_stats/_mcp/_handlers/`:
