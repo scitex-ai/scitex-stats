@@ -118,3 +118,45 @@ def test_identity_refuses_symlink_inputs(identity, tmp_path):
     error = _capture_error(lambda: identity["regular"](link))
     # Assert
     assert isinstance(error, OSError)
+
+
+def _source_preflight(tmp_path, commit_override=None, version_override=None):
+    import tomllib
+
+    commit = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True,
+    ).strip()
+    version = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["version"]
+    sentinel = tmp_path / "keep-existing-dist"
+    sentinel.write_text("unchanged")
+    result = subprocess.run(
+        [sys.executable, "-I", str(ADAPTER), "verify-source",
+         "--commit", commit_override or commit, "--version", version_override or version,
+         "--dist", str(tmp_path)],
+        cwd=ROOT, capture_output=True, text=True, timeout=15,
+    )
+    preserved = (list(tmp_path.iterdir()) == [sentinel] and sentinel.read_text() == "unchanged")
+    return result, preserved, commit, version
+
+
+def test_source_preflight_accepts_identity_without_archives_or_core_fetch(tmp_path):
+    # Arrange: tmp_path contains no archives.
+    # Act: preflight checks the independently supplied source identity.
+    result, preserved, commit, version = _source_preflight(tmp_path)
+    # Assert
+    assert (result.returncode, preserved, json.loads(result.stdout)) == (0, True, {
+        "repository": "scitex-ai/scitex-stats", "commit": commit, "version": version,
+    })
+
+
+@pytest.mark.parametrize("commit_override, version_override", [
+    ("0" * 40, None), (None, "9.9.9"),
+])
+def test_source_preflight_refuses_identity_without_touching_dist(
+    tmp_path, commit_override, version_override,
+):
+    # Arrange: supply the mismatched caller identity.
+    # Act
+    result, preserved, _, _ = _source_preflight(tmp_path, commit_override, version_override)
+    # Assert
+    assert (result.returncode != 0, preserved, result.stdout) == (True, True, "")
