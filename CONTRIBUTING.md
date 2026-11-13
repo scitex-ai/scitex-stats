@@ -67,3 +67,5 @@ pytest tests/ -x -q
 By contributing, you agree to the terms of the [CLA](CLA.md), which includes
 licensing under AGPL-3.0 (see [LICENSE](LICENSE)) and the dual-licensing
 provisions described therein.
+
+For release artifact acceptance, see the [installed-wheel qualification guide](docs/installed-wheel-qualification.md). Its leaf-owned checks complement the full retained-container suite.
