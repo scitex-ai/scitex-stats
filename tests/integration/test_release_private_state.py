@@ -9,7 +9,9 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 import pytest
+import scitex_dev
 
+PROVIDER_SITE = Path(scitex_dev.__file__).resolve().parent.parent
 CONTEXT = Path(__file__).resolve().parents[2] / ".github/ci/release-context.sh"
 
 
@@ -32,9 +34,9 @@ def state_case(tmp_path):
 def execute(case, body=None):
     root, probe, environment = case
     code = 'set -euo pipefail; source "$1"; stats_release_context "$2" "$3"; '
-    code += body or 'stats_release_run "$3/bin/python" -I "$4"'
+    code += body or 'stats_release_run "$3/bin/python" -I "$4" "$5"'
     return subprocess.run(
-        ["bash", "-c", code, "state-control", str(CONTEXT), str(root), sys.prefix, str(probe)],
+        ["bash", "-c", code, "state-control", str(CONTEXT), str(root), sys.prefix, str(probe), str(PROVIDER_SITE)],
         env=environment, capture_output=True, text=True, timeout=15,
     )
 
@@ -73,7 +75,7 @@ def test_postgres_refusal_preserves_special_path_characters(state_case):
 
 def test_parent_home_is_unchanged(state_case):
     # Arrange
-    body = 'stats_release_run "$3/bin/python" -I "$4" > /dev/null; printf "%s" "$HOME"'
+    body = 'stats_release_run "$3/bin/python" -I "$4" "$5" > /dev/null; printf "%s" "$HOME"'
     # Act
     result = execute(state_case, body)
     # Assert
@@ -122,7 +124,11 @@ def test_uninitialized_run_refused(state_case):
 
 def test_real_store_resolution_and_connection_refusal(state_case):
     # Arrange
-    state_case[1].write_text('''import json,os
+    state_case[1].write_text('''import json,os,sys
+sys.path.insert(0,sys.argv[1])
+import scitex_dev
+from pathlib import Path
+assert Path(scitex_dev.__file__).resolve().is_relative_to(Path(sys.argv[1]).resolve())
 import psycopg
 from scitex_dev.store import host_store
 from psycopg.conninfo import conninfo_to_dict
@@ -143,4 +149,4 @@ else:
     with tempfile.TemporaryDirectory(prefix="ss-", dir="/tmp") as short_root:
         result = execute((Path(short_root), state_case[1], state_case[2]))
     # Assert
-    assert (result.returncode, json.loads(result.stdout)) == (0, {"refused": True})
+    assert (result.returncode, result.stdout.strip()) == (0, '{"refused": true}'), result.stderr
