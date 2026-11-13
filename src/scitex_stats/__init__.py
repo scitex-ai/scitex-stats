@@ -122,6 +122,7 @@ _LAZY_ATTRS: dict[str, str] = {
     # Dispatcher
     "available_tests": "_dispatch",
     "run_test": "_dispatch",
+    "effect_size": "_effect_size",
     # Six-stat reporting doctrine (n, 95% CI, method, p-value, effect size,
     # test statistic — see scitex_stats.reporting.full_report)
     "full_report": "reporting",
@@ -247,6 +248,7 @@ __all__ = [
     "tests",
     # Dispatcher
     "run_test",
+    "effect_size",
     "available_tests",
     # Six-stat reporting doctrine
     "full_report",
