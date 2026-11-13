@@ -38,6 +38,7 @@ def configured_runtime(tmp_path):
         "PATH": str(tmp_path) + os.pathsep + os.defpath,
         "HOME": str(tmp_path),
         "RUNNER_TEMP": str(tmp_path),
+        "SCITEX_CI_OWNED_CONTEXT": str(ROOT / "tests/scitex_stats/fixtures/dev-owned-context.bash.fixture"),
         "SCITEX_CI_APPTAINER": str(runtime),
         "SCITEX_CI_APPTAINER_SHA256": hashlib.sha256(runtime.read_bytes()).hexdigest(),
         "SCITEX_CI_SIF": str(image),
@@ -67,8 +68,8 @@ def test_wrapper_executes_only_matching_configured_bytes(configured_runtime, pat
     result = _invoke(config)
     argv = json.loads(config["marker"].read_text())
     # Assert
-    assert (result.returncode, argv[-5:]) == (
-        0, [str(config["image"]), "bash", ".github/ci/build-in-sif.sh",
+    assert (result.returncode, argv[-6:]) == (
+        0, [str(config["image"]), "bash", ".github/ci/run-owned-in-sif.sh", "build-in-sif.sh",
             "3.12", "argument with spaces"],
     )
 

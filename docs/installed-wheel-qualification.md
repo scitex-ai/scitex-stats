@@ -62,7 +62,7 @@ stops the sequence; it never falls back to another installer. Temporary files
 are removed afterwards, so retain stdout/stderr in the calling job.
 
 The caller still owns image/runtime and source/archive identity verification.
-The wrapper neither registers a release profile nor changes the publisher.
+The wrapper does not register a release profile or authorize publication.
 Runner refusal controls live in `tests/integration/test_wheel_probe_runner.py`;
 real fresh-wheel execution remains a separate required qualification.
 
@@ -155,8 +155,30 @@ spaces and reserved characters in its path. Controls in
 environment, source-store DSN resolution and libpq connection refusal, plus
 unsafe-root and occupied-state refusals. They do not connect to a live store.
 
-This helper is not yet invoked by the retained release scripts. The outer
-caller must first deliver the pinned shared `scitex-dev` ownership/cancellation
-resource, create and bind owned scratch, and connect this policy to every
-release application. Full native-suite, cleanup/cancellation, source/runtime
-closure and publisher qualification remain required before release admission.
+The outer wrapper requires `SCITEX_CI_OWNED_CONTEXT` to name an absolute,
+regular, non-symlink file staged by the caller from the qualified
+[Dev lifecycle resource](https://github.com/scitex-ai/scitex-dev/blob/41b907f7f32069fcf42855bf5a7722875e29cbec/src/scitex_dev/ci/owned_context.sh).
+It verifies the fixed SHA-256
+`a795678455d409e076a1c93a4a810b50c89499fcb83ae4c90a8d31a19e90e5d1`
+before sourcing it. The frozen upstream snapshot in the test namespace keeps
+unit controls offline; production callers supply the resource explicitly.
+
+The shared lifecycle creates a mode-0700 job root under `RUNNER_TEMP` (or
+`/tmp`), with birth-token process-group cancellation and bounded cleanup.
+The runtime receives an explicit environment, a private home, private `/tmp`
+and `/var/tmp` bindings, and the reviewed checkout binding. Bind paths reject
+commas, colons and newlines. Ambient provider/OIDC credentials and
+`APPTAINERENV_*` overrides are not forwarded.
+
+`run-owned-in-sif.sh` checks the bound root's device, inode, owner and mode,
+then applies the private state policy before launching the retained test,
+build or fresh-wheel driver. Those inner scripts also require the owned-root
+identity, so direct execution against a host's ordinary `/tmp` fails before
+installation or deletion. The nested fresh-wheel runner supplies its own
+private database-refusal settings when it reconstructs child environments.
+Build installation uses uv and stops on failure, with no pip fallback.
+
+The supported routes are non-publishing applications. The legacy manual OIDC
+publisher is refused. Automatic shared-caller staging, full current native-suite
+and cancellation/cleanup qualification, source/runtime registration, and the
+qualified shared publisher remain prerequisites for release admission.

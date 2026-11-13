@@ -52,6 +52,7 @@ def _run_wrapper(tmp_path, *, shim, sif, path_prepend=None, home=None):
         SCITEX_CI_APPTAINER_SHA256=_fixture_digest(shim),
         SCITEX_CI_SIF_SHA256=_fixture_digest(sif),
         RUNNER_TEMP=str(runner_temp),
+        SCITEX_CI_OWNED_CONTEXT=str(REPO_ROOT / "tests/scitex_stats/fixtures/dev-owned-context.bash.fixture"),
     )
     if path_prepend is not None:
         env["PATH"] = f"{path_prepend}{os.pathsep}{env.get('PATH', '')}"
@@ -103,7 +104,7 @@ def test_wrapper_omits_the_bind_where_the_spartan_tree_is_absent(wrapper_run):
     # Act
     argv = recorded.read_text()
     # Assert
-    assert "--bind" not in argv
+    assert str(SPARTAN_BIND) not in argv
 
 
 def test_wrapper_refuses_a_path_substitute_for_missing_configured_runtime(tmp_path):
