@@ -109,3 +109,24 @@ The proof is verification evidence; it grants no runtime, tag or publishing
 admission. The existing release workflow does not invoke this adapter yet.
 Archive identity and the fresh installed-wheel behavioral probe are separate
 requirements, and neither replaces the full retained-image suite.
+
+## Retained runtime and image bytes
+
+The outer `.github/ci/exec-in-sif.sh` requires the configured runtime and image
+paths plus their reviewed SHA-256 digests:
+
+- `SCITEX_CI_APPTAINER` and `SCITEX_CI_APPTAINER_SHA256`
+- `SCITEX_CI_SIF` and `SCITEX_CI_SIF_SHA256`
+
+Paths must be absolute or start with `~/`. A missing runtime, missing or malformed
+digest, changed runtime/image bytes, or an invalid inner script path stops before
+execution. The wrapper uses the configured executable; another executable on
+PATH cannot replace a missing configured runtime. Quoted paths and arguments
+retain spaces.
+
+Use expected digests from a reviewed runtime/image registration. Computing a
+checksum of an unknown live file does not qualify it. These byte checks grant
+no runtime or publishing admission and do not replace private state/scratch,
+capacity and source/archive verification. The legacy release caller reads the
+digests from Actions variables; missing configuration remains a release hold.
+No release dispatch or variable change is performed by this source change.

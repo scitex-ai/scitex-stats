@@ -1,31 +1,16 @@
 #!/usr/bin/env python3
-"""The SIF exec wrapper must work on a HETEROGENEOUS runner pool.
+"""Retain scratch, binding and argument contracts for explicitly pinned runtimes.
 
-Two measured failures drove these cases:
-
-1. The wrapper hardcoded its apptainer scratch under
-   `/data/gpfs/projects/punim0264`, so on the org runners it died at
-   `mkdir: cannot create directory '/data': Permission denied` BEFORE anything
-   ran (v0.2.26 build; every leg of the first v0.2.27 run).
-2. It demanded `~/.env-3.11/bin/apptainer` exactly, which exists on some nodes
-   and not others: the same tag passed on 3.11 and 3.12 and died on 3.13 with
-   `apptainer shim not executable` (run 35180305493).
-
-These cases run the REAL script against a stub `apptainer` (the external binary
-is the boundary; the script's own decisions are what is asserted). They are
-hermetic about the two things the host also has: `HOME` is redirected, so the
-`~/.env-3.11/bin/apptainer` shim the script prepends to PATH cannot answer
-instead of the stub, and the SIF path is one we create. A "nothing usable
-anywhere" case is deliberately absent — it cannot be asserted hermetically
-because the resolver's last candidates are absolute host paths; the fail-loud
-contract is covered through the SIF gate instead.
-
-One assertion per test (STX-TQ007 — the checker counts `pytest.skip(...)` as an
-assertion, so skips are `@pytest.mark.skipif` decorators).
+The real wrapper executes inert stub runtimes at the external binary boundary.
+Fixtures supply the expected hashes of their own stub/image files. Runtime
+selection follows the explicit configuration: an executable on PATH cannot
+replace a missing configured runtime. HOME and scratch are private to each case.
+The original non-Spartan scratch and omitted-GPFS-bind regressions remain tested.
 """
 
 from __future__ import annotations
 
+import hashlib
 import os
 import stat
 import subprocess
@@ -51,6 +36,12 @@ def _stub(directory, name, recorded):
     return stub
 
 
+def _fixture_digest(path):
+    if path.is_file():
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    return "0" * 64
+
+
 def _run_wrapper(tmp_path, *, shim, sif, path_prepend=None, home=None):
     runner_temp = tmp_path / "runner-temp"
     runner_temp.mkdir(exist_ok=True)
@@ -58,6 +49,8 @@ def _run_wrapper(tmp_path, *, shim, sif, path_prepend=None, home=None):
     env.update(
         SCITEX_CI_APPTAINER=str(shim),
         SCITEX_CI_SIF=str(sif),
+        SCITEX_CI_APPTAINER_SHA256=_fixture_digest(shim),
+        SCITEX_CI_SIF_SHA256=_fixture_digest(sif),
         RUNNER_TEMP=str(runner_temp),
     )
     if path_prepend is not None:
@@ -113,9 +106,8 @@ def test_wrapper_omits_the_bind_where_the_spartan_tree_is_absent(wrapper_run):
     assert "--bind" not in argv
 
 
-def test_wrapper_falls_back_to_an_apptainer_on_the_path(tmp_path):
-    # Arrange: the configured shim is absent — the node state that broke 3.13.
-    # HOME is redirected so the shim the script prepends to PATH cannot answer.
+def test_wrapper_refuses_a_path_substitute_for_missing_configured_runtime(tmp_path):
+    # Arrange: PATH has a stub, but the explicitly configured runtime is absent.
     sif = tmp_path / "ci-cpu.sif"
     sif.write_text("")
     stub_dir = tmp_path / "stub-bin"
@@ -130,26 +122,27 @@ def test_wrapper_falls_back_to_an_apptainer_on_the_path(tmp_path):
         home=tmp_path / "empty-home",
     )
     # Assert
-    assert proc.returncode == 0
+    assert (proc.returncode != 0, "configured runtime is not executable" in proc.stderr,
+            recorded.exists()) == (True, True, False)
 
 
-def test_wrapper_hands_the_inner_script_to_the_path_apptainer(tmp_path):
+def test_wrapper_hands_the_inner_script_to_the_configured_apptainer(tmp_path):
     # Arrange
     sif = tmp_path / "ci-cpu.sif"
     sif.write_text("")
     stub_dir = tmp_path / "stub-bin"
     recorded = tmp_path / "invocation.txt"
-    _stub(stub_dir, "apptainer", recorded)
+    shim = _stub(stub_dir, "apptainer", recorded)
     # Act
-    _run_wrapper(
+    proc = _run_wrapper(
         tmp_path,
-        shim=tmp_path / "missing" / "apptainer",
+        shim=shim,
         sif=sif,
         path_prepend=stub_dir,
         home=tmp_path / "empty-home",
     )
     # Assert
-    assert "run-in-sif.sh" in recorded.read_text()
+    assert (proc.returncode, "run-in-sif.sh" in recorded.read_text()) == (0, True)
 
 
 def test_wrapper_still_fails_loud_without_the_sif(tmp_path):
@@ -169,7 +162,7 @@ def test_wrapper_reports_the_missing_sif_gate(tmp_path):
     # Act
     proc = _run_wrapper(tmp_path, shim=shim, sif=tmp_path / "absent.sif")
     # Assert
-    assert "CI SIF missing" in (proc.stdout + proc.stderr)
+    assert "configured image is missing" in (proc.stdout + proc.stderr)
 
 
 # EOF
