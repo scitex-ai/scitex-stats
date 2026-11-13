@@ -96,7 +96,7 @@ async def normality_test_handler(
         result = await loop.run_in_executor(None, do_normality)
 
         return {
-            "success": True,
+            "success": "error" not in result,
             "method": method,
             "n": len(data),
             **result,

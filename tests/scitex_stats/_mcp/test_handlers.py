@@ -798,7 +798,7 @@ def test_normality_dagostino_labels_test():
     assert out["test"] == "D'Agostino-Pearson"
 
 
-def test_normality_dagostino_succeeds_with_too_few_samples():
+def test_normality_dagostino_fails_with_too_few_samples():
     # Arrange
     data = [1.0, 2.0, 3.0, 4.0]
 
@@ -806,7 +806,7 @@ def test_normality_dagostino_succeeds_with_too_few_samples():
     out = _arun(h.normality_test_handler(data=data, method="dagostino"))
 
     # Assert
-    assert out["success"] is True
+    assert out["success"] is False
 
 
 def test_normality_dagostino_too_few_samples_returns_error():
