@@ -44,11 +44,11 @@ def test_build_stops_at_the_first_failed_artifact_gate(tmp_path, failure, expect
                             cwd=tmp_path, env=env, capture_output=True, text=True, timeout=10)
     # Assert: source/version are caller supplied; failure never reaches later checks.
     actual = [json.loads(line) for line in calls.read_text().splitlines()]
-    stages = ["probe" if argv[1].endswith("probe-wheel.py") else argv[2] for argv in actual]
-    assert (result.returncode, stages) == (code, expected_calls), result.stderr
-    for argv in actual:
-        if argv[1].endswith("release-identity.py"):
-            assert argv[argv.index("--commit") + 1] == "a" * 40
-            assert argv[argv.index("--version") + 1] == "1.0.1"
-        else:
-            assert argv[argv.index("--expected-version") + 1] == "1.0.1"
+    expected = [
+        (["-I", str(ROOT / ".github/ci/probe-wheel.py"), "--dist", "dist",
+          "--expected-version", "1.0.1"] if stage == "probe" else
+         ["-I", str(ROOT / ".github/ci/release-identity.py"), stage,
+          "--commit", "a" * 40, "--version", "1.0.1", "--dist", "dist"])
+        for stage in expected_calls
+    ]
+    assert (result.returncode, actual) == (code, expected), result.stderr
