@@ -292,6 +292,8 @@ def _call_test(
             table = np.array(groups, dtype=float)
         else:
             table = np.vstack([data, data2])
+        if test_name == "fisher":
+            common["alternative"] = alternative
         return func(table, **common)
 
     raise ValueError(f"No dispatch rule for test: {test_name}")

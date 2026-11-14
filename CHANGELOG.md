@@ -7,6 +7,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Forward the requested Fisher alternative in native run_test and CLI calls.
+  One-sided calls previously returned two-sided p-values; MCP already forwarded
+  the alternative correctly.
+
 - Accept the existing Python test-name aliases in MCP run_test: ttest,
   ttest_rel, brunnermunzel and mann_whitney. Preserve paired NaN handling
   and the requested name in results and verification receipts.
