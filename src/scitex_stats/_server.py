@@ -173,7 +173,8 @@ async def validate_apa(
     """Check statistics text (and optional HTML) against APA 7; returns violations with fixes."""
     from scitex_stats._utils._apa import validate_apa as _validate
 
-    return _json(_validate(text, html=html, result=result))
+    report = await asyncio.to_thread(_validate, text, html=html, result=result)
+    return _json(report)
 
 
 @mcp.tool()

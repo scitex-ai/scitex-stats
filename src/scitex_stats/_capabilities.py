@@ -23,6 +23,8 @@ def get_capabilities() -> dict:
          "tests/integration/test_recommendation_mcp_threading.py"),
         ("run_all_applicable", "Run a primary test and applicable sensitivity analyses.",
          "tests/integration/test_recommendation_mcp_threading.py"),
+        ("validate_apa", "Validate statistical text and HTML against the native APA reporting rules.",
+         "tests/integration/test_apa_mcp_threading.py"),
     )
     return {
         "schema_version": 1,

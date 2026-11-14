@@ -7,6 +7,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Run APA text/HTML validation outside the MCP event-loop thread while
+  preserving native reports and propagated validation exceptions. Include this
+  existing native/MCP adapter in the partial capability declaration.
+
 - Run the three data-based recommendation MCP calculations in worker threads
   so their synchronous native calculations do not block the event loop.
   Preserve existing arguments, result envelopes and error responses; add
