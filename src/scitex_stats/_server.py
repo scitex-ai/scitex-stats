@@ -246,6 +246,8 @@ async def power_analysis(
     requires n greater than three; smaller samples return a failure.
     Both correlation modes require a finite effect_size strictly between
     minus one and one; invalid values return the handler failure envelope.
+    Correlation alpha must be finite in (0, 1). For sample-size estimation,
+    target power must also be finite in (0, 1); fixed-n mode ignores it.
     """
     from scitex_stats._mcp.handlers import power_analysis_handler
 

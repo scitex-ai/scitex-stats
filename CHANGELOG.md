@@ -12,6 +12,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Validate correlation alpha and estimated-sample target power as finite
+  probabilities strictly inside (0, 1). Preserve the unused target argument
+  in fixed-n mode and all valid numerical calculations. Split correlation
+  controls from bounded ANOVA/chi-square search controls.
+
 - Validate finite correlation effect sizes strictly inside (-1, 1) before
   the Fisher transform in both power modes. Return a consistent domain error
   for invalid values; preserve valid fixed-n zero and near-boundary results.
