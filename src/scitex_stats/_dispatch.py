@@ -58,19 +58,23 @@ _CONTINGENCY = {"chi2", "fisher"}
 # NaN must be excluded position-wise across all inputs for these
 _NAN_PAIRWISE = _PAIRED | _STACKED_GROUP | {"pearson", "spearman", "kendall"}
 
+# Equivalent test-name spellings shared by the native and MCP dispatchers.
+_TEST_NAME_ALIASES = {
+    "ttest": "ttest_ind",
+    "ttest_rel": "ttest_paired",
+    "brunnermunzel": "brunner_munzel",
+    "mann_whitney": "mannwhitneyu",
+}
+
 # Canonical name mapping — aliases to the function name in stx.stats
 _ALIASES = {
-    "ttest": "test_ttest_ind",
     "ttest_ind": "test_ttest_ind",
     "ttest_welch": "test_ttest_ind",
-    "ttest_rel": "test_ttest_rel",
     "ttest_paired": "test_ttest_rel",
     "ttest_1samp": "test_ttest_1samp",
     "anova": "test_anova",
-    "brunnermunzel": "test_brunner_munzel",
     "brunner_munzel": "test_brunner_munzel",
     "mannwhitneyu": "test_mannwhitneyu",
-    "mann_whitney": "test_mannwhitneyu",
     "wilcoxon": "test_wilcoxon",
     "kruskal": "test_kruskal",
     "friedman": "test_friedman",
@@ -84,6 +88,9 @@ _ALIASES = {
     "kendall": "test_kendall",
 }
 
+_ALIASES.update(
+    {alias: _ALIASES[canonical] for alias, canonical in _TEST_NAME_ALIASES.items()}
+)
 
 def available_tests() -> List[str]:
     """Return sorted list of canonical test names accepted by ``run_test``.

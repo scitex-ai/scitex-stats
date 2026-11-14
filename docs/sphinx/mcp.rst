@@ -92,3 +92,9 @@ Diagnostics
 The tool catalogue describes registered MCP names. Python library exports and
 CLI command paths have their own signatures. Maintainers can find the proposed
 exposure scopes and naming migrations in :doc:`interface_scope`.
+
+The ``run_test`` input accepts the same equivalent spellings as the Python
+dispatcher: ``ttest`` for ``ttest_ind``, ``ttest_rel`` for ``ttest_paired``,
+``brunnermunzel`` for ``brunner_munzel`` and ``mann_whitney`` for
+``mannwhitneyu``. Results and provenance receipts retain the requested spelling.
+These are test-name inputs to the existing tool.

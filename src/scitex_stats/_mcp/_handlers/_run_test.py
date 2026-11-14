@@ -154,11 +154,15 @@ def run_test_sync(
 ) -> dict:
     """Synchronous core of the MCP ``run_test`` tool, with integrity report and receipt."""
     from scitex_stats import _provenance, tests
+    from scitex_stats._dispatch import _TEST_NAME_ALIASES
+
+    requested_name = test_name
+    test_name = _TEST_NAME_ALIASES.get(test_name, test_name)
 
     if test_name not in _TEST_DISPATCH:
         raise ValueError(
             f"Unknown test: {test_name}. "
-            f"Available: {', '.join(sorted(_TEST_DISPATCH.keys()))}"
+            f"Available: {', '.join(sorted(_TEST_DISPATCH.keys() | _TEST_NAME_ALIASES.keys()))}"
         )
 
     category, func_name = _TEST_DISPATCH[test_name]
@@ -192,7 +196,7 @@ def run_test_sync(
 
     out = {
         "success": True,
-        "test_name": test_name,
+        "test_name": requested_name,
         "alternative": alternative,
         **_convert_to_mcp_format(result),
         "input_integrity": integrity,
@@ -203,7 +207,7 @@ def run_test_sync(
     return _provenance.attach(
         out,
         api="mcp.run_test",
-        test_name=test_name,
+        test_name=requested_name,
         function=func_name,
         parameters={"alternative": alternative, "nan_policy": nan_policy},
         raw_inputs=raw,

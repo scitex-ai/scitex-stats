@@ -7,6 +7,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Accept the existing Python test-name aliases in MCP run_test: ttest,
+  ttest_rel, brunnermunzel and mann_whitney. Preserve paired NaN handling
+  and the requested name in results and verification receipts.
+
 - Use package-owned subprocess coverage support instead of writing startup
   hooks into shared Python environments during test collection.
 
