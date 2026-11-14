@@ -12,6 +12,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Validate MCP post-hoc group counts and provided name lengths before
+  calculation. Reject negative/out-of-range Dunnett control indices that
+  could include the control in its own comparison. Preserve valid outputs,
+  generated-name fallback and all numerical implementations.
+
 - Delegate MCP star selection to the existing native style-aware formatter
   in a worker, translating supported thresholds into a fresh StatStyle.
   Preserve strict boundaries, validation, significance text and result fields.

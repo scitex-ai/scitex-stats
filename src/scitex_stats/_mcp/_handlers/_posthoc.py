@@ -22,6 +22,13 @@ async def posthoc_test_handler(
 ) -> dict:
     """Run post-hoc pairwise comparisons."""
     try:
+        if len(groups) < 2:
+            raise ValueError("At least two groups are required for post-hoc comparisons")
+        if group_names and len(group_names) != len(groups):
+            raise ValueError("group_names must match the number of groups")
+        if method == "dunnett" and not 0 <= control_group < len(groups):
+            raise ValueError("control_group must be an index from 0 to the number of groups minus 1")
+
         loop = asyncio.get_event_loop()
 
         def do_posthoc():

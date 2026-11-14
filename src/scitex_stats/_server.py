@@ -340,7 +340,13 @@ async def posthoc_test(
     method: str = "tukey",
     control_group: int = 0,
 ) -> str:
-    """Run post-hoc pairwise comparisons after significant ANOVA/Kruskal."""
+    """Run post-hoc pairwise comparisons after significant ANOVA/Kruskal.
+
+    Requires at least two groups. Nonempty group_names must name every group;
+    None or an empty list uses generated names. Dunnett control_group is a
+    nonnegative index into groups. Invalid designs return a failed result.
+    The current Dunnett option uses Bonferroni-adjusted pairwise t-tests.
+    """
     from scitex_stats._mcp.handlers import posthoc_test_handler
 
     result = await posthoc_test_handler(
