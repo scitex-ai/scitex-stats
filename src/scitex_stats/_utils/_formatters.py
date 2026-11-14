@@ -25,7 +25,6 @@ from typing import Union  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
-import matplotlib.pyplot as _mpl_plt  # noqa: E402
 from scitex_stats._logging import getLogger
 
 logger = getLogger(__name__)
@@ -367,6 +366,8 @@ def _p2stars_scalar(
 
 def main(args):
     """Demonstrate p2stars functionality."""
+    import matplotlib.pyplot as _mpl_plt
+
     logger.info("Demonstrating p2stars functionality")
 
     # Example 1: Single p-values

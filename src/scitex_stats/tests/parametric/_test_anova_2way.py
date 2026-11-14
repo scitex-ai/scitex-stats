@@ -107,6 +107,14 @@ def test_anova_2way(  # noqa: C901
 
     If plot=True, returns tuple of (result, figure)
 
+    Raises
+    ------
+    ValueError
+        If either factor has fewer than two levels, responses are nonfinite,
+        a factorial cell is empty, residual degrees of freedom are not positive,
+        or within-cell variance is zero or nonfinite. These designs cannot
+        produce the finite F tests returned by this function.
+
     Notes
     -----
     See [#anova-2way-ref1]_, [#anova-2way-ref2]_.
@@ -258,6 +266,11 @@ def test_anova_2way(  # noqa: C901
     n_a = len(a_levels)
     n_b = len(b_levels)
 
+    if n_a < 2 or n_b < 2:
+        raise ValueError("Two-way ANOVA requires at least two levels per factor")
+    if not np.all(np.isfinite(y)):
+        raise ValueError("Two-way ANOVA requires finite response values")
+
     # Create level indices
     a_idx = {level: i for i, level in enumerate(a_levels)}
     b_idx = {level: i for i, level in enumerate(b_levels)}
@@ -331,6 +344,11 @@ def test_anova_2way(  # noqa: C901
     df_ab = df_a * df_b
     df_error = n - n_a * n_b
     # df_total = n - 1  # Not used in calculations
+
+    if df_error <= 0:
+        raise ValueError("Two-way ANOVA requires positive residual degrees of freedom")
+    if not np.isfinite(ss_error) or ss_error <= 0:
+        raise ValueError("Two-way ANOVA requires positive finite within-cell variance")
 
     # Mean squares
     ms_a = ss_a / df_a if df_a > 0 else 0

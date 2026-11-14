@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import sys
+import time
 
 import numpy as np
 import pytest
@@ -133,23 +134,44 @@ def test_catalogue_discovery_counts_remain_separate_from_behavior_acceptance():
 
 
 def collect_protocol(directory):
+    started = time.monotonic()
+    def phase(name, **details):
+        with (directory/"protocol-stages.jsonl").open("a") as log:
+            log.write(json.dumps({"phase":name,"elapsed":time.monotonic()-started,**details})+"\n")
+
     params = StdioServerParameters(command=sys.executable,args=["-m","scitex_stats","mcp","start"],
         env={**os.environ,"HOME":str(directory),"TMPDIR":str(directory),"SCITEX_DIR":str(directory/"state"),
              "XDG_CACHE_HOME":str(directory/"cache"),"FASTMCP_CHECK_FOR_UPDATES":"off",
              "PYTHONPATH":str(Path(__file__).resolve().parents[2]/"src")},cwd=directory)
     async def collect():
+        phase("transport.opening")
         with (directory/"server.log").open("w") as errors:
             async with (stdio_client(params,errlog=errors) as (read,write),ClientSession(read,write) as session):
+                phase("initialize.start")
                 await session.initialize()
+                phase("initialize.complete")
                 listing = await session.list_tools()
+                phase("list_tools.complete",tools=len(listing.tools))
                 x,y = CASES[0]
                 requests = [{"test_name":"theilsen","data":[x,y]},
                             {"test_name":"theilsen","data":[x,y],"alternative":"greater"},
                             {"test_name":"ttest_ind","data":[x,y]}]
-                reports = [json.loads((await session.call_tool("run_test",row)).content[0].text) for row in requests]
+                reports = []
+                for index,row in enumerate(requests):
+                    phase("call.start",index=index,test_name=row["test_name"])
+                    reports.append(json.loads((await session.call_tool("run_test",row)).content[0].text))
+                    phase("call.complete",index=index,success=reports[-1]["success"])
                 schemas = {t.name:getattr(t,"input_schema",None) or t.inputSchema for t in listing.tools}
-                return {"schemas":schemas,"theilsen_reports":reports}
-    result = asyncio.run(asyncio.wait_for(collect(),timeout=30))
+                result = {"schemas":schemas,"theilsen_reports":reports}
+                (directory/"protocol-pending-shutdown.json").write_text(json.dumps(result,indent=2))
+                phase("shutdown.start")
+        phase("shutdown.complete")
+        return result
+    try:
+        result = asyncio.run(asyncio.wait_for(collect(),timeout=30))
+    except BaseException as exc:
+        phase("lifecycle.failed",exception=type(exc).__name__)
+        raise
     snapshot = json.dumps(result,indent=2)
     (directory/"protocol-results.json").write_text(snapshot)
     return snapshot

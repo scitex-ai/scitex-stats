@@ -12,6 +12,15 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Defer plotting imports in effect-size, power and formatter utilities until
+  their demos run. Non-plotting utility calls no longer initialize the
+  plotting stack or its font cache; calculation functions are unchanged.
+
+- Reject undefined two-way ANOVA designs before returning effect tests:
+  require two levels per factor, finite responses, positive residual degrees
+  of freedom and positive finite within-cell variance. Zero residual variance
+  previously produced misleading F=0 and p=1 results even for distinct cells.
+
 - Repair MCP's legacy Theil-Sen route by calling the native estimator without
   an unsupported hypothesis keyword. Return its slope/intercept/95% slope
   interval as a regression estimate, without fabricated p-value or test-statistic
