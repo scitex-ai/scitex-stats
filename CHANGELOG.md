@@ -12,6 +12,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Declare the existing native verify / MCP verify_result capability after
+  real default-option delegation and payload checks. Preserve all previous
+  declarations and runtime interfaces. Repair the verification skill's inputs,
+  comparison exclusions, transport meaning and advanced-option limitations.
+
 - Reject non-finite/out-of-range MCP star probabilities and malformed
   thresholds before selecting a star level. Require exactly three finite,
   strictly increasing thresholds in [0, 1]. Preserve valid strict boundaries,

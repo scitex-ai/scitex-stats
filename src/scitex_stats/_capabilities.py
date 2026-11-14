@@ -1,6 +1,6 @@
 """Partial leaf-owned declarations for existing core Python/MCP operations.
 
-The selected scope covers core and recommendation adapters. Remaining public APIs and MCP
+The selected scope covers native/MCP adapters. Remaining public APIs and MCP
 tools need classification. These plain data describe interface bindings;
 implementation tests, installed registration and host availability are separate.
 """
@@ -25,14 +25,17 @@ def get_capabilities() -> dict:
          "tests/integration/test_recommendation_mcp_threading.py"),
         ("validate_apa", "Validate statistical text and HTML against the native APA reporting rules.",
          "tests/integration/test_apa_mcp_threading.py"),
+        ("verify", "Verify result receipts, inputs and recomputation with native default options.",
+         "tests/integration/test_verify_python_mcp.py"),
     )
+    mcp_names = {"verify": "verify_result"}
     return {
         "schema_version": 1,
         "distribution": "scitex-stats",
         "provider": "core-operations",
         "capabilities": [
             {"name": name, "purpose": purpose,
-             "python": [f"scitex_stats.{name}"], "mcp": [name],
+             "python": [f"scitex_stats.{name}"], "mcp": [mcp_names.get(name, name)],
              "test_references": [reference]}
             for name, purpose, reference in operations
         ],
