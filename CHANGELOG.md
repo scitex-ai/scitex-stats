@@ -5,6 +5,11 @@ All notable changes to `scitex-stats` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions follow [Semantic Versioning](https://semver.org/).
 
+- Enforce numeric star inputs before MCP argument coercion. Reject JSON
+  booleans and numeric strings for the probability and threshold items while
+  preserving valid JSON integer/float values, strict boundaries and numeric
+  domain-error envelopes. Verify through a real initialized stdio session.
+
 ## [Unreleased]
 
 - Reject non-finite/out-of-range MCP star probabilities and malformed

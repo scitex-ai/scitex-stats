@@ -13,6 +13,7 @@ import json
 from typing import List, Literal, Optional
 
 from fastmcp import FastMCP
+from pydantic import StrictFloat
 
 # =============================================================================
 # FastMCP Server
@@ -339,8 +340,8 @@ async def posthoc_test(
 
 @mcp.tool()
 async def p_to_stars(
-    p_value: float,
-    thresholds: Optional[List[float]] = None,
+    p_value: StrictFloat,
+    thresholds: Optional[List[StrictFloat]] = None,
 ) -> str:
     """Convert p-value to significance stars (*, **, ***, ns)."""
     from scitex_stats._mcp.handlers import p_to_stars_handler
