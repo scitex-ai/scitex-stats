@@ -12,6 +12,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Reject invalid native Dunnett significance levels and unknown alternatives
+  instead of returning invalid cutoffs or silently selecting the less-sided
+  hypothesis. Preserve valid pooled calculations and public presentation.
+
 - Share unrounded global pooled-t/Bonferroni control-comparison statistics
   between native Dunnett and MCP. Correct MCP pairwise-variance drift and
   emit boolean reject flags; preserve native public rounding, fields and CIs.

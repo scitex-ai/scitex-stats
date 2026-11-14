@@ -27,6 +27,7 @@ IO:
 """
 
 """Imports"""
+from numbers import Real
 from typing import List, Literal, Optional, Union
 
 import numpy as np
@@ -49,7 +50,7 @@ def dunnett_critical_value(
     df : int
         Degrees of freedom for error
     alpha : float
-        Significance level
+        Finite real significance level strictly between 0 and 1 (no booleans)
     alternative : {'two-sided', 'less', 'greater'}
         Direction of test
 
@@ -65,6 +66,11 @@ def dunnett_critical_value(
     Dunnett distribution. SciPy's stats.dunnett provides that procedure
     starting in SciPy 1.11; this package still supports older SciPy versions.
     """
+    if (isinstance(alpha, (bool, np.bool_)) or not isinstance(alpha, Real)
+            or not np.isfinite(alpha) or not 0 < alpha < 1):
+        raise ValueError("alpha must be a finite real number strictly between 0 and 1")
+    if alternative not in ("two-sided", "less", "greater"):
+        raise ValueError("alternative must be 'two-sided', 'less' or 'greater'")
     # Conservative approximation using Bonferroni adjustment
     if alternative == "two-sided":
         alpha_adj = alpha / (2 * k)
@@ -79,6 +85,8 @@ def dunnett_critical_value(
 
 def _dunnett_statistics(control, treatments, alternative="two-sided"):
     """Return unrounded pooled-t/Bonferroni statistics for control comparisons."""
+    if alternative not in ("two-sided", "less", "greater"):
+        raise ValueError("alternative must be 'two-sided', 'less' or 'greater'")
     control = np.asarray(control)
     treatments = [np.asarray(t) for t in treatments]
     k = len(treatments)
@@ -184,6 +192,8 @@ def posthoc_dunnett(
     Samples must be real, finite, nonempty and one-dimensional, with positive
     residual degrees of freedom. Zero pooled variance is supported only when
     all group means are identical. Unsupported inputs raise ValueError.
+    Significance levels must be finite real values strictly between 0 and 1;
+    alternative must be one of the three documented strings.
 
     **Test Statistic**:
 
