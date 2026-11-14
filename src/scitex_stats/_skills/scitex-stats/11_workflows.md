@@ -24,12 +24,34 @@ result = ss.run_test("ttest_ind", group1, group2)
 
 ## "Compare multiple groups"
 
+Pass the groups as one list. The post-hoc workflow runs comparisons only
+after a significant omnibus result by default.
+
 ```python
-result = ss.test_anova(group1, group2, group3)
-# If significant, follow up with post-hoc:
-from scitex_stats.posthoc import tukey_hsd, games_howell
-posthoc = tukey_hsd(group1, group2, group3)
+import scitex_stats as ss
+from scitex_stats.posthoc import run_posthoc
+
+groups = [
+    [1.0, 2.0, 3.0, 4.0],
+    [5.0, 6.0, 7.0, 8.0],
+    [9.0, 10.0, 11.0, 12.0],
+]
+result = ss.test_anova(groups)
+posthoc = run_posthoc(
+    groups, omnibus="anova", omnibus_pvalue=result["pvalue"]
+)
 ```
+
+Without an advance declaration of equal variances, this workflow selects
+Games–Howell. Use `equal_variances=True` only when the study design declares
+that assumption in advance; it selects Tukey HSD. The reported Brown–Forsythe
+test is diagnostic and does not make that declaration.
+
+The owning operations are `scitex_stats.posthoc.select_posthoc` and
+`run_posthoc`. Behavioral controls:
+`tests/scitex_stats/posthoc/test__auto.py`, including
+`test_anova_without_a_declaration_stays_games_howell_even_when_groups_look_homogeneous`
+and `test_anova_with_a_declaration_in_advance_uses_tukey`.
 
 ## "Check correlation"
 

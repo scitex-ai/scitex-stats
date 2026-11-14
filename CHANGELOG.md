@@ -7,6 +7,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Correct post-hoc selection documentation: Tukey requires an advance
+  equal-variance declaration; the reported variance test is diagnostic.
+  Repair the multiple-group skill example to use current grouped arguments
+  and the public post-hoc dispatcher.
+
 - Remove the empirical 0.95 scaling from the native Dunnett approximation's
   critical value. Its significance flags and intervals now use the same
   Bonferroni threshold as its adjusted p-values. Document that this remains
