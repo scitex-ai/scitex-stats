@@ -288,6 +288,7 @@ async def describe(
     """Calculate descriptive statistics for data.
 
     Empty or all-NaN input returns a failed result with an error message.
+    NaN values are removed; any remaining infinity returns a failed result.
     Percentile keys preserve fractional labels; whole-number labels stay integers.
     """
     from scitex_stats._mcp.handlers import describe_handler

@@ -12,6 +12,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Reject infinite MCP descriptive-statistics samples instead of reporting
+  successful nonfinite summaries. Preserve NaN removal, empty-input errors,
+  finite calculations and percentile labels.
+
 - Reject invalid native Dunnett significance levels and unknown alternatives
   instead of returning invalid cutoffs or silently selecting the less-sided
   hypothesis. Preserve valid pooled calculations and public presentation.

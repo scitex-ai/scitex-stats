@@ -29,6 +29,9 @@ async def describe_handler(
             if len(arr) == 0:
                 raise ValueError("No valid data points")
 
+            if not np.all(np.isfinite(arr)):
+                raise ValueError("Data must contain only finite values after removing NaN")
+
             percs = percentiles or [25, 50, 75]
             percentile_values = np.percentile(arr, percs)
 
