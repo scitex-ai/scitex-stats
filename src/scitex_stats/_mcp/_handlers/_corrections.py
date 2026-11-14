@@ -26,7 +26,7 @@ async def correct_pvalues_handler(
 
 def _correct_without_statsmodels(pvalues: list[float], method: str, alpha: float) -> dict:
     """Preserve the private adapter entry point for the NumPy-only operation."""
-    from scitex_stats._correction import _correct_pvalues_numpy
+    from scitex_stats._operations._correction import _correct_pvalues_numpy
 
     result = _correct_pvalues_numpy(pvalues, method, alpha)
     return {"success": True, **result, "timestamp": datetime.now().isoformat()}

@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime
 
-from scitex_stats._normality import _NormalityDependencyError, _NormalityInputError
+from scitex_stats._operations._normality import _NormalityDependencyError, _NormalityInputError
 
 __all__ = ["normality_test_handler"]
 

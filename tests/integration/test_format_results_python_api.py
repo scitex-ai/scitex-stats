@@ -47,35 +47,24 @@ def test_unknown_style_retains_apa_formatting_and_requested_label():
     )
 
 
-def test_native_formatter_propagates_the_owning_formatting_exception(monkeypatch):
-    # Arrange
-    import scitex_stats.auto as auto
-
-    def refused(*args, **kwargs):
-        raise ValueError("formatter refused input")
-
-    monkeypatch.setattr(auto, "format_test_line", refused)
+def test_native_formatter_propagates_the_owning_formatting_exception():
+    # Arrange: a nonnumeric statistic reaches the real formatting implementation.
+    kwargs = dict(test_name="ttest_ind", statistic=object(), p_value=0.03)
     # Act
     # Assert
-    with pytest.raises(ValueError, match="formatter refused input"):
-        ss.format_results(test_name="ttest_ind", statistic=2.5, p_value=0.03)
+    with pytest.raises(TypeError):
+        ss.format_results(**kwargs)
 
 
-def test_formatter_mcp_delegates_all_arguments(monkeypatch):
-    # Arrange
+def test_formatter_mcp_delegates_all_arguments(observe_native):
+    # Arrange: observe the actual function entry; retain real calculations.
     from scitex_stats._mcp._handlers._format import format_results_handler
 
-    kwargs = dict(test_name="ttest_ind", statistic=-3.21, p_value=0.0022, df=58,
-                  effect_size=-0.83, effect_size_name="d", style="brief",
-                  ci_lower=-1.2, ci_upper=-0.4)
-    calls = []
-
-    def native(**received):
-        calls.append(received)
-        return {"native_sentinel": 23}
-
-    monkeypatch.setattr(ss, "format_results", native)
+    kwargs = dict(test_name="ttest_ind", statistic=-3.21, p_value=0.0022, df=58, effect_size=-0.83, effect_size_name="d", style="brief", ci_lower=-1.2, ci_upper=-0.4)
+    expected = ss.format_results(**kwargs)
     # Act
-    result = asyncio.run(format_results_handler(**kwargs))
+    with observe_native(ss.format_results) as calls:
+        result = asyncio.run(format_results_handler(**kwargs))
+    payload = {key: value for key, value in result.items() if key not in {"success", "timestamp"}}
     # Assert
-    assert (calls, result["success"], result.get("native_sentinel")) == ([kwargs], True, 23)
+    assert (calls, result["success"], payload) == ([kwargs], True, expected)

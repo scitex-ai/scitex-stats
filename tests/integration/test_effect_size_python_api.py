@@ -53,20 +53,15 @@ def test_effect_size_mcp_payload_equals_the_native_python_result(measure):
     assert (result["success"], payload) == (True, expected)
 
 
-def test_effect_size_mcp_delegates_all_arguments_to_the_public_api(monkeypatch):
-    # Arrange
+def test_effect_size_mcp_delegates_all_arguments_to_the_public_api(observe_native):
+    # Arrange: observe the actual function entry; retain real calculations.
     from scitex_stats._mcp._handlers._effect_size import effect_size_handler
 
-    calls = []
-
-    def native(group1, group2, measure, pooled):
-        calls.append((group1, group2, measure, pooled))
-        return {"native_sentinel": 23}
-
-    monkeypatch.setattr(ss, "effect_size", native)
+    kwargs = dict(group1=[1.0], group2=[2.0], measure="cliffs_delta", pooled=True)
+    expected = ss.effect_size(**kwargs)
     # Act
-    result = asyncio.run(effect_size_handler(group1=[1.0], group2=[2.0], measure="cliffs_delta"))
+    with observe_native(ss.effect_size) as calls:
+        result = asyncio.run(effect_size_handler(**kwargs))
+    payload = {key: value for key, value in result.items() if key not in {"success", "timestamp"}}
     # Assert
-    assert (calls, result["success"], result.get("native_sentinel")) == (
-        [([1.0], [2.0], "cliffs_delta", True)], True, 23,
-    )
+    assert (calls, result["success"], payload) == ([kwargs], True, expected)

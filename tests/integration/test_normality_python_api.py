@@ -52,20 +52,15 @@ def test_mcp_normality_preserves_the_public_python_payload(method):
     assert (result["success"], payload) == (True, expected)
 
 
-def test_mcp_normality_calls_the_public_operation(monkeypatch):
-    # Arrange: a sentinel native value proves delegation instead of duplicate math.
+def test_mcp_normality_calls_the_public_operation(observe_native):
+    # Arrange: observe the actual function entry; retain real calculations.
     from scitex_stats._mcp._handlers._normality import normality_test_handler
 
-    calls = []
-
-    def native(data, method):
-        calls.append((data, method))
-        return {"native_sentinel": 23}
-
-    monkeypatch.setattr(ss, "normality_test", native)
+    kwargs = dict(data=[1.0, 2.0, 3.0], method="shapiro")
+    expected = ss.normality_test(**kwargs)
     # Act
-    result = asyncio.run(normality_test_handler(data=[1.0, 2.0, 3.0], method="shapiro"))
+    with observe_native(ss.normality_test) as calls:
+        result = asyncio.run(normality_test_handler(**kwargs))
+    payload = {key: value for key, value in result.items() if key not in {"success", "timestamp"}}
     # Assert
-    assert (calls, result["success"], result.get("native_sentinel")) == (
-        [([1.0, 2.0, 3.0], "shapiro")], True, 23,
-    )
+    assert (calls, result["success"], payload) == ([kwargs], True, expected)
