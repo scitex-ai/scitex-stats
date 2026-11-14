@@ -7,6 +7,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Add a leaf-owned capability provider for the four existing core native/MCP
+  adapters: normality, effect size, result formatting and p-value correction.
+  The initial declaration covers these operations; other APIs/tools still need
+  classification and existing audit findings remain active.
+
 - Repair the remaining shipped workflow examples: context-based
   recommendations, independent correlation and distribution examples,
   raw p-value corrections, tuple-based sample sizes and native formatting.

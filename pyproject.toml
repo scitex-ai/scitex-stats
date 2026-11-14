@@ -142,6 +142,9 @@ docs = [
 [project.scripts]
 scitex-stats = "scitex_stats._cli:main"
 
+[project.entry-points."scitex_dev.capabilities"]
+core-operations = "scitex_stats._capabilities:get_capabilities"
+
 [project.entry-points."scitex_dev.docs"]
 scitex-stats = "scitex_stats"
 
