@@ -47,7 +47,8 @@ async def describe_handler(
                 "range": float(np.max(arr) - np.min(arr)),
                 "median": float(np.median(arr)),
                 "percentiles": {
-                    str(int(p)): float(v) for p, v in zip(percs, percentile_values)
+                    (str(int(p)) if float(p).is_integer() else str(float(p))): float(v)
+                    for p, v in zip(percs, percentile_values)
                 },
                 "iqr": float(np.percentile(arr, 75) - np.percentile(arr, 25)),
             }

@@ -7,6 +7,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Preserve fractional percentile labels in descriptive-statistics MCP results.
+  Requests such as 2.1 and 2.9 previously collided under the same integer key.
+  Existing whole-number labels and numerical calculations remain unchanged.
+
 - Correct the Stats linter provider to recommend current leaf-owned Python
   calls, including list arguments for ANOVA and Kruskal-Wallis. Remove its
   unrelated umbrella import requirement and correct the provider group name.
