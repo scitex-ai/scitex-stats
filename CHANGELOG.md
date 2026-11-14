@@ -12,6 +12,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Expose the documented optional `sep` on MCP `run_test` and forward it to
+  the existing CSV loader. Explicit separators now resolve ambiguous files;
+  omitted/null separators retain automatic detection and ambiguity errors.
+
 - Honor the requested alternative for one-sample t and KS tests in native
   and MCP dispatch, correcting one-sided Python/CLI/MCP results that previously
   used two-sided calculations. Preserve non-directional normality calls and

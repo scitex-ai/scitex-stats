@@ -46,6 +46,11 @@ The file separator is estimated (tab / comma / semicolon / pipe / whitespace;
 Separator choice and a column picker; `resolve_columns(..., sep=";")` and the
 MCP `run_test` `sep` parameter specify it programmatically.
 
+The registered MCP tool forwards `sep` to `_utils._csv_support._load_file`;
+omitted/null values keep estimation and ambiguous files require an override.
+Handler, registered-tool and real stdio controls for explicit, wrong and
+automatic separators live in `tests/integration/test_mcp_separator.py`.
+
 ## Statistical tests (25 callables)
 
 (25 statistical tests; `test_result_to_stats`, the bundle-I/O helper,
