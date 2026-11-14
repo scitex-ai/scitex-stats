@@ -7,6 +7,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Repair the remaining shipped workflow examples: context-based
+  recommendations, independent correlation and distribution examples,
+  raw p-value corrections, tuple-based sample sizes and native formatting.
+  Define inputs in every example and use current result field names.
+
 - Correct post-hoc selection documentation: Tukey requires an advance
   equal-variance declaration; the reported variance test is diagnostic.
   Repair the multiple-group skill example to use current grouped arguments
