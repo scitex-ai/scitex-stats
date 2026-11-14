@@ -22,9 +22,7 @@ ONE = ["ttest_1samp", "shapiro", "normality", "ks_1samp"]
 BAD = [(name, [X,Y,X][:n], 2) for name in TWO for n in [0,1,3]] + [
     (name, [X,Y][:n], 1) for name in ONE for n in [0,2]]
 ALIASES = ["ttest", "ttest_rel", "brunnermunzel", "mann_whitney"]
-# The current Theil–Sen route passes an unsupported alternative keyword. Its
-# valid execution remains an explicit separate gap, not qualified by this test.
-VALID = [(name, [X,Y]) for name in TWO if name != "theilsen"] + [(name, [X]) for name in ONE]
+VALID = [(name, [X,Y]) for name in TWO] + [(name, [X]) for name in ONE]
 
 
 async def registered_call(**kwargs):

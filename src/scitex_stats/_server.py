@@ -159,6 +159,8 @@ async def run_test(
     estimation; " " splits on whitespace runs. Ambiguous files require sep.
     One-sample tests require one data group and two-group tests require two;
     missing or extra groups return a failed result.
+    Theil-Sen returns a regression estimate and 95% slope interval without
+    p-value/statistic placeholders; one-sided alternatives are unsupported.
     """
     from scitex_stats._mcp.handlers import run_test_handler
 

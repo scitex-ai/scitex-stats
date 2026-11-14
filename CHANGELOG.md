@@ -12,6 +12,12 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Repair MCP's legacy Theil-Sen route by calling the native estimator without
+  an unsupported hypothesis keyword. Return its slope/intercept/95% slope
+  interval as a regression estimate, without fabricated p-value or test-statistic
+  fields. Reject unsupported one-sided requests; preserve the direct Python
+  estimator and native named-dispatcher coverage.
+
 - Require exactly one data array for MCP one-sample tests and two for
   two-group tests, including aliases and CSV column inputs. Reject missing
   or extra groups before sanitization/calculation instead of silently

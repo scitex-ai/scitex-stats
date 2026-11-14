@@ -116,6 +116,8 @@ async def run_test_handler(  # noqa: C901
     alternative : str
         Alternative hypothesis: "two-sided", "less", or "greater".
         Passed through for one-sample t and KS as well as directional two-group tests.
+        Theil-Sen accepts only the default and returns a 95% slope interval,
+        not a p-value test; one-sided alternatives are unsupported.
     """
     try:
         source = None
@@ -185,7 +187,11 @@ def run_test_sync(
     groups = [used[n] for n in names]
 
     # Call the test function with appropriate arguments
-    if test_name in _TWO_GROUP:
+    if test_name == "theilsen":
+        if alternative != "two-sided":
+            raise ValueError("Theil-Sen returns a fixed two-sided 95% slope interval; one-sided alternatives are unsupported")
+        result = test_func(groups[0], groups[1], verbose=False)
+    elif test_name in _TWO_GROUP:
         result = test_func(groups[0], groups[1], alternative=alternative)
     elif test_name in _ONE_SAMPLE:
         if test_name in {"ttest_1samp", "ks_1samp"}:
@@ -205,11 +211,19 @@ def run_test_sync(
     else:
         result = test_func(*groups, alternative=alternative)
 
+    if test_name == "theilsen":
+        payload = {"test": "Theil-Sen robust regression", "result_type": "regression_estimate",
+                   "confidence_level": 0.95, **result}
+        for field in ("slope", "intercept", "low_slope", "high_slope"):
+            payload[field] = float(payload[field])
+    else:
+        payload = _convert_to_mcp_format(result)
+
     out = {
         "success": True,
         "test_name": requested_name,
         "alternative": alternative,
-        **_convert_to_mcp_format(result),
+        **payload,
         "input_integrity": integrity,
     }
     extra = None
