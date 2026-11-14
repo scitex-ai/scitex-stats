@@ -127,6 +127,13 @@ def _power_anova(
     else:
         # Binary search for n
         n_min, n_max = 2, 1000
+        df1 = n_groups - 1
+        df2 = n_groups * n_max - n_groups
+        nc = effect_size**2 * n_max * n_groups
+        f_crit = scipy_stats.f.ppf(1 - alpha, df1, df2)
+        maximum_power = 1 - scipy_stats.ncf.cdf(f_crit, df1, df2, nc)
+        if not np.isfinite(maximum_power) or maximum_power < power:
+            raise ValueError(f"Required sample size exceeds supported search limit ({n_max})")
         while n_max - n_min > 1:
             n_mid = (n_min + n_max) // 2
             df1 = n_groups - 1
@@ -224,6 +231,11 @@ def _power_chi2(
     else:
         # Binary search for n
         n_min, n_max = 10, 10000
+        nc = effect_size**2 * n_max
+        chi2_crit = scipy_stats.chi2.ppf(1 - alpha, df)
+        maximum_power = 1 - scipy_stats.ncx2.cdf(chi2_crit, df, nc)
+        if not np.isfinite(maximum_power) or maximum_power < power:
+            raise ValueError(f"Required sample size exceeds supported search limit ({n_max})")
         while n_max - n_min > 1:
             n_mid = (n_min + n_max) // 2
             nc = effect_size**2 * n_mid

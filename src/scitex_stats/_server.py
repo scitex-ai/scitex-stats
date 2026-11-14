@@ -234,7 +234,12 @@ async def power_analysis(
     n_groups: int = 2,
     ratio: float = 1.0,
 ) -> str:
-    """Calculate statistical power or required sample size."""
+    """Calculate statistical power or required sample size.
+
+    ANOVA and chi-square sample-size searches return a failure if the target
+    cannot be reached within 1000 observations per group or 10000 total,
+    respectively. Those bounds are search limits, not successful estimates.
+    """
     from scitex_stats._mcp.handlers import power_analysis_handler
 
     result = await power_analysis_handler(

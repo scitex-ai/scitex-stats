@@ -12,6 +12,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Fail ANOVA/chi-square required-sample searches when their existing upper
+  limit cannot achieve the requested power, rather than reporting that limit
+  as a successful estimate. Preserve feasible results, limits and kernels;
+  verify against independent Statsmodels power solvers.
+
 - Correct the style-aware p_to_stars docstring at strict default thresholds.
   Document boundary and missing-value behavior separately from inclusive
   native p2stars; keep all formatter calculations unchanged.
