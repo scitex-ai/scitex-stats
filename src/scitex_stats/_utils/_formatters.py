@@ -302,8 +302,13 @@ def p2stars(
         raise ValueError("thresholds must be in ascending order")
 
     # Handle different input types
-    if isinstance(pvalue, (pd.DataFrame, pd.Series)):
-        # Apply to DataFrame/Series
+    if isinstance(pvalue, pd.DataFrame):
+        # Map columns through the Series path so the scalar formatter sees cells.
+        return pvalue.apply(
+            lambda column: p2stars(column, thresholds, symbols, ns_symbol)
+        )
+    elif isinstance(pvalue, pd.Series):
+        # Apply to Series
         return pvalue.apply(
             lambda p: _p2stars_scalar(p, thresholds, symbols, ns_symbol)
         )

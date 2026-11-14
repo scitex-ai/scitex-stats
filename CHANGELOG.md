@@ -7,6 +7,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Repair native p2stars DataFrame input by formatting cells through the
+  existing Series/scalar path. Preserve axes, input values, threshold boundaries,
+  custom symbols and the existing missing/invalid-value output conventions.
+
 - Run APA text/HTML validation outside the MCP event-loop thread while
   preserving native reports and propagated validation exceptions. Include this
   existing native/MCP adapter in the partial capability declaration.
