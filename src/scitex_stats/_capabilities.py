@@ -27,6 +27,8 @@ def get_capabilities() -> dict:
          "tests/integration/test_apa_mcp_threading.py"),
         ("verify", "Verify result receipts, inputs and recomputation with native default options.",
          "tests/integration/test_verify_python_mcp.py"),
+        ("recommend_tests", "Recommend tests for a single-factor context with default families and return format.",
+         "tests/integration/test_context_recommendation_mcp.py"),
     )
     mcp_names = {"verify": "verify_result"}
     return {

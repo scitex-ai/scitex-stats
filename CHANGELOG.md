@@ -12,6 +12,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Qualify and declare the existing public recommend_tests / MCP mapping for
+  single-factor contexts with default families and return format. Verify
+  actual worker calls, context translation, ordered selections and registry
+  detail fields; keep the partial capability inventory explicitly incomplete.
+
 - Validate correlation alpha and estimated-sample target power as finite
   probabilities strictly inside (0, 1). Preserve the unused target argument
   in fixed-n mode and all valid numerical calculations. Split correlation
