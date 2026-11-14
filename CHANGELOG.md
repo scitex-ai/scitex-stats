@@ -7,6 +7,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Correct the Stats linter provider to recommend current leaf-owned Python
+  calls, including list arguments for ANOVA and Kruskal-Wallis. Remove its
+  unrelated umbrella import requirement and correct the provider group name.
+
 - Accept both fisher and fisher_exact in Python, CLI and MCP test dispatch.
   Keep existing names, requested hypotheses, count-table output and provenance
   receipts; no additional MCP tool is registered.
