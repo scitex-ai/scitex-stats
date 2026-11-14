@@ -12,6 +12,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Honor the requested alternative for one-sample t and KS tests in native
+  and MCP dispatch, correcting one-sided Python/CLI/MCP results that previously
+  used two-sided calculations. Preserve non-directional normality calls and
+  existing result/receipt structures.
+
 - Add synchronous `summarize` for the dictionary summary already exposed by
   MCP `describe`, and delegate that handler to the native operation in its
   existing worker. Preserve the numerical kernel and older axis-aware

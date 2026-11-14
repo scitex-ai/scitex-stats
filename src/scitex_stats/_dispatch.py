@@ -133,7 +133,7 @@ def run_test(
     groups : list of array-like, optional
         List of group arrays (for ANOVA, Kruskal, etc.).
     alternative : str, default ``"two-sided"``
-        Alternative hypothesis for applicable tests.
+        Alternative hypothesis for applicable tests, including one-sample t and KS.
     plot : bool, default ``False``
         Whether to generate a plot.
     popmean : float, default ``0``
@@ -277,10 +277,12 @@ def _call_test(
         return func(data, data2, alternative=alternative, **common)
 
     if test_name in _ONE_SAMPLE:
+        if test_name == "ks_1samp":
+            common["alternative"] = alternative
         return func(data, **common)
 
     if test_name in _ONE_SAMPLE_MEAN:
-        return func(data, popmean=popmean, **common)
+        return func(data, popmean=popmean, alternative=alternative, **common)
 
     if test_name in _GROUP:
         return func(groups, **common)

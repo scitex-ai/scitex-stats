@@ -113,6 +113,7 @@ async def run_test_handler(  # noqa: C901
         (tab/comma/semicolon/pipe/space, ``.tsv`` keeps tab).
     alternative : str
         Alternative hypothesis: "two-sided", "less", or "greater".
+        Passed through for one-sample t and KS as well as directional two-group tests.
     """
     try:
         source = None
@@ -180,7 +181,10 @@ def run_test_sync(
     if test_name in _TWO_GROUP:
         result = test_func(groups[0], groups[1], alternative=alternative)
     elif test_name in _ONE_SAMPLE:
-        result = test_func(groups[0])
+        if test_name in {"ttest_1samp", "ks_1samp"}:
+            result = test_func(groups[0], alternative=alternative)
+        else:
+            result = test_func(groups[0])
     elif test_name in _MULTI_GROUP:
         result = test_func(groups)
     elif test_name in _CONTINGENCY:
