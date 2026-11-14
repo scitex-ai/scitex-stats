@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 
 _PAIRED = {"ttest_rel", "ttest_paired", "wilcoxon", "pearson", "spearman", "kendall"}
-_NO_DATA = {"chi2", "fisher"}
+_NO_DATA = {"chi2", "fisher", "fisher_exact"}
 
 
 def describe(values: Any, name: str) -> Dict[str, Any]:

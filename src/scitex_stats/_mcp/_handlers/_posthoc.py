@@ -22,6 +22,13 @@ async def posthoc_test_handler(
 ) -> dict:
     """Run post-hoc pairwise comparisons."""
     try:
+        if len(groups) < 2:
+            raise ValueError("At least two groups are required for post-hoc comparisons")
+        if group_names and len(group_names) != len(groups):
+            raise ValueError("group_names must match the number of groups")
+        if method == "dunnett" and not 0 <= control_group < len(groups):
+            raise ValueError("control_group must be an index from 0 to the number of groups minus 1")
+
         loop = asyncio.get_event_loop()
 
         def do_posthoc():
@@ -110,31 +117,18 @@ def _tukey_hsd(group_arrays, names):
 
 
 def _dunnett(group_arrays, names, control_group):
-    """Dunnett's test (compare all to control)."""
-    from scipy import stats as scipy_stats
+    """Compare controls using the native pooled-t/Bonferroni approximation."""
+    from scitex_stats.posthoc._dunnett import _dunnett_statistics
 
-    control = group_arrays[control_group]
-    n_comparisons = len(group_arrays) - 1
-
-    comparisons = []
-    for i, (name, group) in enumerate(zip(names, group_arrays)):
-        if i == control_group:
-            continue
-        stat, p = scipy_stats.ttest_ind(group, control)
-        p_adj = min(p * n_comparisons, 1.0)
-        comparisons.append(
-            {
-                "group": name,
-                "vs_control": names[control_group],
-                "mean_diff": float(np.mean(group) - np.mean(control)),
-                "t_statistic": float(stat),
-                "p_value": float(p),
-                "p_adj": float(p_adj),
-                "reject": p_adj < 0.05,
-            }
-        )
-
-    return comparisons
+    indices = [i for i in range(len(group_arrays)) if i != control_group]
+    rows = _dunnett_statistics(
+        group_arrays[control_group], [group_arrays[i] for i in indices],
+        alternative="two-sided",
+    )
+    return [{"group": names[i], "vs_control": names[control_group],
+             "mean_diff": float(row["mean_diff"]), "t_statistic": float(row["t_statistic"]),
+             "p_value": float(row["pvalue_raw"]), "p_adj": float(row["pvalue"]),
+             "reject": bool(row["pvalue"] < .05)} for i, row in zip(indices, rows)]
 
 
 def _games_howell(group_arrays, names):

@@ -6,6 +6,8 @@ import os
 import sys
 from pathlib import Path
 
+import pytest
+
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
@@ -39,18 +41,24 @@ def test_stdio_describe_rejects_empty_data_and_accepts_numbers(tmp_path):
                 await session.initialize()
                 empty = await session.call_tool("describe", {"data": []})
                 valid = await session.call_tool("describe", {"data": [1, 2, 3]})
+                fractional = await session.call_tool(
+                    "describe", {"data": [0, 100], "percentiles": [2.1, 2.9, 97.5]}
+                )
                 return (
                     json.loads(empty.content[0].text),
                     json.loads(valid.content[0].text),
+                    json.loads(fractional.content[0].text),
                 )
 
     # Act
-    empty, valid = asyncio.run(asyncio.wait_for(collect_results(), timeout=30))
+    empty, valid, fractional = asyncio.run(asyncio.wait_for(collect_results(), timeout=30))
     # Assert
     assert (
         empty,
         (valid["success"], valid["n"], valid["mean"]),
+        (fractional["success"], fractional["percentiles"]),
     ) == (
         {"success": False, "error": "No valid data points"},
         (True, 3, 2.0),
+        (True, pytest.approx({"2.1": 2.1, "2.9": 2.9, "97.5": 97.5})),
     )

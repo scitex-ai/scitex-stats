@@ -25,7 +25,6 @@ from typing import Union  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
-import matplotlib.pyplot as _mpl_plt  # noqa: E402
 from scitex_stats._logging import getLogger
 
 logger = getLogger(__name__)
@@ -263,13 +262,25 @@ def p2stars(
     Notes
     -----
     Default thresholds and symbols:
-    - p < 0.001: '***' (highly significant)
-    - p < 0.01:  '**'  (very significant)
-    - p < 0.05:  '*'   (significant)
-    - p >= 0.05: 'ns'  (not significant)
+    - 0 <= p <= 0.001: '***'
+    - 0.001 < p <= 0.01: '**'
+    - 0.01 < p <= 0.05: '*'
+    - 0.05 < p <= 1: 'ns'
+
+    The first matching inclusive threshold supplies its corresponding symbol.
+    Missing values return 'NaN'; values outside [0, 1] return 'invalid'.
+    DataFrame values are formatted cell by cell with their axes preserved.
+    The style-aware scitex_stats.p_to_stars and the MCP tool have separate
+    arguments and strict-threshold behavior.
+
+    Behavior is covered by tests/scitex_stats/_utils/test__formatters.py and
+    tests/integration/test_dataframe_p2stars.py.
 
     Examples
     --------
+    >>> import numpy as np
+    >>> import pandas as pd
+    >>> from scitex_stats._utils import p2stars
     >>> p2stars(0.001)
     '***'
 
@@ -287,9 +298,15 @@ def p2stars(
     >>> p2stars(pvals)
     array(['***', '**', '*', 'ns'], dtype='<U3')
 
-    >>> # Works with DataFrames
-    >>> df = pd.DataFrame({'pvalue': [0.001, 0.05, 0.15]})
-    >>> df['pstars'] = p2stars(df['pvalue'])
+    >>> # A whole DataFrame keeps its columns and row labels.
+    >>> df = pd.DataFrame({'A': [0.001, 0.05], 'B': [0.01, 0.15]}, index=['before', 'after'])
+    >>> p2stars(df).to_dict('list')
+    {'A': ['***', '*'], 'B': ['**', 'ns']}
+    >>> p2stars(df).index.equals(df.index)
+    True
+    >>> # A single column remains a Series.
+    >>> p2stars(df['A']).tolist()
+    ['***', '*']
     """
     # Validate inputs
     if len(symbols) != len(thresholds) + 1:
@@ -302,8 +319,13 @@ def p2stars(
         raise ValueError("thresholds must be in ascending order")
 
     # Handle different input types
-    if isinstance(pvalue, (pd.DataFrame, pd.Series)):
-        # Apply to DataFrame/Series
+    if isinstance(pvalue, pd.DataFrame):
+        # Map columns through the Series path so the scalar formatter sees cells.
+        return pvalue.apply(
+            lambda column: p2stars(column, thresholds, symbols, ns_symbol)
+        )
+    elif isinstance(pvalue, pd.Series):
+        # Apply to Series
         return pvalue.apply(
             lambda p: _p2stars_scalar(p, thresholds, symbols, ns_symbol)
         )
@@ -344,6 +366,8 @@ def _p2stars_scalar(
 
 def main(args):
     """Demonstrate p2stars functionality."""
+    import matplotlib.pyplot as _mpl_plt
+
     logger.info("Demonstrating p2stars functionality")
 
     # Example 1: Single p-values

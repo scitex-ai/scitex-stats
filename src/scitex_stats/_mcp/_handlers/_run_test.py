@@ -103,6 +103,8 @@ async def run_test_handler(  # noqa: C901
         - One-sample tests: [[sample...]]
         - Multi-group tests: [[g1...], [g2...], [g3...], ...]
         - Contingency: [[row1...], [row2...]] (2D table)
+        One-sample and two-group families require exactly one and two arrays,
+        respectively; missing or extra arrays in those families fail.
         - RM/factorial: [[condition1...], [condition2...], ...] (wide format)
     data_file : str, optional
         Path to CSV file. Use with ``columns`` instead of ``data``.
@@ -113,6 +115,9 @@ async def run_test_handler(  # noqa: C901
         (tab/comma/semicolon/pipe/space, ``.tsv`` keeps tab).
     alternative : str
         Alternative hypothesis: "two-sided", "less", or "greater".
+        Passed through for one-sample t and KS as well as directional two-group tests.
+        Theil-Sen accepts only the default and returns a 95% slope interval,
+        not a p-value test; one-sided alternatives are unsupported.
     """
     try:
         source = None
@@ -154,12 +159,21 @@ def run_test_sync(
 ) -> dict:
     """Synchronous core of the MCP ``run_test`` tool, with integrity report and receipt."""
     from scitex_stats import _provenance, tests
+    from scitex_stats._dispatch import _TEST_NAME_ALIASES
+
+    requested_name = test_name
+    test_name = _TEST_NAME_ALIASES.get(test_name, test_name)
 
     if test_name not in _TEST_DISPATCH:
         raise ValueError(
             f"Unknown test: {test_name}. "
-            f"Available: {', '.join(sorted(_TEST_DISPATCH.keys()))}"
+            f"Available: {', '.join(sorted(_TEST_DISPATCH.keys() | _TEST_NAME_ALIASES.keys()))}"
         )
+
+    if test_name in _TWO_GROUP and len(data) != 2:
+        raise ValueError(f"{requested_name} requires exactly 2 data groups; got {len(data)}")
+    if test_name in _ONE_SAMPLE and len(data) != 1:
+        raise ValueError(f"{requested_name} requires exactly 1 data group; got {len(data)}")
 
     category, func_name = _TEST_DISPATCH[test_name]
     test_func = getattr(getattr(tests, category), func_name)
@@ -173,10 +187,17 @@ def run_test_sync(
     groups = [used[n] for n in names]
 
     # Call the test function with appropriate arguments
-    if test_name in _TWO_GROUP:
+    if test_name == "theilsen":
+        if alternative != "two-sided":
+            raise ValueError("Theil-Sen returns a fixed two-sided 95% slope interval; one-sided alternatives are unsupported")
+        result = test_func(groups[0], groups[1], verbose=False)
+    elif test_name in _TWO_GROUP:
         result = test_func(groups[0], groups[1], alternative=alternative)
     elif test_name in _ONE_SAMPLE:
-        result = test_func(groups[0])
+        if test_name in {"ttest_1samp", "ks_1samp"}:
+            result = test_func(groups[0], alternative=alternative)
+        else:
+            result = test_func(groups[0])
     elif test_name in _MULTI_GROUP:
         result = test_func(groups)
     elif test_name in _CONTINGENCY:
@@ -190,11 +211,19 @@ def run_test_sync(
     else:
         result = test_func(*groups, alternative=alternative)
 
+    if test_name == "theilsen":
+        payload = {"test": "Theil-Sen robust regression", "result_type": "regression_estimate",
+                   "confidence_level": 0.95, **result}
+        for field in ("slope", "intercept", "low_slope", "high_slope"):
+            payload[field] = float(payload[field])
+    else:
+        payload = _convert_to_mcp_format(result)
+
     out = {
         "success": True,
-        "test_name": test_name,
+        "test_name": requested_name,
         "alternative": alternative,
-        **_convert_to_mcp_format(result),
+        **payload,
         "input_integrity": integrity,
     }
     extra = None
@@ -203,7 +232,7 @@ def run_test_sync(
     return _provenance.attach(
         out,
         api="mcp.run_test",
-        test_name=test_name,
+        test_name=requested_name,
         function=func_name,
         parameters={"alternative": alternative, "nan_policy": nan_policy},
         raw_inputs=raw,

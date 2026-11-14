@@ -4,15 +4,17 @@
 
 Selection (3 or more groups only):
 
-- one-way ANOVA  -> Tukey HSD when Brown–Forsythe (median-centred Levene)
-  p >= alpha, else Games–Howell;
+- one-way ANOVA  -> Tukey HSD only with an advance equal-variance
+  declaration; otherwise Games–Howell. Brown–Forsythe is reported as a
+  diagnostic and does not select the procedure;
 - Welch's ANOVA  -> Games–Howell;
 - Kruskal–Wallis -> Dunn's test, Holm-adjusted;
 - Friedman       -> Nemenyi (default) or pairwise Wilcoxon signed-rank, Holm-adjusted;
 - repeated-measures ANOVA -> pairwise paired t-tests, Holm-adjusted.
 
-Every comparison carries the unadjusted and adjusted p (APA formatted), a
-pairwise effect size, and a 95% CI where one is computable. p values for
+Comparisons carry adjusted p-values and available unadjusted p-values (APA
+formatted), a pairwise effect size, and confidence intervals where computable
+(95% by default). p values for
 Tukey, Games–Howell and Nemenyi come from the exact studentized range
 distribution (``scipy.stats.studentized_range``). Bootstrap CIs for rank
 effect sizes use ``numpy.random.default_rng(seed)`` so repeated runs match.

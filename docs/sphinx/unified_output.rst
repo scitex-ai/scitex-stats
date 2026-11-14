@@ -147,6 +147,40 @@ The ``stars`` field follows the standard convention:
      - p >= 0.05
      - Not significant
 
+Native array and table formatting
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The native ``scitex_stats._utils.p2stars`` helper formats scalars, NumPy arrays,
+Series and whole DataFrames. Its default thresholds are inclusive: ``.001``
+maps to ``***``, ``.01`` to ``**`` and ``.05`` to ``*``. Values above ``.05``
+through ``1`` map to ``ns``. Missing values map to ``NaN`` and probabilities
+outside ``[0, 1]`` map to ``invalid``. Custom thresholds must increase strictly,
+with one more symbol than thresholds; ``ns_symbol=False`` makes the final
+non-significant symbol an empty string.
+
+These native table-formatting boundaries and custom-threshold arguments are
+independent of the strict-threshold result field above and the style-aware
+``scitex_stats.p_to_stars`` interface. The current MCP ``p_to_stars`` adapter
+also has a separate contract; cross-interface alignment remains pending.
+
+.. code-block:: python
+
+   import pandas as pd
+   from scitex_stats._utils import p2stars
+
+   assert [p2stars(p) for p in (.001, .01, .05)] == ["***", "**", "*"]
+   table = pd.DataFrame({"A": [.001, .05], "B": [.01, .15]}, index=["before", "after"])
+   original = table.copy(deep=True)
+   stars = p2stars(table)
+   assert stars.to_dict("list") == {"A": ["***", "*"], "B": ["**", "ns"]}
+   assert stars.index.equals(table.index)
+   assert table.equals(original)
+
+The owning implementation is ``_utils/_formatters.py::p2stars``. Literal
+boundary/value controls and container behavior are exercised by
+``tests/scitex_stats/_utils/test__formatters.py`` and
+``tests/integration/test_dataframe_p2stars.py``.
+
 Working with Results
 --------------------
 

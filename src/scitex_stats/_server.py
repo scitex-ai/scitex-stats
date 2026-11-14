@@ -8,10 +8,12 @@ This is the main server entry point. Tools are defined here using FastMCP.
 
 from __future__ import annotations
 
+import asyncio
 import json
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from fastmcp import FastMCP
+from pydantic import StrictFloat
 
 # =============================================================================
 # FastMCP Server
@@ -56,11 +58,12 @@ async def recommend_tests(
     return _json(result)
 
 
-def _recommend_call(fn_name: str, **kwargs) -> str:
+async def _recommend_call(fn_name: str, **kwargs) -> str:
     import scitex_stats._recommend as rec
 
     try:
-        return _json({"success": True, **_wrap(getattr(rec, fn_name)(**kwargs))})
+        result = await asyncio.to_thread(getattr(rec, fn_name), **kwargs)
+        return _json({"success": True, **_wrap(result)})
     except (TypeError, ValueError) as exc:
         return _json({"success": False, "error": str(exc)})
 
@@ -82,7 +85,7 @@ async def check_applicability(
     design: "independent" or "paired" — state it; None is treated as independent and flagged.
     scale: "continuous", "ordinal" or "categorical".
     """
-    return _recommend_call("check_applicability", data=groups, design=design, scale=scale, group_names=group_names)
+    return await _recommend_call("check_applicability", data=groups, design=design, scale=scale, group_names=group_names)
 
 
 @mcp.tool()
@@ -94,7 +97,7 @@ async def recommend_test(
     assume_equal_variance: bool = False,
 ) -> str:
     """Recommend ONE primary test with a plain-language reason, the decision path and secondary alternatives."""
-    return _recommend_call(
+    return await _recommend_call(
         "recommend_test", data=groups, design=design, scale=scale,
         group_names=group_names, assume_equal_variance=assume_equal_variance,
     )
@@ -113,7 +116,7 @@ async def run_all_applicable(
 
     Never selects by p-value; the output carries a p-hacking warning and an agreement report.
     """
-    return _recommend_call(
+    return await _recommend_call(
         "run_all_applicable", data=groups, design=design, scale=scale,
         group_names=group_names, primary=primary, alternative=alternative,
     )
@@ -148,8 +151,17 @@ async def run_test(
     data_file: Optional[str] = None,
     columns: Optional[List[str]] = None,
     alternative: str = "two-sided",
+    sep: Optional[str] = None,
 ) -> str:
-    """Execute a statistical test on provided data."""
+    """Execute a statistical test on provided data.
+
+    For data_file, sep=None estimates the separator. An explicit sep overrides
+    estimation; " " splits on whitespace runs. Ambiguous files require sep.
+    One-sample tests require one data group and two-group tests require two;
+    missing or extra groups return a failed result.
+    Theil-Sen returns a regression estimate and 95% slope interval without
+    p-value/statistic placeholders; one-sided alternatives are unsupported.
+    """
     from scitex_stats._mcp.handlers import run_test_handler
 
     result = await run_test_handler(
@@ -158,6 +170,7 @@ async def run_test(
         data_file=data_file,
         columns=columns,
         alternative=alternative,
+        sep=sep,
     )
     return _json(result)
 
@@ -171,7 +184,8 @@ async def validate_apa(
     """Check statistics text (and optional HTML) against APA 7; returns violations with fixes."""
     from scitex_stats._utils._apa import validate_apa as _validate
 
-    return _json(_validate(text, html=html, result=result))
+    report = await asyncio.to_thread(_validate, text, html=html, result=result)
+    return _json(report)
 
 
 @mcp.tool()
@@ -230,7 +244,21 @@ async def power_analysis(
     n_groups: int = 2,
     ratio: float = 1.0,
 ) -> str:
-    """Calculate statistical power or required sample size."""
+    """Calculate statistical power or required sample size.
+
+    ANOVA and chi-square sample-size searches return a failure if the target
+    cannot be reached within 1000 observations per group or 10000 total,
+    respectively. Those bounds are search limits, not successful estimates.
+    Searches include integer sizes from two observations per ANOVA group or
+    one total observation in the existing chi-square power model. Model power
+    does not check expected cell counts or other study-design assumptions.
+    Fixed-sample correlation power uses a Fisher-normal approximation and
+    requires n greater than three; smaller samples return a failure.
+    Both correlation modes require a finite effect_size strictly between
+    minus one and one; invalid values return the handler failure envelope.
+    Correlation alpha must be finite in (0, 1). For sample-size estimation,
+    target power must also be finite in (0, 1); fixed-n mode ignores it.
+    """
     from scitex_stats._mcp.handlers import power_analysis_handler
 
     result = await power_analysis_handler(
@@ -270,6 +298,8 @@ async def describe(
     """Calculate descriptive statistics for data.
 
     Empty or all-NaN input returns a failed result with an error message.
+    NaN values are removed; any remaining infinity returns a failed result.
+    Percentile keys preserve fractional labels; whole-number labels stay integers.
     """
     from scitex_stats._mcp.handlers import describe_handler
 
@@ -285,9 +315,9 @@ async def effect_size(
     group1: List[float],
     group2: List[float],
     measure: str = "cohens_d",
-    pooled: bool = True,
+    pooled: Literal[True] = True,
 ) -> str:
-    """Calculate effect size between groups."""
+    """Calculate the selected effect-size measure; pooled=False is unsupported."""
     from scitex_stats._mcp.handlers import effect_size_handler
 
     result = await effect_size_handler(
@@ -321,7 +351,14 @@ async def posthoc_test(
     method: str = "tukey",
     control_group: int = 0,
 ) -> str:
-    """Run post-hoc pairwise comparisons after significant ANOVA/Kruskal."""
+    """Run post-hoc pairwise comparisons after significant ANOVA/Kruskal.
+
+    Requires at least two groups. Nonempty group_names must name every group;
+    None or an empty list uses generated names. Dunnett control_group is a
+    nonnegative index into groups. Invalid designs return a failed result.
+    The Dunnett option is a conservative global-pooled-t/Bonferroni
+    approximation. Invalid sample geometry returns a failed result.
+    """
     from scitex_stats._mcp.handlers import posthoc_test_handler
 
     result = await posthoc_test_handler(
@@ -335,8 +372,8 @@ async def posthoc_test(
 
 @mcp.tool()
 async def p_to_stars(
-    p_value: float,
-    thresholds: Optional[List[float]] = None,
+    p_value: StrictFloat,
+    thresholds: Optional[List[StrictFloat]] = None,
 ) -> str:
     """Convert p-value to significance stars (*, **, ***, ns)."""
     from scitex_stats._mcp.handlers import p_to_stars_handler

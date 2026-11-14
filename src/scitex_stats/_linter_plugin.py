@@ -1,66 +1,60 @@
 """Linter plugin for scitex-stats: statistics-specific rules (ST001-ST006).
 
-Registered via entry point 'scitex_linter.plugins' so scitex-linter
+Registered via entry point 'scitex_dev.linter.plugins' so scitex-dev
 discovers these rules automatically when scitex-stats is installed.
 """
 
 
 def get_plugin():
     """Return scitex-stats linter rules and call mappings."""
-    from scitex_dev.linter._rules._base import Rule
+    from scitex_dev.linter.rules import Rule
 
     ST001 = Rule(
         id="STX-ST001",
         severity="warning",
         category="stats",
-        message="`scipy.stats.ttest_ind()` — use `stx.stats.ttest_ind()` for auto effect size + CI",
-        suggestion="Replace with `stx.stats.ttest_ind(a, b)` which includes Cohen's d and CI.",
-        requires="scitex",
+        message="`scipy.stats.ttest_ind()` — use `scitex_stats.test_ttest_ind()` for a SciTeX result dictionary",
+        suggestion="Use `scitex_stats.test_ttest_ind(a, b)` after importing scitex_stats; inspect its result dictionary keys.",
     )
 
     ST002 = Rule(
         id="STX-ST002",
         severity="warning",
         category="stats",
-        message="`scipy.stats.mannwhitneyu()` — use `stx.stats.mannwhitneyu()` for auto effect size",
-        suggestion="Replace with `stx.stats.mannwhitneyu(a, b)` which includes Cliff's delta.",
-        requires="scitex",
+        message="`scipy.stats.mannwhitneyu()` — use `scitex_stats.test_mannwhitneyu()` for a SciTeX result dictionary",
+        suggestion="Use `scitex_stats.test_mannwhitneyu(a, b)` after importing scitex_stats; inspect its result dictionary keys.",
     )
 
     ST003 = Rule(
         id="STX-ST003",
         severity="warning",
         category="stats",
-        message="`scipy.stats.pearsonr()` — use `stx.stats.pearsonr()` for auto CI + power",
-        suggestion="Replace with `stx.stats.pearsonr(a, b)` which includes CI and power analysis.",
-        requires="scitex",
+        message="`scipy.stats.pearsonr()` — use `scitex_stats.test_pearson()` for a SciTeX result dictionary",
+        suggestion="Use `scitex_stats.test_pearson(x, y)` after importing scitex_stats; inspect its result dictionary keys.",
     )
 
     ST004 = Rule(
         id="STX-ST004",
         severity="warning",
         category="stats",
-        message="`scipy.stats.f_oneway()` — use `stx.stats.anova_oneway()` for post-hoc + effect sizes",
-        suggestion="Replace with `stx.stats.anova_oneway(*groups)` which includes eta-squared.",
-        requires="scitex",
+        message="`scipy.stats.f_oneway()` — use `scitex_stats.test_anova()` for a SciTeX result dictionary",
+        suggestion="Use `scitex_stats.test_anova(groups)` after importing scitex_stats; inspect its result dictionary keys.",
     )
 
     ST005 = Rule(
         id="STX-ST005",
         severity="warning",
         category="stats",
-        message="`scipy.stats.wilcoxon()` — use `stx.stats.wilcoxon()` for auto effect size",
-        suggestion="Replace with `stx.stats.wilcoxon(a, b)` which includes effect size and CI.",
-        requires="scitex",
+        message="`scipy.stats.wilcoxon()` — use `scitex_stats.test_wilcoxon()` for a SciTeX result dictionary",
+        suggestion="Use `scitex_stats.test_wilcoxon(a, b)` after importing scitex_stats; inspect its result dictionary keys.",
     )
 
     ST006 = Rule(
         id="STX-ST006",
         severity="warning",
         category="stats",
-        message="`scipy.stats.kruskal()` — use `stx.stats.kruskal()` for post-hoc + effect sizes",
-        suggestion="Replace with `stx.stats.kruskal(*groups)` which includes epsilon-squared.",
-        requires="scitex",
+        message="`scipy.stats.kruskal()` — use `scitex_stats.test_kruskal()` for a SciTeX result dictionary",
+        suggestion="Use `scitex_stats.test_kruskal(groups)` after importing scitex_stats; inspect its result dictionary keys.",
     )
 
     return {

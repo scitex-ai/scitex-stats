@@ -5,7 +5,176 @@ All notable changes to `scitex-stats` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions follow [Semantic Versioning](https://semver.org/).
 
+- Enforce numeric star inputs before MCP argument coercion. Reject JSON
+  booleans and numeric strings for the probability and threshold items while
+  preserving valid JSON integer/float values, strict boundaries and numeric
+  domain-error envelopes. Verify through a real initialized stdio session.
+
 ## [Unreleased]
+
+- Defer plotting imports in effect-size, power and formatter utilities until
+  their demos run. Non-plotting utility calls no longer initialize the
+  plotting stack or its font cache; calculation functions are unchanged.
+
+- Reject undefined two-way ANOVA designs before returning effect tests:
+  require two levels per factor, finite responses, positive residual degrees
+  of freedom and positive finite within-cell variance. Zero residual variance
+  previously produced misleading F=0 and p=1 results even for distinct cells.
+
+- Repair MCP's legacy Theil-Sen route by calling the native estimator without
+  an unsupported hypothesis keyword. Return its slope/intercept/95% slope
+  interval as a regression estimate, without fabricated p-value or test-statistic
+  fields. Reject unsupported one-sided requests; preserve the direct Python
+  estimator and native named-dispatcher coverage.
+
+- Require exactly one data array for MCP one-sample tests and two for
+  two-group tests, including aliases and CSV column inputs. Reject missing
+  or extra groups before sanitization/calculation instead of silently
+  discarding extra arrays or reporting only downstream indexing failures.
+
+- Expose the documented optional `sep` on MCP `run_test` and forward it to
+  the existing CSV loader. Explicit separators now resolve ambiguous files;
+  omitted/null separators retain automatic detection and ambiguity errors.
+
+- Honor the requested alternative for one-sample t and KS tests in native
+  and MCP dispatch, correcting one-sided Python/CLI/MCP results that previously
+  used two-sided calculations. Preserve non-directional normality calls and
+  existing result/receipt structures.
+
+- Add synchronous `summarize` for the dictionary summary already exposed by
+  MCP `describe`, and delegate that handler to the native operation in its
+  existing worker. Preserve the numerical kernel and older axis-aware
+  `describe`. Declare the explicit summary/describe capability mapping.
+
+- Reject infinite MCP descriptive-statistics samples instead of reporting
+  successful nonfinite summaries. Preserve NaN removal, empty-input errors,
+  finite calculations and percentile labels.
+
+- Reject invalid native Dunnett significance levels and unknown alternatives
+  instead of returning invalid cutoffs or silently selecting the less-sided
+  hypothesis. Preserve valid pooled calculations and public presentation.
+
+- Share unrounded global pooled-t/Bonferroni control-comparison statistics
+  between native Dunnett and MCP. Correct MCP pairwise-variance drift and
+  emit boolean reject flags; preserve native public rounding, fields and CIs.
+  Reject unsupported sample geometry and differing means with zero pooled
+  variance; preserve the identical-constant zero-difference convention. The
+  procedure remains a conservative approximation, with no joint-Dunnett claim.
+
+- Validate MCP post-hoc group counts and provided name lengths before
+  calculation. Reject negative/out-of-range Dunnett control indices that
+  could include the control in its own comparison. Preserve valid outputs,
+  generated-name fallback and all numerical implementations.
+
+- Delegate MCP star selection to the existing native style-aware formatter
+  in a worker, translating supported thresholds into a fresh StatStyle.
+  Preserve strict boundaries, validation, significance text and result fields.
+  Qualify and declare the default-style native/MCP mapping; inventory remains
+  partial and generic audit findings remain independent.
+
+- Qualify and declare the existing public recommend_tests / MCP mapping for
+  single-factor contexts with default families and return format. Verify
+  actual worker calls, context translation, ordered selections and registry
+  detail fields; keep the partial capability inventory explicitly incomplete.
+
+- Validate correlation alpha and estimated-sample target power as finite
+  probabilities strictly inside (0, 1). Preserve the unused target argument
+  in fixed-n mode and all valid numerical calculations. Split correlation
+  controls from bounded ANOVA/chi-square search controls.
+
+- Validate finite correlation effect sizes strictly inside (-1, 1) before
+  the Fisher transform in both power modes. Return a consistent domain error
+  for invalid values; preserve valid fixed-n zero and near-boundary results.
+
+- Reject correlation-power requests with n <= 3 before evaluating the
+  undefined Fisher standard error. Preserve valid approximate-power results
+  and all other power calculations; document the sample-size requirement.
+
+- Include small valid integer solutions in ANOVA/chi-square power searches.
+  Correct exclusive lower bisection sentinels that forced at least three
+  observations per group or eleven total even when the model needed fewer.
+  Preserve existing ceilings, infeasibility checks and power calculations.
+
+- Fail ANOVA/chi-square required-sample searches when their existing upper
+  limit cannot achieve the requested power, rather than reporting that limit
+  as a successful estimate. Preserve feasible results, limits and kernels;
+  verify against independent Statsmodels power solvers.
+
+- Correct the style-aware p_to_stars docstring at strict default thresholds.
+  Document boundary and missing-value behavior separately from inclusive
+  native p2stars; keep all formatter calculations unchanged.
+
+- Correct shipped MCP skill catalogues to the standalone server's 18 bare
+  names. Separate configured client/umbrella aliases, preserve allowed-tools
+  permissions and cover all three documented tables with the owner registry
+  regression. Clarify discovery, input/error contracts and skill delivery.
+
+- Declare the existing native verify / MCP verify_result capability after
+  real default-option delegation and payload checks. Preserve all previous
+  declarations and runtime interfaces. Repair the verification skill's inputs,
+  comparison exclusions, transport meaning and advanced-option limitations.
+
+- Reject non-finite/out-of-range MCP star probabilities and malformed
+  thresholds before selecting a star level. Require exactly three finite,
+  strictly increasing thresholds in [0, 1]. Preserve valid strict boundaries,
+  response fields, custom thresholds and existing direct tuple callers.
+
+- Correct native p2stars documentation to describe inclusive boundaries,
+  missing/invalid values and actual whole-DataFrame examples. Distinguish its
+  table-formatting contract from style-aware and MCP star conversion.
+
+- Repair native p2stars DataFrame input by formatting cells through the
+  existing Series/scalar path. Preserve axes, input values, threshold boundaries,
+  custom symbols and the existing missing/invalid-value output conventions.
+
+- Run APA text/HTML validation outside the MCP event-loop thread while
+  preserving native reports and propagated validation exceptions. Include this
+  existing native/MCP adapter in the partial capability declaration.
+
+- Run the three data-based recommendation MCP calculations in worker threads
+  so their synchronous native calculations do not block the event loop.
+  Preserve existing arguments, result envelopes and error responses; add
+  these three adapters to the partial capability declaration.
+
+- Add a leaf-owned capability provider for the four existing core native/MCP
+  adapters: normality, effect size, result formatting and p-value correction.
+  The initial declaration covers these operations; other APIs/tools still need
+  classification and existing audit findings remain active.
+
+- Repair the remaining shipped workflow examples: context-based
+  recommendations, independent correlation and distribution examples,
+  raw p-value corrections, tuple-based sample sizes and native formatting.
+  Define inputs in every example and use current result field names.
+
+- Correct post-hoc selection documentation: Tukey requires an advance
+  equal-variance declaration; the reported variance test is diagnostic.
+  Repair the multiple-group skill example to use current grouped arguments
+  and the public post-hoc dispatcher.
+
+- Remove the empirical 0.95 scaling from the native Dunnett approximation's
+  critical value. Its significance flags and intervals now use the same
+  Bonferroni threshold as its adjusted p-values. Document that this remains
+  an approximation rather than the joint Dunnett procedure.
+
+- Preserve fractional percentile labels in descriptive-statistics MCP results.
+  Requests such as 2.1 and 2.9 previously collided under the same integer key.
+  Existing whole-number labels and numerical calculations remain unchanged.
+
+- Correct the Stats linter provider to recommend current leaf-owned Python
+  calls, including list arguments for ANOVA and Kruskal-Wallis. Remove its
+  unrelated umbrella import requirement and correct the provider group name.
+
+- Accept both fisher and fisher_exact in Python, CLI and MCP test dispatch.
+  Keep existing names, requested hypotheses, count-table output and provenance
+  receipts; no additional MCP tool is registered.
+
+- Forward the requested Fisher alternative in native run_test and CLI calls.
+  One-sided calls previously returned two-sided p-values; MCP already forwarded
+  the alternative correctly.
+
+- Accept the existing Python test-name aliases in MCP run_test: ttest,
+  ttest_rel, brunnermunzel and mann_whitney. Preserve paired NaN handling
+  and the requested name in results and verification receipts.
 
 - Use package-owned subprocess coverage support instead of writing startup
   hooks into shared Python environments during test collection.

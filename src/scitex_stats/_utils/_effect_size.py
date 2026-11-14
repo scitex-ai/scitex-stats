@@ -23,7 +23,6 @@ import argparse
 import sys
 from typing import List, Literal, Optional, Union
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -723,6 +722,8 @@ def interpret_cohens_d(d: float) -> str:
 
 def main(args):
     """Demonstrate effect size computation (Cohen's d, Cliff's delta, eta-squared)."""
+    import matplotlib.pyplot as plt
+
     logger.info("Demonstrating effect size calculations")
 
     # Set random seed for reproducibility

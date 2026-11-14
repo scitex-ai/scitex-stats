@@ -55,6 +55,7 @@ dependencies = [
     # MCP server stack — bundled in default install so `scitex-stats mcp …` works out-of-the-box
     "mcp",
     "fastmcp>=2.0.0",
+    "pydantic>=2.0",
     # Pingouin — sphericity (Mauchly) in test_anova_rm and other advanced
     # parametric paths. scitex-stats is a stats package; users expect these
     # to work out-of-the-box, not via an extra.
@@ -141,6 +142,9 @@ docs = [
 
 [project.scripts]
 scitex-stats = "scitex_stats._cli:main"
+
+[project.entry-points."scitex_dev.capabilities"]
+core-operations = "scitex_stats._capabilities:get_capabilities"
 
 [project.entry-points."scitex_dev.docs"]
 scitex-stats = "scitex_stats"

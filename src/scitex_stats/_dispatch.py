@@ -53,29 +53,34 @@ _GROUP = {"anova", "kruskal"}
 _STACKED_GROUP = {"friedman"}
 
 # Contingency-table tests
-_CONTINGENCY = {"chi2", "fisher"}
+_CONTINGENCY = {"chi2", "fisher", "fisher_exact"}
 
 # NaN must be excluded position-wise across all inputs for these
 _NAN_PAIRWISE = _PAIRED | _STACKED_GROUP | {"pearson", "spearman", "kendall"}
 
+# Equivalent test-name spellings shared by the native and MCP dispatchers.
+_TEST_NAME_ALIASES = {
+    "ttest": "ttest_ind",
+    "ttest_rel": "ttest_paired",
+    "brunnermunzel": "brunner_munzel",
+    "mann_whitney": "mannwhitneyu",
+    "fisher": "fisher_exact",
+}
+
 # Canonical name mapping — aliases to the function name in stx.stats
 _ALIASES = {
-    "ttest": "test_ttest_ind",
     "ttest_ind": "test_ttest_ind",
     "ttest_welch": "test_ttest_ind",
-    "ttest_rel": "test_ttest_rel",
     "ttest_paired": "test_ttest_rel",
     "ttest_1samp": "test_ttest_1samp",
     "anova": "test_anova",
-    "brunnermunzel": "test_brunner_munzel",
     "brunner_munzel": "test_brunner_munzel",
     "mannwhitneyu": "test_mannwhitneyu",
-    "mann_whitney": "test_mannwhitneyu",
     "wilcoxon": "test_wilcoxon",
     "kruskal": "test_kruskal",
     "friedman": "test_friedman",
     "chi2": "test_chi2",
-    "fisher": "test_fisher",
+    "fisher_exact": "test_fisher",
     "shapiro": "test_shapiro",
     "ks_1samp": "test_ks_1samp",
     "ks_2samp": "test_ks_2samp",
@@ -84,6 +89,9 @@ _ALIASES = {
     "kendall": "test_kendall",
 }
 
+_ALIASES.update(
+    {alias: _ALIASES[canonical] for alias, canonical in _TEST_NAME_ALIASES.items()}
+)
 
 def available_tests() -> List[str]:
     """Return sorted list of canonical test names accepted by ``run_test``.
@@ -125,7 +133,7 @@ def run_test(
     groups : list of array-like, optional
         List of group arrays (for ANOVA, Kruskal, etc.).
     alternative : str, default ``"two-sided"``
-        Alternative hypothesis for applicable tests.
+        Alternative hypothesis for applicable tests, including one-sample t and KS.
     plot : bool, default ``False``
         Whether to generate a plot.
     popmean : float, default ``0``
@@ -269,10 +277,12 @@ def _call_test(
         return func(data, data2, alternative=alternative, **common)
 
     if test_name in _ONE_SAMPLE:
+        if test_name == "ks_1samp":
+            common["alternative"] = alternative
         return func(data, **common)
 
     if test_name in _ONE_SAMPLE_MEAN:
-        return func(data, popmean=popmean, **common)
+        return func(data, popmean=popmean, alternative=alternative, **common)
 
     if test_name in _GROUP:
         return func(groups, **common)
@@ -285,6 +295,8 @@ def _call_test(
             table = np.array(groups, dtype=float)
         else:
             table = np.vstack([data, data2])
+        if test_name in {"fisher", "fisher_exact"}:
+            common["alternative"] = alternative
         return func(table, **common)
 
     raise ValueError(f"No dispatch rule for test: {test_name}")

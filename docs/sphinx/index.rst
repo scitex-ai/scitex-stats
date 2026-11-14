@@ -37,6 +37,7 @@ effect sizes, power analysis, and APA-formatted strings.
    :caption: API Reference
 
    api/index
+   interface_scope
 
 .. toctree::
    :maxdepth: 2

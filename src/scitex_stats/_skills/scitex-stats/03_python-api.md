@@ -18,12 +18,21 @@ import scitex_stats as sst
 |---|---|
 | `sst.run_test(name, *groups, **kw)` | Unified entry — runs any `test_*` by name/alias |
 | `sst.recommend_tests(n_groups, sample_sizes, outcome, design, ...)` | Pick suitable tests for a design |
-| `sst.describe(data, funcs=None)` | Descriptive statistics for a column / array |
+| `sst.describe(data, funcs=None)` | Axis-aware stacked statistics and their names |
+| `sst.summarize(data, percentiles=None)` | Dictionary summary of a numeric sample; used by MCP `describe` |
 | `sst.available_tests()` | List of all `test_*` names |
 
 `run_test` accepts `return_as ∈ {"dict","dataframe","latex","json"}` (default
 `"dict"`). All `test_*` functions decorated with `@supports_return_as` accept
 the same kwarg.
+
+`summarize` removes NaN values, raises `ValueError` for an empty cleaned sample
+or infinities, and returns native statistics without MCP status/timestamps.
+An empty percentile list uses the default quartiles. The older `describe`
+keeps its array/axis behavior and returns stacked values plus statistic names.
+Owning implementation: `_operations/_summarize.py::summarize`; native values,
+exceptions, complete MCP payloads, worker calls and legacy behavior are checked
+in `tests/integration/test_summary_python_mcp.py`.
 
 ## Tabular file input (`data=`)
 
@@ -36,6 +45,11 @@ The file separator is estimated (tab / comma / semicolon / pipe / whitespace;
 `.tsv` keeps tab). The web UI offers the same Auto estimate plus a hard
 Separator choice and a column picker; `resolve_columns(..., sep=";")` and the
 MCP `run_test` `sep` parameter specify it programmatically.
+
+The registered MCP tool forwards `sep` to `_utils._csv_support._load_file`;
+omitted/null values keep estimation and ambiguous files require an override.
+Handler, registered-tool and real stdio controls for explicit, wrong and
+automatic separators live in `tests/integration/test_mcp_separator.py`.
 
 ## Statistical tests (25 callables)
 

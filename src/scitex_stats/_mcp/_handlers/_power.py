@@ -126,7 +126,14 @@ def _power_anova(
         }
     else:
         # Binary search for n
-        n_min, n_max = 2, 1000
+        n_min, n_max = 1, 1000
+        df1 = n_groups - 1
+        df2 = n_groups * n_max - n_groups
+        nc = effect_size**2 * n_max * n_groups
+        f_crit = scipy_stats.f.ppf(1 - alpha, df1, df2)
+        maximum_power = 1 - scipy_stats.ncf.cdf(f_crit, df1, df2, nc)
+        if not np.isfinite(maximum_power) or maximum_power < power:
+            raise ValueError(f"Required sample size exceeds supported search limit ({n_max})")
         while n_max - n_min > 1:
             n_mid = (n_min + n_max) // 2
             df1 = n_groups - 1
@@ -161,8 +168,16 @@ def _power_correlation(
 
     if effect_size is None:
         raise ValueError("effect_size (r) required for correlation power")
+    if not np.isfinite(effect_size) or not -1 < effect_size < 1:
+        raise ValueError("effect_size must be finite and strictly between -1 and 1 for correlation power")
+    if not np.isfinite(alpha) or not 0 < alpha < 1:
+        raise ValueError("alpha must be finite and strictly between 0 and 1 for correlation power")
+    if n is None and (not np.isfinite(power) or not 0 < power < 1):
+        raise ValueError("power must be finite and strictly between 0 and 1 for correlation sample size")
 
     if n is not None:
+        if n <= 3:
+            raise ValueError("n must be greater than 3 for correlation power")
         # Calculate power
         z = 0.5 * np.log((1 + effect_size) / (1 - effect_size))
         se = 1 / np.sqrt(n - 3)
@@ -223,7 +238,12 @@ def _power_chi2(
         }
     else:
         # Binary search for n
-        n_min, n_max = 10, 10000
+        n_min, n_max = 0, 10000
+        nc = effect_size**2 * n_max
+        chi2_crit = scipy_stats.chi2.ppf(1 - alpha, df)
+        maximum_power = 1 - scipy_stats.ncx2.cdf(chi2_crit, df, nc)
+        if not np.isfinite(maximum_power) or maximum_power < power:
+            raise ValueError(f"Required sample size exceeds supported search limit ({n_max})")
         while n_max - n_min > 1:
             n_mid = (n_min + n_max) // 2
             nc = effect_size**2 * n_mid

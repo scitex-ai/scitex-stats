@@ -340,7 +340,14 @@ def p_to_stars(
     """
     Convert p-value to significance stars.
 
-    Uses the alpha thresholds from the specified style.
+    Uses strict comparisons against the specified style's alpha thresholds.
+    With the default ``apa_latex`` style, p < .001 gives "***", .001 <= p <
+    .01 gives "**", .01 <= p < .05 gives "*", and p >= .05 gives "ns".
+    ``None`` also gives "ns". Custom styles can define other thresholds.
+
+    This style-aware function differs from native ``p2stars``, which uses
+    inclusive comparisons. Existing boundary and style controls are in
+    ``tests/scitex_stats/auto/test__formatting.py`` and ``test__styles.py``.
 
     Parameters
     ----------
@@ -357,7 +364,13 @@ def p_to_stars(
     Examples
     --------
     >>> p_to_stars(0.001)
-    '***'
+    '**'
+    >>> p_to_stars(0.01)
+    '*'
+    >>> p_to_stars(0.05)
+    'ns'
+    >>> p_to_stars(None)
+    'ns'
     >>> p_to_stars(0.03)
     '*'
     >>> p_to_stars(0.10)

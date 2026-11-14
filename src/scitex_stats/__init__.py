@@ -122,6 +122,10 @@ _LAZY_ATTRS: dict[str, str] = {
     # Dispatcher
     "available_tests": "_dispatch",
     "run_test": "_dispatch",
+    "effect_size": "_operations._effect_size",
+    "format_results": "_operations._format_results",
+    "correct_pvalues": "_operations._correction",
+    "summarize": "_operations._summarize",
     # Six-stat reporting doctrine (n, 95% CI, method, p-value, effect size,
     # test statistic — see scitex_stats.reporting.full_report)
     "full_report": "reporting",
@@ -188,7 +192,8 @@ _LAZY_ATTRS: dict[str, str] = {
     "test_fisher": "tests",
     "test_mcnemar": "tests",
     "test_cochran_q": "tests",
-    # Normality (4)
+    # Normality
+    "normality_test": "_operations._normality",
     "test_shapiro": "tests",
     "test_normality": "tests",
     "test_ks_1samp": "tests",
@@ -246,6 +251,10 @@ __all__ = [
     "tests",
     # Dispatcher
     "run_test",
+    "effect_size",
+    "format_results",
+    "correct_pvalues",
+    "summarize",
     "available_tests",
     # Six-stat reporting doctrine
     "full_report",
@@ -309,7 +318,8 @@ __all__ = [
     "test_fisher",
     "test_mcnemar",
     "test_cochran_q",
-    # Normality (4)
+    # Normality
+    "normality_test",
     "test_shapiro",
     "test_normality",
     "test_ks_1samp",

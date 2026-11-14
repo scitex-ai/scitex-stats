@@ -27,6 +27,7 @@ IO:
 """
 
 """Imports"""
+from numbers import Real
 from typing import List, Literal, Optional, Union
 
 import numpy as np
@@ -40,7 +41,7 @@ def dunnett_critical_value(
     k: int, df: int, alpha: float = 0.05, alternative: str = "two-sided"
 ) -> float:
     """
-    Get critical value for Dunnett's test.
+    Get the Bonferroni t critical value used by the Dunnett approximation.
 
     Parameters
     ----------
@@ -49,7 +50,7 @@ def dunnett_critical_value(
     df : int
         Degrees of freedom for error
     alpha : float
-        Significance level
+        Finite real significance level strictly between 0 and 1 (no booleans)
     alternative : {'two-sided', 'less', 'greater'}
         Direction of test
 
@@ -60,10 +61,16 @@ def dunnett_critical_value(
 
     Notes
     -----
-    Uses conservative approximation based on t-distribution with
-    Bonferroni-like adjustment. For exact values, specialized tables
-    or software (R, SAS) would be needed.
+    Uses the t-distribution with a Bonferroni adjustment, matching the
+    adjusted p-values returned by this implementation. This is not the joint
+    Dunnett distribution. SciPy's stats.dunnett provides that procedure
+    starting in SciPy 1.11; this package still supports older SciPy versions.
     """
+    if (isinstance(alpha, (bool, np.bool_)) or not isinstance(alpha, Real)
+            or not np.isfinite(alpha) or not 0 < alpha < 1):
+        raise ValueError("alpha must be a finite real number strictly between 0 and 1")
+    if alternative not in ("two-sided", "less", "greater"):
+        raise ValueError("alternative must be 'two-sided', 'less' or 'greater'")
     # Conservative approximation using Bonferroni adjustment
     if alternative == "two-sided":
         alpha_adj = alpha / (2 * k)
@@ -72,11 +79,55 @@ def dunnett_critical_value(
 
     t_crit = stats.t.ppf(1 - alpha_adj, df)
 
-    # Dunnett critical value is typically slightly smaller than Bonferroni
-    # This approximation is conservative
-    d_crit = t_crit * 0.95  # Slight correction factor
+    # Keep the cutoff consistent with the Bonferroni-adjusted p-values.
+    return float(t_crit)
 
-    return float(d_crit)
+
+def _dunnett_statistics(control, treatments, alternative="two-sided"):
+    """Return unrounded pooled-t/Bonferroni statistics for control comparisons."""
+    if alternative not in ("two-sided", "less", "greater"):
+        raise ValueError("alternative must be 'two-sided', 'less' or 'greater'")
+    control = np.asarray(control)
+    treatments = [np.asarray(t) for t in treatments]
+    k = len(treatments)
+    if k < 1:
+        raise ValueError("Need at least 1 treatment group")
+    groups = [control, *treatments]
+    if any(g.ndim != 1 or g.size == 0 or not np.isrealobj(g)
+           or not np.all(np.isfinite(g)) for g in groups):
+        raise ValueError("Dunnett groups must be nonempty finite one-dimensional real samples")
+    n_control = len(control)
+    mean_control = np.mean(control)
+    n_treatments = [len(t) for t in treatments]
+    means_treatments = [np.mean(t) for t in treatments]
+    df_error = n_control + sum(n_treatments) - (k + 1)
+    if df_error <= 0:
+        raise ValueError("Dunnett comparisons require positive residual degrees of freedom")
+    ss_error = np.sum((control - mean_control) ** 2)
+    for t in treatments:
+        ss_error += np.sum((t - np.mean(t)) ** 2)
+    ms_error = ss_error / df_error
+    if not np.isfinite(ms_error) or ms_error < 0:
+        raise ValueError("Dunnett comparisons require finite pooled variance")
+    if ms_error == 0 and any(mean != mean_control for mean in means_treatments):
+        raise ValueError("Dunnett comparisons require positive pooled variance when group means differ")
+    rows = []
+    for n_t, mean_t in zip(n_treatments, means_treatments):
+        mean_diff = mean_t - mean_control
+        se = np.sqrt(ms_error * (1 / n_t + 1 / n_control))
+        t_stat = 0.0 if se == 0 else mean_diff / se
+        if alternative == "two-sided":
+            raw_pvalue = 2 * (1 - stats.t.cdf(abs(t_stat), df_error))
+        elif alternative == "greater":
+            raw_pvalue = 1 - stats.t.cdf(t_stat, df_error)
+        else:
+            raw_pvalue = stats.t.cdf(t_stat, df_error)
+        rows.append({"n_control": n_control, "n_treatment": n_t,
+                     "mean_control": mean_control, "mean_treatment": mean_t,
+                     "mean_diff": mean_diff, "std_error": se, "t_statistic": t_stat,
+                     "pvalue_raw": raw_pvalue, "pvalue": min(raw_pvalue * k, 1.0),
+                     "df_error": df_error})
+    return rows
 
 
 def posthoc_dunnett(
@@ -89,10 +140,10 @@ def posthoc_dunnett(
     return_as: str = "dataframe",
 ) -> Union[pd.DataFrame, List[dict]]:
     """
-    Perform Dunnett's test for comparing treatments vs control.
+    Compare treatments vs control with a Bonferroni t approximation.
 
     Conducts multiple comparisons of treatment groups against a single
-    control group, controlling the family-wise error rate.
+    control group, conservatively controlling the family-wise error rate.
 
     Parameters
     ----------
@@ -125,7 +176,7 @@ def posthoc_dunnett(
         - mean_diff: Difference (treatment - control)
         - std_error: Standard error of difference
         - t_statistic: t-statistic
-        - d_critical: Dunnett critical value
+        - d_critical: Bonferroni t critical value
         - pvalue: Approximate p-value
         - significant: Whether difference is significant
         - ci_lower: Lower bound of CI
@@ -134,8 +185,15 @@ def posthoc_dunnett(
     Notes
     -----
     Dunnett's test is specifically designed for comparing multiple treatment
-    groups against a single control group, which is more powerful than
-    using Tukey HSD for this purpose.
+    groups against a single control group. This implementation approximates
+    that procedure with Bonferroni-adjusted pooled t comparisons; it does not
+    evaluate the joint Dunnett distribution.
+
+    Samples must be real, finite, nonempty and one-dimensional, with positive
+    residual degrees of freedom. Zero pooled variance is supported only when
+    all group means are identical. Unsupported inputs raise ValueError.
+    Significance levels must be finite real values strictly between 0 and 1;
+    alternative must be one of the three documented strings.
 
     **Test Statistic**:
 
@@ -148,8 +206,8 @@ def posthoc_dunnett(
     - MS_error: Pooled mean square error
 
     **Critical Value**:
-    Uses Dunnett distribution tables (approximated here via conservative
-    t-distribution adjustment).
+    Uses the Bonferroni-adjusted t quantile, consistent with the adjusted
+    p-values. No empirical scaling factor is applied.
 
     **Assumptions**:
     1. Independence of observations
@@ -158,9 +216,7 @@ def posthoc_dunnett(
     4. One group designated as control
 
     **Advantages**:
-    - More powerful than Tukey HSD for control comparisons
-    - More powerful than Bonferroni for this specific design
-    - Controls family-wise error rate exactly
+    - Controls family-wise error conservatively under the stated assumptions
     - Provides directional tests (one-sided)
 
     **Disadvantages**:
@@ -223,23 +279,8 @@ def posthoc_dunnett(
     if len(treatment_names) != k:
         raise ValueError(f"Expected {k} treatment names, got {len(treatment_names)}")
 
-    # Group statistics
-    n_control = len(control)
-    mean_control = np.mean(control)
-
-    n_treatments = [len(t) for t in treatments]
-    means_treatments = [np.mean(t) for t in treatments]
-
-    # Total sample size and degrees of freedom
-    N = n_control + sum(n_treatments)
-    df_error = N - (k + 1)  # k treatments + 1 control
-
-    # Pooled variance (MS_error)
-    ss_error = np.sum((control - mean_control) ** 2)
-    for t in treatments:
-        ss_error += np.sum((t - np.mean(t)) ** 2)
-
-    ms_error = ss_error / df_error
+    comparisons = _dunnett_statistics(control, treatments, alternative)
+    df_error = comparisons[0]["df_error"]
 
     # Get critical value
     d_crit = dunnett_critical_value(k, df_error, alpha, alternative)
@@ -247,31 +288,15 @@ def posthoc_dunnett(
     # Perform comparisons vs control
     results = []
 
-    for i, (treatment, n_t, mean_t) in enumerate(
-        zip(treatments, n_treatments, means_treatments)
-    ):
-        # Mean difference
-        mean_diff = mean_t - mean_control
-
-        # Standard error
-        se = np.sqrt(ms_error * (1 / n_t + 1 / n_control))
-
-        # t-statistic
-        if se == 0:
-            t_stat = 0.0
-        else:
-            t_stat = mean_diff / se
-
-        # p-value (conservative approximation)
-        if alternative == "two-sided":
-            pvalue = 2 * (1 - stats.t.cdf(abs(t_stat), df_error))
-        elif alternative == "greater":
-            pvalue = 1 - stats.t.cdf(t_stat, df_error)
-        else:  # less
-            pvalue = stats.t.cdf(t_stat, df_error)
-
-        # Adjust for multiple comparisons (conservative)
-        pvalue = min(pvalue * k, 1.0)
+    for i, comparison in enumerate(comparisons):
+        n_t = comparison["n_treatment"]
+        n_control = comparison["n_control"]
+        mean_t = comparison["mean_treatment"]
+        mean_control = comparison["mean_control"]
+        mean_diff = comparison["mean_diff"]
+        se = comparison["std_error"]
+        t_stat = comparison["t_statistic"]
+        pvalue = comparison["pvalue"]
 
         # Determine significance
         if alternative == "two-sided":
@@ -429,7 +454,7 @@ if __name__ == "__main__":
         f"{tukey_vs_placebo[['group_i', 'group_j', 'pvalue', 'significant']].to_string()}"
     )
 
-    logger.info("\nNote: Dunnett is more powerful for control comparisons")
+    logger.info("\nNote: This implementation uses a Bonferroni approximation.")
 
     # Example 5: Unbalanced design
     logger.info("\n[Example 5] Unbalanced design")

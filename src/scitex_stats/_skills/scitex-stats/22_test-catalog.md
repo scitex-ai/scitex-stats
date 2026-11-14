@@ -65,15 +65,26 @@ tags: [scitex-stats-test-catalog, scitex-stats]
 
 ## Dispatcher Coverage
 
-`run_test()` routes 22 aliases; the MCP `run_test` tool routes 23 names.
-Both cover the Parametric/Nonparametric/Correlation/Categorical/Normality
-families fully. Two edge gaps (measured on develop, documented — not
-silent): the Python dispatcher does not route `test_anova_rm`,
-`test_anova_2way`, `test_theilsen`, `test_mcnemar`, `test_cochran_q`,
-`test_kendalls_w`, `test_icc`, or `test_normality` by name (call these
-directly, e.g. `sst.test_mcnemar(...)`), and the MCP tool does not route
-`test_kendalls_w` or `test_icc`. Agreement-family and repeated-measures
-ANOVA go direct; everything else dispatches.
+Native `available_tests()` lists 23 accepted selector strings, including five
+aliases. MCP `run_test(test_name=...)` has 23 canonical selectors and accepts
+the same five aliases. These are test selectors, not separate MCP tools;
+discovery alone does not verify every route or study design.
+
+The native named dispatcher does not route `anova_rm`, `anova_2way`,
+`theilsen`, `mcnemar`, `cochran_q`, `kendalls_w`, `icc`, or `normality`.
+Call their native functions directly, for example `sst.test_theilsen(x, y)`.
+The MCP selector registry does not include `kendalls_w` or `icc`. Remaining
+dispatcher parity and broader test/design behavior are unfinished work.
+
+The legacy MCP `theilsen` selector delegates to native `test_theilsen` and
+returns a regression estimate: slope, intercept and a fixed 95% slope
+interval (`low_slope`, `high_slope`). It returns no p-value, significance or
+placeholder test statistic. Only the default `alternative="two-sided"` is
+accepted; one-sided inference is not implemented. This interval is for the
+slope, not the intercept or predicted observations. The native estimator and
+this MCP adapter are checked against SciPy, paired missing-data handling,
+actual worker calls, CSV input, receipt replay and real stdio in
+`tests/integration/test_theilsen_mcp.py`.
 
 ## Dispatcher Aliases
 

@@ -22,7 +22,6 @@ IO:
 import argparse
 from typing import Literal, Optional, Union
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -265,6 +264,8 @@ def sample_size_ttest(
 
 def main(args):
     """Demonstrate power analysis functionality."""
+    import matplotlib.pyplot as plt
+
     logger.info("Demonstrating statistical power analysis")
 
     # Example 1: Effect size vs power
