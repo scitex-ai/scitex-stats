@@ -1,6 +1,6 @@
 """Partial leaf-owned declarations for existing core Python/MCP operations.
 
-The initial scope covers four existing adapters. Remaining public APIs and MCP
+The selected scope covers core and recommendation adapters. Remaining public APIs and MCP
 tools need classification. These plain data describe interface bindings;
 implementation tests, installed registration and host availability are separate.
 """
@@ -17,6 +17,12 @@ def get_capabilities() -> dict:
          "tests/integration/test_format_results_python_api.py"),
         ("correct_pvalues", "Adjust a family of p-values with a supported correction method.",
          "tests/integration/test_correction_python_api.py"),
+        ("check_applicability", "Assess supported tests and their assumptions for grouped data.",
+         "tests/integration/test_recommendation_mcp_threading.py"),
+        ("recommend_test", "Recommend a primary test from the design and data assumptions.",
+         "tests/integration/test_recommendation_mcp_threading.py"),
+        ("run_all_applicable", "Run a primary test and applicable sensitivity analyses.",
+         "tests/integration/test_recommendation_mcp_threading.py"),
     )
     return {
         "schema_version": 1,

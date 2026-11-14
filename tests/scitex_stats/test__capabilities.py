@@ -9,7 +9,8 @@ import pytest
 
 from scitex_stats._capabilities import get_capabilities
 
-NAMES = ("normality_test", "effect_size", "format_results", "correct_pvalues")
+NAMES = ("normality_test", "effect_size", "format_results", "correct_pvalues",
+         "check_applicability", "recommend_test", "run_all_applicable")
 ROOT = Path(__file__).resolve().parents[2]
 
 

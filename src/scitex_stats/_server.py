@@ -8,6 +8,7 @@ This is the main server entry point. Tools are defined here using FastMCP.
 
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import List, Literal, Optional
 
@@ -56,11 +57,12 @@ async def recommend_tests(
     return _json(result)
 
 
-def _recommend_call(fn_name: str, **kwargs) -> str:
+async def _recommend_call(fn_name: str, **kwargs) -> str:
     import scitex_stats._recommend as rec
 
     try:
-        return _json({"success": True, **_wrap(getattr(rec, fn_name)(**kwargs))})
+        result = await asyncio.to_thread(getattr(rec, fn_name), **kwargs)
+        return _json({"success": True, **_wrap(result)})
     except (TypeError, ValueError) as exc:
         return _json({"success": False, "error": str(exc)})
 
@@ -82,7 +84,7 @@ async def check_applicability(
     design: "independent" or "paired" — state it; None is treated as independent and flagged.
     scale: "continuous", "ordinal" or "categorical".
     """
-    return _recommend_call("check_applicability", data=groups, design=design, scale=scale, group_names=group_names)
+    return await _recommend_call("check_applicability", data=groups, design=design, scale=scale, group_names=group_names)
 
 
 @mcp.tool()
@@ -94,7 +96,7 @@ async def recommend_test(
     assume_equal_variance: bool = False,
 ) -> str:
     """Recommend ONE primary test with a plain-language reason, the decision path and secondary alternatives."""
-    return _recommend_call(
+    return await _recommend_call(
         "recommend_test", data=groups, design=design, scale=scale,
         group_names=group_names, assume_equal_variance=assume_equal_variance,
     )
@@ -113,7 +115,7 @@ async def run_all_applicable(
 
     Never selects by p-value; the output carries a p-hacking warning and an agreement report.
     """
-    return _recommend_call(
+    return await _recommend_call(
         "run_all_applicable", data=groups, design=design, scale=scale,
         group_names=group_names, primary=primary, alternative=alternative,
     )

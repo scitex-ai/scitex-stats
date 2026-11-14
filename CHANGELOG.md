@@ -7,6 +7,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Run the three data-based recommendation MCP calculations in worker threads
+  so their synchronous native calculations do not block the event loop.
+  Preserve existing arguments, result envelopes and error responses; add
+  these three adapters to the partial capability declaration.
+
 - Add a leaf-owned capability provider for the four existing core native/MCP
   adapters: normality, effect size, result formatting and p-value correction.
   The initial declaration covers these operations; other APIs/tools still need
