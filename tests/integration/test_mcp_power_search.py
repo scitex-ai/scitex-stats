@@ -77,3 +77,34 @@ def test_fixed_sample_power_preserves_complete_report(test_type):
     timestamp = datetime.fromisoformat(report.pop("timestamp"))
     # Assert
     assert (report, isinstance(timestamp, datetime)) == (expected, True)
+
+
+@pytest.mark.parametrize("test_type", ["anova", "chi2"])
+@pytest.mark.parametrize("effect_size", [3., 5.])
+@pytest.mark.parametrize("n_groups", [3, 5])
+def test_small_required_sample_matches_exhaustive_reference(test_type, effect_size, n_groups):
+    # Arrange
+    solver = FTestAnovaPower() if test_type == "anova" else GofChisquarePower()
+    options = {"k_groups": n_groups} if test_type == "anova" else {"n_bins": n_groups}
+    multiplier, floor = (n_groups, 2) if test_type == "anova" else (1, 1)
+    candidates = [(n, solver.power(effect_size, n * multiplier, .05, **options))
+                  for n in range(floor, 11)]
+    expected = next(n for n, achieved in candidates if achieved >= .8)
+    # Act
+    report = call_tool(test_type=test_type, effect_size=effect_size, power=.8, n_groups=n_groups)
+    # Assert
+    assert (report["success"], report.get("required_n_per_group" if test_type == "anova" else "required_n")) == (True, expected)
+
+
+@pytest.mark.parametrize("test_type", ["anova", "chi2"])
+def test_search_remains_minimal_across_previous_floor(test_type):
+    # Arrange
+    solver, options, multiplier, _ = reference(test_type)
+    previous_first = 3 if test_type == "anova" else 11
+    target = solver.power(.8, (previous_first - .25) * multiplier, .05, **options)
+    lower = solver.power(.8, (previous_first - 1) * multiplier, .05, **options)
+    upper = solver.power(.8, previous_first * multiplier, .05, **options)
+    # Act
+    report = call_tool(test_type=test_type, effect_size=.8, power=target, n_groups=3)
+    # Assert
+    assert (lower < target <= upper, report["success"], report.get("required_n_per_group" if test_type == "anova" else "required_n")) == (True, True, previous_first)

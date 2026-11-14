@@ -239,6 +239,9 @@ async def power_analysis(
     ANOVA and chi-square sample-size searches return a failure if the target
     cannot be reached within 1000 observations per group or 10000 total,
     respectively. Those bounds are search limits, not successful estimates.
+    Searches include integer sizes from two observations per ANOVA group or
+    one total observation in the existing chi-square power model. Model power
+    does not check expected cell counts or other study-design assumptions.
     """
     from scitex_stats._mcp.handlers import power_analysis_handler
 

@@ -12,6 +12,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Include small valid integer solutions in ANOVA/chi-square power searches.
+  Correct exclusive lower bisection sentinels that forced at least three
+  observations per group or eleven total even when the model needed fewer.
+  Preserve existing ceilings, infeasibility checks and power calculations.
+
 - Fail ANOVA/chi-square required-sample searches when their existing upper
   limit cannot achieve the requested power, rather than reporting that limit
   as a successful estimate. Preserve feasible results, limits and kernels;

@@ -126,7 +126,7 @@ def _power_anova(
         }
     else:
         # Binary search for n
-        n_min, n_max = 2, 1000
+        n_min, n_max = 1, 1000
         df1 = n_groups - 1
         df2 = n_groups * n_max - n_groups
         nc = effect_size**2 * n_max * n_groups
@@ -230,7 +230,7 @@ def _power_chi2(
         }
     else:
         # Binary search for n
-        n_min, n_max = 10, 10000
+        n_min, n_max = 0, 10000
         nc = effect_size**2 * n_max
         chi2_crit = scipy_stats.chi2.ppf(1 - alpha, df)
         maximum_power = 1 - scipy_stats.ncx2.cdf(chi2_crit, df, nc)
