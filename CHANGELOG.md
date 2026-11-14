@@ -12,6 +12,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Reject correlation-power requests with n <= 3 before evaluating the
+  undefined Fisher standard error. Preserve valid approximate-power results
+  and all other power calculations; document the sample-size requirement.
+
 - Include small valid integer solutions in ANOVA/chi-square power searches.
   Correct exclusive lower bisection sentinels that forced at least three
   observations per group or eleven total even when the model needed fewer.

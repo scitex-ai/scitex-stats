@@ -170,6 +170,8 @@ def _power_correlation(
         raise ValueError("effect_size (r) required for correlation power")
 
     if n is not None:
+        if n <= 3:
+            raise ValueError("n must be greater than 3 for correlation power")
         # Calculate power
         z = 0.5 * np.log((1 + effect_size) / (1 - effect_size))
         se = 1 / np.sqrt(n - 3)
