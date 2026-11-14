@@ -12,6 +12,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Correct shipped MCP skill catalogues to the standalone server's 18 bare
+  names. Separate configured client/umbrella aliases, preserve allowed-tools
+  permissions and cover all three documented tables with the owner registry
+  regression. Clarify discovery, input/error contracts and skill delivery.
+
 - Declare the existing native verify / MCP verify_result capability after
   real default-option delegation and payload checks. Preserve all previous
   declarations and runtime interfaces. Repair the verification skill's inputs,

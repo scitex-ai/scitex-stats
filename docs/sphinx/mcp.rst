@@ -89,6 +89,11 @@ Diagnostics
    scitex-stats mcp doctor          # Check dependencies and server health
    scitex-stats mcp list-tools -vv  # List tools with descriptions
 
+The catalogue lists bare names registered by the standalone leaf server.
+Client-qualified names and umbrella aliases depend on the configured server;
+discover that server's actual tool list before using an alias. Standalone
+registration does not establish that every alias is available in a facade.
+
 The tool catalogue describes registered MCP names. Python library exports and
 CLI command paths have their own signatures. Maintainers can find the proposed
 exposure scopes and naming migrations in :doc:`interface_scope`.

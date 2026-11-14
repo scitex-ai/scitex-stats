@@ -72,20 +72,35 @@ scitex-stats <command> [options]
 
 ## MCP Tools
 
-| Tool | Description |
-|------|-------------|
-| `stats_run_test` | Run a statistical test |
-| `stats_recommend_tests` | Auto-recommend tests for data |
-| `stats_describe` | Descriptive statistics |
-| `stats_effect_size` | Compute effect sizes |
-| `stats_correct_pvalues` | Multiple comparison correction |
-| `stats_posthoc_test` | Post-hoc pairwise tests |
-| `stats_power_analysis` | Power analysis / sample size |
-| `stats_normality_test` | Normality testing |
-| `stats_format_results` | Format for publication |
-| `stats_p_to_stars` | p-value to significance stars |
-| `stats_verify_result` | Verify a result's receipt, data hashes and statistics by recompute |
+The standalone `scitex-stats mcp start` server has **18 registered MCP tools**:
 
+| Tool | Purpose |
+|------|---------|
+| `recommend_tests` | Recommend tests from group counts, sample sizes and design. |
+| `check_applicability` | Assess applicable tests for grouped data and design. |
+| `recommend_test` | Recommend one primary test from grouped data and design. |
+| `run_all_applicable` | Run the primary test and applicable sensitivity analyses. |
+| `run_test` | Run one named statistical test. |
+| `describe` | Calculate descriptive statistics for a numeric sequence. |
+| `normality_test` | Run a supported normality check. |
+| `posthoc_test` | Request the selected post-hoc comparison procedure. |
+| `effect_size` | Calculate a supported two-group effect size. |
+| `power_analysis` | Calculate achieved power or required sample size. |
+| `correct_pvalues` | Apply a multiple-comparison correction. |
+| `format_results` | Format statistical results in a supported journal style. |
+| `p_to_stars` | Convert a numeric p-value using strict star thresholds. |
+| `validate_apa` | Report statistical-text or HTML formatting violations. |
+| `generate_report` | Generate a statistical report from groups or a data file. |
+| `verify_result` | Check a result or result file using native default verification options. |
+| `skills_list` | List discoverable Stats skill resources. |
+| `skills_get` | Read a discoverable Stats skill resource. |
+
+The bare names above belong to the standalone registry. The existing
+`allowed-tools` pattern in this skill addresses an umbrella/client namespace;
+use the actual names advertised by that configured server when selecting
+client-qualified or `stats_*` aliases. Alias availability is separate from
+standalone registration. See [13_mcp-tools.md](13_mcp-tools.md) for discovery,
+argument/result distinctions and owning tests.
 
 ## Environment
 
