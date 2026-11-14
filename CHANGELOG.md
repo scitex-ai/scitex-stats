@@ -7,6 +7,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Reject non-finite/out-of-range MCP star probabilities and malformed
+  thresholds before selecting a star level. Require exactly three finite,
+  strictly increasing thresholds in [0, 1]. Preserve valid strict boundaries,
+  response fields, custom thresholds and existing direct tuple callers.
+
 - Correct native p2stars documentation to describe inclusive boundaries,
   missing/invalid values and actual whole-DataFrame examples. Distinguish its
   table-formatting contract from style-aware and MCP star conversion.
