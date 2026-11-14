@@ -7,6 +7,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Remove the empirical 0.95 scaling from the native Dunnett approximation's
+  critical value. Its significance flags and intervals now use the same
+  Bonferroni threshold as its adjusted p-values. Document that this remains
+  an approximation rather than the joint Dunnett procedure.
+
 - Preserve fractional percentile labels in descriptive-statistics MCP results.
   Requests such as 2.1 and 2.9 previously collided under the same integer key.
   Existing whole-number labels and numerical calculations remain unchanged.

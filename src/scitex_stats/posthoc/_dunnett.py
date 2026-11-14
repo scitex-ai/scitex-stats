@@ -40,7 +40,7 @@ def dunnett_critical_value(
     k: int, df: int, alpha: float = 0.05, alternative: str = "two-sided"
 ) -> float:
     """
-    Get critical value for Dunnett's test.
+    Get the Bonferroni t critical value used by the Dunnett approximation.
 
     Parameters
     ----------
@@ -60,9 +60,10 @@ def dunnett_critical_value(
 
     Notes
     -----
-    Uses conservative approximation based on t-distribution with
-    Bonferroni-like adjustment. For exact values, specialized tables
-    or software (R, SAS) would be needed.
+    Uses the t-distribution with a Bonferroni adjustment, matching the
+    adjusted p-values returned by this implementation. This is not the joint
+    Dunnett distribution. SciPy's stats.dunnett provides that procedure
+    starting in SciPy 1.11; this package still supports older SciPy versions.
     """
     # Conservative approximation using Bonferroni adjustment
     if alternative == "two-sided":
@@ -72,11 +73,8 @@ def dunnett_critical_value(
 
     t_crit = stats.t.ppf(1 - alpha_adj, df)
 
-    # Dunnett critical value is typically slightly smaller than Bonferroni
-    # This approximation is conservative
-    d_crit = t_crit * 0.95  # Slight correction factor
-
-    return float(d_crit)
+    # Keep the cutoff consistent with the Bonferroni-adjusted p-values.
+    return float(t_crit)
 
 
 def posthoc_dunnett(
@@ -89,10 +87,10 @@ def posthoc_dunnett(
     return_as: str = "dataframe",
 ) -> Union[pd.DataFrame, List[dict]]:
     """
-    Perform Dunnett's test for comparing treatments vs control.
+    Compare treatments vs control with a Bonferroni t approximation.
 
     Conducts multiple comparisons of treatment groups against a single
-    control group, controlling the family-wise error rate.
+    control group, conservatively controlling the family-wise error rate.
 
     Parameters
     ----------
@@ -125,7 +123,7 @@ def posthoc_dunnett(
         - mean_diff: Difference (treatment - control)
         - std_error: Standard error of difference
         - t_statistic: t-statistic
-        - d_critical: Dunnett critical value
+        - d_critical: Bonferroni t critical value
         - pvalue: Approximate p-value
         - significant: Whether difference is significant
         - ci_lower: Lower bound of CI
@@ -134,8 +132,9 @@ def posthoc_dunnett(
     Notes
     -----
     Dunnett's test is specifically designed for comparing multiple treatment
-    groups against a single control group, which is more powerful than
-    using Tukey HSD for this purpose.
+    groups against a single control group. This implementation approximates
+    that procedure with Bonferroni-adjusted pooled t comparisons; it does not
+    evaluate the joint Dunnett distribution.
 
     **Test Statistic**:
 
@@ -148,8 +147,8 @@ def posthoc_dunnett(
     - MS_error: Pooled mean square error
 
     **Critical Value**:
-    Uses Dunnett distribution tables (approximated here via conservative
-    t-distribution adjustment).
+    Uses the Bonferroni-adjusted t quantile, consistent with the adjusted
+    p-values. No empirical scaling factor is applied.
 
     **Assumptions**:
     1. Independence of observations
@@ -158,9 +157,7 @@ def posthoc_dunnett(
     4. One group designated as control
 
     **Advantages**:
-    - More powerful than Tukey HSD for control comparisons
-    - More powerful than Bonferroni for this specific design
-    - Controls family-wise error rate exactly
+    - Controls family-wise error conservatively under the stated assumptions
     - Provides directional tests (one-sided)
 
     **Disadvantages**:
@@ -429,7 +426,7 @@ if __name__ == "__main__":
         f"{tukey_vs_placebo[['group_i', 'group_j', 'pvalue', 'significant']].to_string()}"
     )
 
-    logger.info("\nNote: Dunnett is more powerful for control comparisons")
+    logger.info("\nNote: This implementation uses a Bonferroni approximation.")
 
     # Example 5: Unbalanced design
     logger.info("\n[Example 5] Unbalanced design")
