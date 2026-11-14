@@ -7,6 +7,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Correct native p2stars documentation to describe inclusive boundaries,
+  missing/invalid values and actual whole-DataFrame examples. Distinguish its
+  table-formatting contract from style-aware and MCP star conversion.
+
 - Repair native p2stars DataFrame input by formatting cells through the
   existing Series/scalar path. Preserve axes, input values, threshold boundaries,
   custom symbols and the existing missing/invalid-value output conventions.
