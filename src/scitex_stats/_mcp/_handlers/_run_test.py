@@ -103,6 +103,8 @@ async def run_test_handler(  # noqa: C901
         - One-sample tests: [[sample...]]
         - Multi-group tests: [[g1...], [g2...], [g3...], ...]
         - Contingency: [[row1...], [row2...]] (2D table)
+        One-sample and two-group families require exactly one and two arrays,
+        respectively; missing or extra arrays in those families fail.
         - RM/factorial: [[condition1...], [condition2...], ...] (wide format)
     data_file : str, optional
         Path to CSV file. Use with ``columns`` instead of ``data``.
@@ -165,6 +167,11 @@ def run_test_sync(
             f"Unknown test: {test_name}. "
             f"Available: {', '.join(sorted(_TEST_DISPATCH.keys() | _TEST_NAME_ALIASES.keys()))}"
         )
+
+    if test_name in _TWO_GROUP and len(data) != 2:
+        raise ValueError(f"{requested_name} requires exactly 2 data groups; got {len(data)}")
+    if test_name in _ONE_SAMPLE and len(data) != 1:
+        raise ValueError(f"{requested_name} requires exactly 1 data group; got {len(data)}")
 
     category, func_name = _TEST_DISPATCH[test_name]
     test_func = getattr(getattr(tests, category), func_name)

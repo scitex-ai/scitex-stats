@@ -12,6 +12,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Require exactly one data array for MCP one-sample tests and two for
+  two-group tests, including aliases and CSV column inputs. Reject missing
+  or extra groups before sanitization/calculation instead of silently
+  discarding extra arrays or reporting only downstream indexing failures.
+
 - Expose the documented optional `sep` on MCP `run_test` and forward it to
   the existing CSV loader. Explicit separators now resolve ambiguous files;
   omitted/null separators retain automatic detection and ambiguity errors.

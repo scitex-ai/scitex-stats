@@ -157,6 +157,8 @@ async def run_test(
 
     For data_file, sep=None estimates the separator. An explicit sep overrides
     estimation; " " splits on whitespace runs. Ambiguous files require sep.
+    One-sample tests require one data group and two-group tests require two;
+    missing or extra groups return a failed result.
     """
     from scitex_stats._mcp.handlers import run_test_handler
 
