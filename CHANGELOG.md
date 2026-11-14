@@ -12,6 +12,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Add synchronous `summarize` for the dictionary summary already exposed by
+  MCP `describe`, and delegate that handler to the native operation in its
+  existing worker. Preserve the numerical kernel and older axis-aware
+  `describe`. Declare the explicit summary/describe capability mapping.
+
 - Reject infinite MCP descriptive-statistics samples instead of reporting
   successful nonfinite summaries. Preserve NaN removal, empty-input errors,
   finite calculations and percentile labels.

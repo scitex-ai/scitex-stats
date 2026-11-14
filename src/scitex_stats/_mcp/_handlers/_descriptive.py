@@ -9,8 +9,6 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime
 
-import numpy as np
-
 __all__ = ["describe_handler"]
 
 
@@ -22,50 +20,10 @@ async def describe_handler(
     try:
         loop = asyncio.get_event_loop()
 
+        from scitex_stats import summarize
+
         def do_describe():
-            arr = np.array(data, dtype=float)
-            arr = arr[~np.isnan(arr)]  # Remove NaN
-
-            if len(arr) == 0:
-                raise ValueError("No valid data points")
-
-            if not np.all(np.isfinite(arr)):
-                raise ValueError("Data must contain only finite values after removing NaN")
-
-            percs = percentiles or [25, 50, 75]
-            percentile_values = np.percentile(arr, percs)
-
-            result = {
-                "n": int(len(arr)),
-                "mean": float(np.mean(arr)),
-                "std": float(np.std(arr, ddof=1)) if len(arr) > 1 else 0.0,
-                "var": float(np.var(arr, ddof=1)) if len(arr) > 1 else 0.0,
-                "sem": (
-                    float(np.std(arr, ddof=1) / np.sqrt(len(arr)))
-                    if len(arr) > 1
-                    else 0.0
-                ),
-                "min": float(np.min(arr)),
-                "max": float(np.max(arr)),
-                "range": float(np.max(arr) - np.min(arr)),
-                "median": float(np.median(arr)),
-                "percentiles": {
-                    (str(int(p)) if float(p).is_integer() else str(float(p))): float(v)
-                    for p, v in zip(percs, percentile_values)
-                },
-                "iqr": float(np.percentile(arr, 75) - np.percentile(arr, 25)),
-            }
-
-            # Add skewness and kurtosis if scipy available
-            try:
-                from scipy import stats as scipy_stats
-
-                result["skewness"] = float(scipy_stats.skew(arr))
-                result["kurtosis"] = float(scipy_stats.kurtosis(arr))
-            except ImportError:
-                pass
-
-            return result
+            return summarize(data=data, percentiles=percentiles)
 
         result = await loop.run_in_executor(None, do_describe)
 

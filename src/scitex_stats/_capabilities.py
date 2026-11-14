@@ -31,8 +31,10 @@ def get_capabilities() -> dict:
          "tests/integration/test_context_recommendation_mcp.py"),
         ("p_to_stars", "Map a finite probability to strict significance stars with default style thresholds.",
          "tests/integration/test_star_native_mcp.py"),
+        ("summarize", "Summarize a numeric sample as a dictionary after removing NaN values.",
+         "tests/integration/test_summary_python_mcp.py"),
     )
-    mcp_names = {"verify": "verify_result"}
+    mcp_names = {"verify": "verify_result", "summarize": "describe"}
     return {
         "schema_version": 1,
         "distribution": "scitex-stats",
