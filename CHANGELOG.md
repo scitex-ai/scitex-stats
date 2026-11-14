@@ -7,6 +7,14 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Correct Games-Howell probabilities and simultaneous confidence intervals
+  using the studentized range distribution with Welch-Satterthwaite degrees
+  of freedom. Python p-values, significance decisions and stars now use the
+  adjusted probability. MCP retains its unadjusted Welch diagnostic p_value;
+  p_adj and reject use Games-Howell. Both interfaces share the calculation.
+  Comparisons with nonfinite or zero standard error are refused instead of
+  reporting invalid inference. These corrections can change previous results.
+
 - Use package-owned subprocess coverage support instead of writing startup
   hooks into shared Python environments during test collection.
 

@@ -74,6 +74,25 @@ def welch_satterthwaite_df(var_i: float, n_i: int, var_j: float, n_j: int) -> fl
     return float(df)
 
 
+def _games_howell_pair(mean_i, var_i, n_i, mean_j, var_j, n_j, k, alpha):
+    """Compute one pair using the studentized range and Welch degrees of freedom."""
+    se = np.sqrt(var_i / n_i + var_j / n_j)
+    df = welch_satterthwaite_df(var_i, n_i, var_j, n_j)
+    if not (np.isfinite(se) and se > 0 and np.isfinite(df) and df > 0):
+        raise ValueError("Games-Howell requires finite positive standard error and degrees of freedom")
+    mean_diff = mean_i - mean_j
+    t_stat = mean_diff / se
+    p_adj = float(stats.studentized_range.sf(np.sqrt(2) * abs(t_stat), k, df))
+    margin = stats.studentized_range.ppf(1 - alpha, k, df) * se / np.sqrt(2)
+    return {
+        "mean_diff": float(mean_diff), "std_error": float(se),
+        "t_statistic": float(t_stat), "df": float(df),
+        "p_value": float(2 * stats.t.sf(abs(t_stat), df)),
+        "p_adj": p_adj, "reject": bool(p_adj < alpha),
+        "ci_lower": float(mean_diff - margin), "ci_upper": float(mean_diff + margin),
+    }
+
+
 def posthoc_games_howell(
     groups: List[Union[np.ndarray, pd.Series]],
     group_names: Optional[List[str]] = None,
@@ -130,7 +149,8 @@ def posthoc_games_howell(
         df = \\frac{(s_i^2/n_i + s_j^2/n_j)^2}{\\frac{(s_i^2/n_i)^2}{n_i-1} + \\frac{(s_j^2/n_j)^2}{n_j-1}}
 
     **Critical Value**:
-    Uses studentized range distribution with Welch df (approximated).
+    Uses the studentized range distribution with Welch-Satterthwaite degrees of freedom.
+    P-values and confidence intervals account for all pairwise comparisons.
 
     **Assumptions**:
     1. Independence of observations
@@ -216,36 +236,11 @@ def posthoc_games_howell(
             var_i = variances[i]
             var_j = variances[j]
 
-            # Mean difference
-            mean_diff = mean_i - mean_j
-
-            # Standard error (Welch formula)
-            se = np.sqrt(var_i / n_i + var_j / n_j)
-
-            # Welch t-statistic
-            if se == 0:
-                t_stat = 0.0
-            else:
-                t_stat = mean_diff / se
-
-            # Welch-Satterthwaite degrees of freedom
-            df = welch_satterthwaite_df(var_i, n_i, var_j, n_j)
-
-            # p-value (two-tailed)
-            pvalue = 2 * (1 - stats.t.cdf(abs(t_stat), df))
-
-            # Critical value for CI (using studentized range approximation)
-            # For simplicity, use t-distribution with Bonferroni-like adjustment
-            alpha_adj = alpha / (k * (k - 1) / 2)
-            t_crit = stats.t.ppf(1 - alpha_adj / 2, df)
-
-            # Determine significance
-            significant = abs(t_stat) > t_crit
-
-            # Confidence interval
-            margin = t_crit * se
-            ci_lower = mean_diff - margin
-            ci_upper = mean_diff + margin
+            pair = _games_howell_pair(mean_i, var_i, n_i, mean_j, var_j, n_j, k, alpha)
+            mean_diff, se = pair["mean_diff"], pair["std_error"]
+            t_stat, df = pair["t_statistic"], pair["df"]
+            pvalue, significant = pair["p_adj"], pair["reject"]
+            ci_lower, ci_upper = pair["ci_lower"], pair["ci_upper"]
 
             results.append(
                 {

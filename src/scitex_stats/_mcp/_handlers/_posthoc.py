@@ -138,43 +138,24 @@ def _dunnett(group_arrays, names, control_group):
 
 
 def _games_howell(group_arrays, names):
-    """Games-Howell test (doesn't assume equal variances)."""
-    from scipy import stats as scipy_stats
+    """Games-Howell comparisons using the owning statistical implementation."""
+    from scitex_stats.posthoc._games_howell import _games_howell_pair
 
     comparisons = []
-    n_comparisons = len(group_arrays) * (len(group_arrays) - 1) // 2
-
-    for i in range(len(group_arrays)):
-        for j in range(i + 1, len(group_arrays)):
+    k = len(group_arrays)
+    for i in range(k):
+        for j in range(i + 1, k):
             g1, g2 = group_arrays[i], group_arrays[j]
-            n1, n2 = len(g1), len(g2)
-            m1, m2 = np.mean(g1), np.mean(g2)
-            v1, v2 = np.var(g1, ddof=1), np.var(g2, ddof=1)
-
-            se = np.sqrt(v1 / n1 + v2 / n2)
-            t_stat = (m1 - m2) / se
-
-            # Welch-Satterthwaite df
-            df = (v1 / n1 + v2 / n2) ** 2 / (
-                (v1 / n1) ** 2 / (n1 - 1) + (v2 / n2) ** 2 / (n2 - 1)
+            pair = _games_howell_pair(
+                np.mean(g1), np.var(g1, ddof=1), len(g1),
+                np.mean(g2), np.var(g2, ddof=1), len(g2), k, 0.05,
             )
-
-            p = 2 * (1 - scipy_stats.t.cdf(abs(t_stat), df))
-            p_adj = min(p * n_comparisons, 1.0)
-
-            comparisons.append(
-                {
-                    "group1": names[i],
-                    "group2": names[j],
-                    "mean_diff": float(m1 - m2),
-                    "t_statistic": float(t_stat),
-                    "df": float(df),
-                    "p_value": float(p),
-                    "p_adj": float(p_adj),
-                    "reject": p_adj < 0.05,
-                }
-            )
-
+            comparisons.append({
+                "group1": names[i], "group2": names[j],
+                **{key: pair[key] for key in (
+                    "mean_diff", "t_statistic", "df", "p_value", "p_adj", "reject",
+                )},
+            })
     return comparisons
 
 
