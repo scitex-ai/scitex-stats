@@ -77,6 +77,51 @@ def dunnett_critical_value(
     return float(t_crit)
 
 
+def _dunnett_statistics(control, treatments, alternative="two-sided"):
+    """Return unrounded pooled-t/Bonferroni statistics for control comparisons."""
+    control = np.asarray(control)
+    treatments = [np.asarray(t) for t in treatments]
+    k = len(treatments)
+    if k < 1:
+        raise ValueError("Need at least 1 treatment group")
+    groups = [control, *treatments]
+    if any(g.ndim != 1 or g.size == 0 or not np.isrealobj(g)
+           or not np.all(np.isfinite(g)) for g in groups):
+        raise ValueError("Dunnett groups must be nonempty finite one-dimensional real samples")
+    n_control = len(control)
+    mean_control = np.mean(control)
+    n_treatments = [len(t) for t in treatments]
+    means_treatments = [np.mean(t) for t in treatments]
+    df_error = n_control + sum(n_treatments) - (k + 1)
+    if df_error <= 0:
+        raise ValueError("Dunnett comparisons require positive residual degrees of freedom")
+    ss_error = np.sum((control - mean_control) ** 2)
+    for t in treatments:
+        ss_error += np.sum((t - np.mean(t)) ** 2)
+    ms_error = ss_error / df_error
+    if not np.isfinite(ms_error) or ms_error < 0:
+        raise ValueError("Dunnett comparisons require finite pooled variance")
+    if ms_error == 0 and any(mean != mean_control for mean in means_treatments):
+        raise ValueError("Dunnett comparisons require positive pooled variance when group means differ")
+    rows = []
+    for n_t, mean_t in zip(n_treatments, means_treatments):
+        mean_diff = mean_t - mean_control
+        se = np.sqrt(ms_error * (1 / n_t + 1 / n_control))
+        t_stat = 0.0 if se == 0 else mean_diff / se
+        if alternative == "two-sided":
+            raw_pvalue = 2 * (1 - stats.t.cdf(abs(t_stat), df_error))
+        elif alternative == "greater":
+            raw_pvalue = 1 - stats.t.cdf(t_stat, df_error)
+        else:
+            raw_pvalue = stats.t.cdf(t_stat, df_error)
+        rows.append({"n_control": n_control, "n_treatment": n_t,
+                     "mean_control": mean_control, "mean_treatment": mean_t,
+                     "mean_diff": mean_diff, "std_error": se, "t_statistic": t_stat,
+                     "pvalue_raw": raw_pvalue, "pvalue": min(raw_pvalue * k, 1.0),
+                     "df_error": df_error})
+    return rows
+
+
 def posthoc_dunnett(
     control: Union[np.ndarray, pd.Series],
     treatments: List[Union[np.ndarray, pd.Series]],
@@ -135,6 +180,10 @@ def posthoc_dunnett(
     groups against a single control group. This implementation approximates
     that procedure with Bonferroni-adjusted pooled t comparisons; it does not
     evaluate the joint Dunnett distribution.
+
+    Samples must be real, finite, nonempty and one-dimensional, with positive
+    residual degrees of freedom. Zero pooled variance is supported only when
+    all group means are identical. Unsupported inputs raise ValueError.
 
     **Test Statistic**:
 
@@ -220,23 +269,8 @@ def posthoc_dunnett(
     if len(treatment_names) != k:
         raise ValueError(f"Expected {k} treatment names, got {len(treatment_names)}")
 
-    # Group statistics
-    n_control = len(control)
-    mean_control = np.mean(control)
-
-    n_treatments = [len(t) for t in treatments]
-    means_treatments = [np.mean(t) for t in treatments]
-
-    # Total sample size and degrees of freedom
-    N = n_control + sum(n_treatments)
-    df_error = N - (k + 1)  # k treatments + 1 control
-
-    # Pooled variance (MS_error)
-    ss_error = np.sum((control - mean_control) ** 2)
-    for t in treatments:
-        ss_error += np.sum((t - np.mean(t)) ** 2)
-
-    ms_error = ss_error / df_error
+    comparisons = _dunnett_statistics(control, treatments, alternative)
+    df_error = comparisons[0]["df_error"]
 
     # Get critical value
     d_crit = dunnett_critical_value(k, df_error, alpha, alternative)
@@ -244,31 +278,15 @@ def posthoc_dunnett(
     # Perform comparisons vs control
     results = []
 
-    for i, (treatment, n_t, mean_t) in enumerate(
-        zip(treatments, n_treatments, means_treatments)
-    ):
-        # Mean difference
-        mean_diff = mean_t - mean_control
-
-        # Standard error
-        se = np.sqrt(ms_error * (1 / n_t + 1 / n_control))
-
-        # t-statistic
-        if se == 0:
-            t_stat = 0.0
-        else:
-            t_stat = mean_diff / se
-
-        # p-value (conservative approximation)
-        if alternative == "two-sided":
-            pvalue = 2 * (1 - stats.t.cdf(abs(t_stat), df_error))
-        elif alternative == "greater":
-            pvalue = 1 - stats.t.cdf(t_stat, df_error)
-        else:  # less
-            pvalue = stats.t.cdf(t_stat, df_error)
-
-        # Adjust for multiple comparisons (conservative)
-        pvalue = min(pvalue * k, 1.0)
+    for i, comparison in enumerate(comparisons):
+        n_t = comparison["n_treatment"]
+        n_control = comparison["n_control"]
+        mean_t = comparison["mean_treatment"]
+        mean_control = comparison["mean_control"]
+        mean_diff = comparison["mean_diff"]
+        se = comparison["std_error"]
+        t_stat = comparison["t_statistic"]
+        pvalue = comparison["pvalue"]
 
         # Determine significance
         if alternative == "two-sided":

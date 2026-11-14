@@ -12,6 +12,13 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Share unrounded global pooled-t/Bonferroni control-comparison statistics
+  between native Dunnett and MCP. Correct MCP pairwise-variance drift and
+  emit boolean reject flags; preserve native public rounding, fields and CIs.
+  Reject unsupported sample geometry and differing means with zero pooled
+  variance; preserve the identical-constant zero-difference convention. The
+  procedure remains a conservative approximation, with no joint-Dunnett claim.
+
 - Validate MCP post-hoc group counts and provided name lengths before
   calculation. Reject negative/out-of-range Dunnett control indices that
   could include the control in its own comparison. Preserve valid outputs,

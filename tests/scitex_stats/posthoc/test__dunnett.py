@@ -620,8 +620,8 @@ class TestStatisticalProperties:
     def test_mean_diff_calculation_iloc_results(self):
         """Test mean difference calculation."""
         # Arrange
-        control = np.array([5, 5, 5, 5, 5])
-        treatment = np.array([10, 10, 10, 10, 10])
+        control = np.array([4, 5, 5, 5, 6])
+        treatment = np.array([9, 10, 10, 10, 11])
         # Act
         results = posthoc_dunnett(control=control, treatments=[treatment])
         # Assert
@@ -630,8 +630,8 @@ class TestStatisticalProperties:
     def test_mean_diff_calculation_control_iloc_results(self):
         """Test mean difference calculation."""
         # Arrange
-        control = np.array([5, 5, 5, 5, 5])
-        treatment = np.array([10, 10, 10, 10, 10])
+        control = np.array([4, 5, 5, 5, 6])
+        treatment = np.array([9, 10, 10, 10, 11])
         # Act
         results = posthoc_dunnett(control=control, treatments=[treatment])
         # Assert
@@ -640,8 +640,8 @@ class TestStatisticalProperties:
     def test_mean_diff_calculation_treatment_iloc_results(self):
         """Test mean difference calculation."""
         # Arrange
-        control = np.array([5, 5, 5, 5, 5])
-        treatment = np.array([10, 10, 10, 10, 10])
+        control = np.array([4, 5, 5, 5, 6])
+        treatment = np.array([9, 10, 10, 10, 11])
         # Act
         results = posthoc_dunnett(control=control, treatments=[treatment])
         # Assert

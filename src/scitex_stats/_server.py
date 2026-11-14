@@ -345,7 +345,8 @@ async def posthoc_test(
     Requires at least two groups. Nonempty group_names must name every group;
     None or an empty list uses generated names. Dunnett control_group is a
     nonnegative index into groups. Invalid designs return a failed result.
-    The current Dunnett option uses Bonferroni-adjusted pairwise t-tests.
+    The Dunnett option is a conservative global-pooled-t/Bonferroni
+    approximation. Invalid sample geometry returns a failed result.
     """
     from scitex_stats._mcp.handlers import posthoc_test_handler
 
