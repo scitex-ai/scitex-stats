@@ -12,6 +12,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Correct the style-aware p_to_stars docstring at strict default thresholds.
+  Document boundary and missing-value behavior separately from inclusive
+  native p2stars; keep all formatter calculations unchanged.
+
 - Correct shipped MCP skill catalogues to the standalone server's 18 bare
   names. Separate configured client/umbrella aliases, preserve allowed-tools
   permissions and cover all three documented tables with the owner registry
