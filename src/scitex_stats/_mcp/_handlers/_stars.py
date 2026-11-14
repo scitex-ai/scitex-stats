@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 from math import isfinite
 from numbers import Real
@@ -44,17 +45,24 @@ async def p_to_stars_handler(
     try:
         thresh = _validated_thresholds(p_value, thresholds)
 
+        def select_native_stars():
+            from scitex_stats import StatStyle, p_to_stars
+
+            style = StatStyle(
+                id="mcp-thresholds", label="MCP thresholds", target="plain",
+                alpha_thresholds=list(zip(thresh, ("***", "**", "*"))),
+            )
+            return p_to_stars(p_value, style=style)
+
+        stars = await asyncio.to_thread(select_native_stars)
+
         if p_value < thresh[0]:
-            stars = "***"
             significance = f"p < {thresh[0]}"
         elif p_value < thresh[1]:
-            stars = "**"
             significance = f"p < {thresh[1]}"
         elif p_value < thresh[2]:
-            stars = "*"
             significance = f"p < {thresh[2]}"
         else:
-            stars = "ns"
             significance = f"p >= {thresh[2]} (not significant)"
 
         return {

@@ -29,6 +29,8 @@ def get_capabilities() -> dict:
          "tests/integration/test_verify_python_mcp.py"),
         ("recommend_tests", "Recommend tests for a single-factor context with default families and return format.",
          "tests/integration/test_context_recommendation_mcp.py"),
+        ("p_to_stars", "Map a finite probability to strict significance stars with default style thresholds.",
+         "tests/integration/test_star_native_mcp.py"),
     )
     mcp_names = {"verify": "verify_result"}
     return {

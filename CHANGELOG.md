@@ -12,6 +12,12 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Delegate MCP star selection to the existing native style-aware formatter
+  in a worker, translating supported thresholds into a fresh StatStyle.
+  Preserve strict boundaries, validation, significance text and result fields.
+  Qualify and declare the default-style native/MCP mapping; inventory remains
+  partial and generic audit findings remain independent.
+
 - Qualify and declare the existing public recommend_tests / MCP mapping for
   single-factor contexts with default families and return format. Verify
   actual worker calls, context translation, ordered selections and registry
