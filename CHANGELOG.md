@@ -7,6 +7,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Accept both fisher and fisher_exact in Python, CLI and MCP test dispatch.
+  Keep existing names, requested hypotheses, count-table output and provenance
+  receipts; no additional MCP tool is registered.
+
 - Forward the requested Fisher alternative in native run_test and CLI calls.
   One-sided calls previously returned two-sided p-values; MCP already forwarded
   the alternative correctly.

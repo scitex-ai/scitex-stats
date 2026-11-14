@@ -95,6 +95,7 @@ exposure scopes and naming migrations in :doc:`interface_scope`.
 
 The ``run_test`` input accepts the same equivalent spellings as the Python
 dispatcher: ``ttest`` for ``ttest_ind``, ``ttest_rel`` for ``ttest_paired``,
-``brunnermunzel`` for ``brunner_munzel`` and ``mann_whitney`` for
-``mannwhitneyu``. Results and provenance receipts retain the requested spelling.
+``brunnermunzel`` for ``brunner_munzel``, ``mann_whitney`` for
+``mannwhitneyu`` and ``fisher`` for ``fisher_exact``. Results and provenance
+receipts retain the requested spelling.
 These are test-name inputs to the existing tool.

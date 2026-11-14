@@ -53,7 +53,7 @@ _GROUP = {"anova", "kruskal"}
 _STACKED_GROUP = {"friedman"}
 
 # Contingency-table tests
-_CONTINGENCY = {"chi2", "fisher"}
+_CONTINGENCY = {"chi2", "fisher", "fisher_exact"}
 
 # NaN must be excluded position-wise across all inputs for these
 _NAN_PAIRWISE = _PAIRED | _STACKED_GROUP | {"pearson", "spearman", "kendall"}
@@ -64,6 +64,7 @@ _TEST_NAME_ALIASES = {
     "ttest_rel": "ttest_paired",
     "brunnermunzel": "brunner_munzel",
     "mann_whitney": "mannwhitneyu",
+    "fisher": "fisher_exact",
 }
 
 # Canonical name mapping — aliases to the function name in stx.stats
@@ -79,7 +80,7 @@ _ALIASES = {
     "kruskal": "test_kruskal",
     "friedman": "test_friedman",
     "chi2": "test_chi2",
-    "fisher": "test_fisher",
+    "fisher_exact": "test_fisher",
     "shapiro": "test_shapiro",
     "ks_1samp": "test_ks_1samp",
     "ks_2samp": "test_ks_2samp",
@@ -292,7 +293,7 @@ def _call_test(
             table = np.array(groups, dtype=float)
         else:
             table = np.vstack([data, data2])
-        if test_name == "fisher":
+        if test_name in {"fisher", "fisher_exact"}:
             common["alternative"] = alternative
         return func(table, **common)
 
