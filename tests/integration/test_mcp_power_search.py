@@ -121,7 +121,7 @@ def test_correlation_power_rejects_undefined_fisher_sample_size(n):
 
 
 @pytest.mark.parametrize("n", [4, 5, 30])
-@pytest.mark.parametrize("effect_size", [-.3, .3])
+@pytest.mark.parametrize("effect_size", [-.999, -.3, 0., .3, .999])
 def test_valid_correlation_power_matches_independent_normal_reference(n, effect_size):
     # Arrange
     from math import atanh, sqrt
@@ -138,3 +138,14 @@ def test_valid_correlation_power_matches_independent_normal_reference(n, effect_
     timestamp = datetime.fromisoformat(report.pop("timestamp"))
     # Assert
     assert (report, isinstance(timestamp, datetime)) == (expected, True)
+
+
+@pytest.mark.parametrize("n", [None, 30])
+@pytest.mark.parametrize("effect_size", [-2., -1., 1., 2., float("nan"), float("inf"), -float("inf")])
+def test_correlation_power_rejects_out_of_range_and_nonfinite_effects(n, effect_size):
+    # Arrange
+    kwargs = {"test_type": "correlation", "effect_size": effect_size, "n": n}
+    # Act
+    report = call_tool(**kwargs)
+    # Assert
+    assert report == {"success": False, "error": "effect_size must be finite and strictly between -1 and 1 for correlation power"}

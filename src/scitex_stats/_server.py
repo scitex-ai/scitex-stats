@@ -244,6 +244,8 @@ async def power_analysis(
     does not check expected cell counts or other study-design assumptions.
     Fixed-sample correlation power uses a Fisher-normal approximation and
     requires n greater than three; smaller samples return a failure.
+    Both correlation modes require a finite effect_size strictly between
+    minus one and one; invalid values return the handler failure envelope.
     """
     from scitex_stats._mcp.handlers import power_analysis_handler
 

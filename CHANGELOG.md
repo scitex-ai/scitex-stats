@@ -12,6 +12,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Validate finite correlation effect sizes strictly inside (-1, 1) before
+  the Fisher transform in both power modes. Return a consistent domain error
+  for invalid values; preserve valid fixed-n zero and near-boundary results.
+
 - Reject correlation-power requests with n <= 3 before evaluating the
   undefined Fisher standard error. Preserve valid approximate-power results
   and all other power calculations; document the sample-size requirement.

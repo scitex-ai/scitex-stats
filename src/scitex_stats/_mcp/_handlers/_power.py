@@ -168,6 +168,8 @@ def _power_correlation(
 
     if effect_size is None:
         raise ValueError("effect_size (r) required for correlation power")
+    if not np.isfinite(effect_size) or not -1 < effect_size < 1:
+        raise ValueError("effect_size must be finite and strictly between -1 and 1 for correlation power")
 
     if n is not None:
         if n <= 3:
