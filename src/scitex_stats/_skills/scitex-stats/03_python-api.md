@@ -180,30 +180,21 @@ values and does not calculate a correction. This legacy style-preset line
 is separate from the structured `run_test(...)["apa"]` renderer described
 in [APA reporting](16_apa7-reporting.md). Do not assume it establishes
 complete journal/APA-7 compliance. Owning field-precedence, raw/default
-and MCP preset-selection checks are in
-`tests/integration/test_formatting_values.py` and
-`tests/integration/test_mcp_describe_stdio.py`.
+and MCP preset-selection checks: `tests/integration/test_formatting_values.py`
+and `tests/integration/test_mcp_describe_stdio.py`.
 
-
-Supplied effect bounds render as `CI [lower, upper]` at the selected
-preset's `decimal_places_effect` precision. For example:
+Supplied bounds render `CI [lower, upper]` at the preset's effect precision:
 
 ```python
 from scitex_stats.auto import format_test_line
-
-format_test_line({
-    "test_name": "ttest_ind", "stat": 2.0, "p_raw": 0.04,
-}, effects=[{"name": "d", "value": 0.5,
-             "ci_lower": -0.25, "ci_upper": 1.25}], style="plain")
+format_test_line({"test_name": "ttest_ind", "stat": 2.0, "p_raw": 0.04},
+                 effects=[{"name": "d", "value": 0.5,
+                           "ci_lower": -0.25, "ci_upper": 1.25}], style="plain")
 # "t = 2.00, p = 0.040, d = 0.50, CI [-0.25, 1.25]"
 ```
 
-When either bound is supplied, both endpoints and the effect estimate must
-be finite, with `ci_lower <= ci_upper`; invalid input raises `ValueError`.
-Omitting both bounds preserves the existing point-only output. This
-formatter does not calculate intervals or infer their confidence level.
-The generic label intentionally carries no assumed 95% coverage. Actual
-rendering and invalid-input tests are in
-`tests/integration/test_effect_interval_reporting.py` and the real MCP
-stdio suite above. Dedicated Science styling, confidence-level metadata
-and complete journal compliance remain outside this verified scope.
+Both supplied endpoints and the effect must be finite and ordered
+(`ci_lower <= ci_upper`), otherwise `ValueError` is raised. Omitting both
+bounds preserves point-only output. No interval or confidence level is calculated or inferred. See [MCP scope](13_mcp-tools.md) for remaining
+Science/journal limitations; actual interval controls:
+`tests/integration/test_effect_interval_reporting.py`.
