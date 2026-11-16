@@ -29,7 +29,7 @@ async def describe_handler(
             if len(arr) == 0:
                 raise ValueError("No valid data points")
 
-            percs = percentiles or [25, 50, 75]
+            percs = [25, 50, 75] if percentiles is None else percentiles
             percentile_values = np.percentile(arr, percs)
 
             result = {
@@ -47,7 +47,8 @@ async def describe_handler(
                 "range": float(np.max(arr) - np.min(arr)),
                 "median": float(np.median(arr)),
                 "percentiles": {
-                    str(int(p)): float(v) for p, v in zip(percs, percentile_values)
+                    (str(int(p)) if float(p).is_integer() else str(float(p))): float(v)
+                    for p, v in zip(percs, percentile_values)
                 },
                 "iqr": float(np.percentile(arr, 75) - np.percentile(arr, 25)),
             }

@@ -16,7 +16,7 @@ All tools are prefixed `stats_` under the scitex MCP server
 |------|---------|
 | `stats_run_test` | Run any statistical test by name |
 | `stats_recommend_tests` | Auto-recommend appropriate tests for given data |
-| `stats_describe` | Compute descriptive statistics (mean, std, CI, etc.) |
+| `stats_describe` | Compute count, mean, std, percentiles, IQR, skewness and kurtosis |
 | `stats_effect_size` | Calculate effect size between groups |
 | `stats_correct_pvalues` | Apply multiple comparison correction |
 | `stats_posthoc_test` | Run post-hoc pairwise comparisons |
@@ -31,6 +31,17 @@ All tools are prefixed `stats_` under the scitex MCP server
 | `stats_check_applicability` | Decide per-test applicability for data |
 | `stats_recommend_test` | Recommend ONE primary test with reason |
 | `stats_run_all_applicable` | Run every applicable test (primary + sensitivity) |
+
+The standalone server exposes `describe`; the table uses the umbrella
+`stats_` namespace. Its optional `percentiles` argument accepts numbers from
+0 to 100. Omission uses `[25, 50, 75]`; an explicit `[]` returns an empty
+`percentiles` object. Fractional labels remain distinct (`"2.5"`, `"2.9"`),
+while integral labels retain their existing spelling (`"25"`, including a
+request for `25.0`). This handler does not return confidence intervals.
+The owning implementation is `_mcp/_handlers/_descriptive.py::describe_handler`;
+handler controls and the real stdio-server checks are in
+`tests/scitex_stats/_mcp/_handlers/test__descriptive.py` and
+`tests/integration/test_mcp_describe_stdio.py`.
 
 Descriptive statistics require at least one non-NaN observation. Empty or
 all-NaN input returns `success: false` and `error: "No valid data points"`.

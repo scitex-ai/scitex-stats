@@ -7,6 +7,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Preserve fractional descriptive-statistics percentile labels over MCP,
+  including closely spaced values, and honor an explicit empty list without
+  substituting default quartiles. Integral label spelling stays compatible.
+
 - Use package-owned subprocess coverage support instead of writing startup
   hooks into shared Python environments during test collection.
 
