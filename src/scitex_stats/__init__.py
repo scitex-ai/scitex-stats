@@ -80,9 +80,11 @@ except Exception:
 # __init__.py thin and let the audit-mirror test (PS-204) find a real
 # src file to pair the test against.
 # ---------------------------------------------------------------------------
-from ._runtime_paths import migrate_runtime_dirs as _migrate_runtime_dirs
-from ._runtime_paths import runtime_path as _runtime_path  # re-export
+from . import _runtime_paths
 
+# Preserve the existing private helper bindings without unused imports.
+_migrate_runtime_dirs = _runtime_paths.migrate_runtime_dirs
+_runtime_path = _runtime_paths.runtime_path
 _migrate_runtime_dirs()
 
 try:
