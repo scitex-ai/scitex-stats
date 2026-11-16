@@ -7,6 +7,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Add synchronous native `format_results` and delegate MCP to it. Preserve
+  existing style/fallback, supplied interval and reporting semantics, with
+  transport success/timestamp fields confined to MCP.
+
 - Render supplied effect confidence-interval bounds in legacy result lines
   at effect precision. Reject incomplete, reversed or non-finite bounds
   and missing effect estimates; do not calculate intervals or infer levels.

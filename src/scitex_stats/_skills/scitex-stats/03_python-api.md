@@ -5,7 +5,6 @@ description: |
 tags: [scitex-stats-python-api, scitex-stats]
 ---
 
-
 # Python API
 
 ```python
@@ -160,7 +159,9 @@ See [21_effect-sizes.md](21_effect-sizes.md) for interpretation thresholds.
 
 ```python
 sst.p_to_stars(0.003)        # → "**"
-# Native legacy line formatting (the root format_results API is not implemented):
+# Native result dict (formatted, stars, style, style_used):
+sst.format_results("ttest_ind", 2.0, 0.04, style="brief")
+# Lower-level line formatting with explicit adjusted/raw p-value fields:
 from scitex_stats.auto import format_test_line
 format_test_line({"test_name": "ttest_ind", "stat": 2.0, "p_adj": 0.0}, style="plain")
 # "t = 2.00, p < 0.001"
@@ -169,8 +170,7 @@ sst.run_posthoc(groups, equal_variances=True)  # only if declared in advance
 sst.power.power_ttest(effect_size=0.5, n1=30, n2=30, alpha=0.05)
 ```
 
-See [10_quick-start.md](10_quick-start.md) for end-to-end usage and
-[11_workflows.md](11_workflows.md) for common patterns.
+See [quick start](10_quick-start.md) and [workflows](11_workflows.md).
 
 ### Legacy line formatter scope
 

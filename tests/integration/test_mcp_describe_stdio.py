@@ -304,3 +304,41 @@ def test_stdio_formatting_renders_intervals_and_rejects_partial_bounds(
         partial["success"],
         missing_effect["success"],
     ) == (True, "t = 2.00, p = 0.040, d = 0.50, CI [-0.25, 1.25]", False, False)
+
+
+def test_stdio_formatter_payload_matches_native_api(tmp_path, stdio_parameters):
+    # Arrange
+    from scitex_stats import format_results
+
+    arguments = {
+        "test_name": "ttest_ind",
+        "statistic": 2.0,
+        "p_value": 0.04,
+        "effect_size": 0.5,
+        "ci_lower": -0.25,
+        "ci_upper": 1.25,
+        "style": "brief",
+    }
+    expected = format_results(**arguments)
+
+    async def collect_result():
+        with (tmp_path / "native-format-server.log").open("w") as errors:
+            async with (
+                stdio_client(stdio_parameters, errlog=errors) as (read, write),
+                ClientSession(read, write) as session,
+            ):
+                await session.initialize()
+                response = await session.call_tool("format_results", arguments)
+                return json.loads(response.content[0].text)
+
+    # Act
+    result = asyncio.run(asyncio.wait_for(collect_result(), timeout=30))
+    # Assert
+    assert (
+        result["success"],
+        {
+            key: value
+            for key, value in result.items()
+            if key not in {"success", "timestamp"}
+        },
+    ) == (True, expected)

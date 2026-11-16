@@ -127,6 +127,7 @@ _LAZY_ATTRS: dict[str, str] = {
     "effect_size": "effect_sizes._effect_size",
     "normality_test": "tests.normality._normality_test",
     "correct_pvalues": "correct._correct_pvalues",
+    "format_results": "auto._format_results",
     # Dispatcher
     "available_tests": "_dispatch",
     "run_test": "_dispatch",
@@ -256,6 +257,7 @@ __all__ = [
     "effect_size",
     "normality_test",
     "correct_pvalues",
+    "format_results",
     # Dispatcher
     "run_test",
     "available_tests",

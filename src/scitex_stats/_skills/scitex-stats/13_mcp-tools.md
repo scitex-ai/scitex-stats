@@ -72,7 +72,15 @@ presets. `apa` selects `apa_latex`, `nature` selects `nature_latex`, and
 additive `style_used` identifies the actual preset. There is no dedicated
 Science preset: `science` and unknown legacy names retain the APA LaTeX
 fallback, now reported explicitly. This is not a new journal-compliance
-certification or a native root `format_results` API. Supplied `ci_lower` and `ci_upper` render as `CI [lower, upper]`
+certification. Native `scitex_stats.format_results` is synchronous and uses
+the same argument names/defaults and domain payload (`formatted`, `stars`,
+`style`, `style_used`); only MCP adds success/timestamp fields or converts
+exceptions to `success: false`. The implementation lives in
+`auto/_format_results.py`, independent of MCP. Native tests are in
+`tests/scitex_stats/auto/test__format_results.py`; real protocol parity is
+checked in `tests/integration/test_mcp_describe_stdio.py`. Broader legacy
+scalar validation remains unfinished. Supplied `ci_lower` and `ci_upper`
+render as `CI [lower, upper]`
 at the selected preset's effect precision. Both bounds and an effect
 estimate must be finite; bounds must be ordered. A partial pair, reversed
 bounds or missing effect estimate returns `success: false`. Omitting both

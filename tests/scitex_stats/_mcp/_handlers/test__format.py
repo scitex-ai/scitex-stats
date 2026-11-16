@@ -42,3 +42,34 @@ def test_transport_reports_actual_style_without_changing_request_echo(requested,
     result = asyncio.run(request)
     # Assert
     assert (result["style"], result["style_used"]) == (requested, used)
+
+
+@pytest.mark.parametrize(
+    "style", ["apa", "nature", "brief", "science", "legacy-unknown"]
+)
+def test_transport_payload_matches_native_operation(style):
+    # Arrange
+    from scitex_stats import format_results
+
+    arguments = {
+        "test_name": "ttest_ind",
+        "statistic": 2.0,
+        "p_value": 0.04,
+        "df": 12.0,
+        "effect_size": 0.5,
+        "ci_lower": -0.25,
+        "ci_upper": 1.25,
+        "style": style,
+    }
+    expected = format_results(**arguments)
+    # Act
+    result = asyncio.run(format_results_handler(**arguments))
+    # Assert
+    assert (
+        result["success"],
+        {
+            key: value
+            for key, value in result.items()
+            if key not in {"success", "timestamp"}
+        },
+    ) == (True, expected)

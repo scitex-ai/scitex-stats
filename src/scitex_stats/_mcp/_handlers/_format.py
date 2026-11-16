@@ -27,64 +27,25 @@ async def format_results_handler(
     try:
         loop = asyncio.get_event_loop()
 
-        def do_format():
-            from scitex_stats.auto import format_test_line, p_to_stars
-            from scitex_stats.auto._formatting import EffectResultDict, TestResultDict
-            from scitex_stats.auto._styles import get_stat_style
+        from scitex_stats.auto._format_results import format_results
 
-            # Build test result dict
-            test_result: TestResultDict = {
-                "test_name": test_name,
-                "stat": statistic,
-                "p_raw": p_value,
-            }
-            if df is not None:
-                test_result["df"] = df
-
-            # Preserve supplied metadata so the domain formatter can validate it.
-            effects = None
-            if effect_size is not None or ci_lower is not None or ci_upper is not None:
-                effect = EffectResultDict(
-                    name=effect_size_name or "d",
-                    label=effect_size_name or "Cohen's d",
-                    ci_lower=ci_lower,
-                    ci_upper=ci_upper,
-                )
-                if effect_size is not None:
-                    effect["value"] = effect_size
-                effects = [effect]
-
-            # Map style names
-            style_map = {
-                "apa": "apa_latex",
-                "nature": "nature_latex",
-                "science": "apa_latex",  # Retain the legacy fallback; no Science preset.
-                "brief": "plain",
-            }
-            selected_style = get_stat_style(style_map.get(style, "apa_latex"))
-
-            # Format the line
-            formatted = format_test_line(
-                test_result,
-                effects=effects,
-                style=selected_style,
-                include_n=False,
-            )
-
-            # Get stars representation
-            stars = p_to_stars(p_value, style=selected_style)
-
-            return {
-                "formatted": formatted,
-                "stars": stars,
-                "style_used": selected_style.id,
-            }
-
-        result = await loop.run_in_executor(None, do_format)
+        result = await loop.run_in_executor(
+            None,
+            lambda: format_results(
+                test_name=test_name,
+                statistic=statistic,
+                p_value=p_value,
+                df=df,
+                effect_size=effect_size,
+                effect_size_name=effect_size_name,
+                style=style,
+                ci_lower=ci_lower,
+                ci_upper=ci_upper,
+            ),
+        )
 
         return {
             "success": True,
-            "style": style,
             **result,
             "timestamp": datetime.now().isoformat(),
         }
