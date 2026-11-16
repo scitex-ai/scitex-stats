@@ -165,8 +165,8 @@ from scitex_stats.auto import format_test_line
 format_test_line({"test_name": "ttest_ind", "stat": 2.0, "p_adj": 0.0}, style="plain")
 # "t = 2.00, p < 0.001"
 sst.correct_pvalues(pvals, method="fdr_bh")
-sst.posthoc(*groups, method="tukey")
-sst.power_analysis(test="ttest_ind", n=30, effect_size=0.5, alpha=0.05)
+sst.run_posthoc(groups, equal_variances=True)  # only if declared in advance
+sst.power.power_ttest(effect_size=0.5, n1=30, n2=30, alpha=0.05)
 ```
 
 See [10_quick-start.md](10_quick-start.md) for end-to-end usage and
