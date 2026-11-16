@@ -193,9 +193,8 @@ from scitex_stats.auto import format_test_line
 
 format_test_line({
     "test_name": "ttest_ind", "stat": 2.0, "p_raw": 0.04,
-    "effects": [{"name": "cohens_d", "label": "d", "value": 0.5,
-                 "ci_lower": -0.25, "ci_upper": 1.25}],
-}, style="plain")
+}, effects=[{"name": "d", "value": 0.5,
+             "ci_lower": -0.25, "ci_upper": 1.25}], style="plain")
 # "t = 2.00, p = 0.040, d = 0.50, CI [-0.25, 1.25]"
 ```
 
