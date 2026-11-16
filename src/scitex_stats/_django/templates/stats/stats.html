@@ -96,6 +96,41 @@ base page (site header + dock), standalone uses the SDK UI shell.
           <input type="number" id="statsPopmean" value="0" step="any">
         </label>
       </div>
+
+      <details class="stx-acc stats-acc">
+        <summary>{% translate "Multiple-comparison correction" %}</summary>
+        <div class="stx-acc__body">
+          <label class="stats-field"><span>{% translate "Method" %}</span>
+            <select class="stx-select" id="statsCorrMethod">
+              <option value="fdr_bh" selected>FDR (Benjamini–Hochberg)</option>
+              <option value="bonferroni">Bonferroni</option>
+              <option value="holm">Holm</option>
+              <option value="sidak">Šidák</option>
+            </select>
+          </label>
+          <label class="stats-field"><span>{% translate "P-values" %}</span>
+            <textarea id="statsCorrP" rows="2" placeholder="0.01 0.02 0.03 0.5"></textarea>
+          </label>
+          <button type="button" class="stats-btn" id="statsCorrect">{% translate "Correct" %}</button>
+          <table class="stats-table"><tbody id="statsCorrOut"></tbody></table>
+        </div>
+      </details>
+
+      <details class="stx-acc stats-acc">
+        <summary>{% translate "Post-hoc comparisons" %}</summary>
+        <div class="stx-acc__body">
+          <p class="stats-hint">{% translate "Uses the groups in Data." %}</p>
+          <label class="stats-field"><span>{% translate "Method" %}</span>
+            <select class="stx-select" id="statsPhMethod">
+              <option value="tukey" selected>Tukey HSD</option>
+              <option value="games_howell">Games–Howell</option>
+              <option value="dunnett">Dunnett</option>
+            </select>
+          </label>
+          <button type="button" class="stats-btn" id="statsPosthoc">{% translate "Compare groups" %}</button>
+          <table class="stats-table"><tbody id="statsPhOut"></tbody></table>
+        </div>
+      </details>
     </div>
   {% endscitex_pane %}
 
@@ -160,40 +195,6 @@ base page (site header + dock), standalone uses the SDK UI shell.
         <p id="statsReportStatus" class="stats-hint stats-report__status" role="status" aria-live="polite"></p>
       </section>
 
-      <details class="stx-acc stats-acc">
-        <summary>{% translate "Multiple-comparison correction" %}</summary>
-        <div class="stx-acc__body">
-          <label class="stats-field"><span>{% translate "Method" %}</span>
-            <select class="stx-select" id="statsCorrMethod">
-              <option value="fdr_bh" selected>FDR (Benjamini–Hochberg)</option>
-              <option value="bonferroni">Bonferroni</option>
-              <option value="holm">Holm</option>
-              <option value="sidak">Šidák</option>
-            </select>
-          </label>
-          <label class="stats-field"><span>{% translate "P-values" %}</span>
-            <textarea id="statsCorrP" rows="2" placeholder="0.01 0.02 0.03 0.5"></textarea>
-          </label>
-          <button type="button" class="stats-btn" id="statsCorrect">{% translate "Correct" %}</button>
-          <table class="stats-table"><tbody id="statsCorrOut"></tbody></table>
-        </div>
-      </details>
-
-      <details class="stx-acc stats-acc">
-        <summary>{% translate "Post-hoc comparisons" %}</summary>
-        <div class="stx-acc__body">
-          <p class="stats-hint">{% translate "Uses the groups in Data." %}</p>
-          <label class="stats-field"><span>{% translate "Method" %}</span>
-            <select class="stx-select" id="statsPhMethod">
-              <option value="tukey" selected>Tukey HSD</option>
-              <option value="games_howell">Games–Howell</option>
-              <option value="dunnett">Dunnett</option>
-            </select>
-          </label>
-          <button type="button" class="stats-btn" id="statsPosthoc">{% translate "Compare groups" %}</button>
-          <table class="stats-table"><tbody id="statsPhOut"></tbody></table>
-        </div>
-      </details>
     </div>
   {% endscitex_pane %}
 {% endscitex_panes %}
