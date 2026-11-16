@@ -274,7 +274,9 @@ def get_tool_schemas() -> list[types.Tool]:
                 "'apply Bonferroni', 'FDR-correct these p-values', 'Benjamini-"
                 "Hochberg', 'control family-wise error rate', or has run many "
                 "tests and needs adjusted p-values. Returns adjusted p-values and "
-                "a reject/accept mask at the specified alpha."
+                "a rejection mask at the specified alpha. Requires a non-empty finite "
+                "1-D array in [0,1] and scalar alpha in [0,1]. Legacy unknown-method "
+                "fallback uses fdr_bh; method_used identifies the actual calculation."
             ),
             input_schema={
                 "type": "object",
@@ -292,7 +294,7 @@ def get_tool_schemas() -> list[types.Tool]:
                     },
                     "alpha": {
                         "type": "number",
-                        "description": "Family-wise error rate",
+                        "description": "Significance level in [0,1], controlling FWER or FDR according to method",
                         "default": 0.05,
                     },
                 },

@@ -251,7 +251,11 @@ async def correct_pvalues(
     method: str = "fdr_bh",
     alpha: float = 0.05,
 ) -> str:
-    """Apply multiple comparison correction to p-values."""
+    """Correct finite 1-D p-values in [0,1] through the native API.
+
+    Unknown method names retain the legacy fdr_bh fallback; method_used
+    reports the actual calculation. Invalid values or alpha fail explicitly.
+    """
     from scitex_stats._mcp.handlers import correct_pvalues_handler
 
     result = await correct_pvalues_handler(

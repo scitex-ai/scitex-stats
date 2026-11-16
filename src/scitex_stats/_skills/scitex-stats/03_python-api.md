@@ -63,9 +63,33 @@ heuristic at alpha 0.05. Failure to reject does not prove normality.
 Anderson returns `critical_value_5pct` and `normal`, without a p-value.
 For `[1, 2, 3]`, Shapiro returns W=1 and p=1.
 Owning numerical/count/input/error controls are in
-`tests/scitex_stats/tests/normality/test__normality_api.py`; real MCP
+`tests/scitex_stats/tests/normality/test__normality_test.py`; real MCP
 error and valid responses are checked by
 `tests/integration/test_mcp_describe_stdio.py`.
+
+## P-value correction dispatch
+
+`sst.correct_pvalues(pvalues, method="fdr_bh", alpha=0.05)` is a synchronous
+operation owned by `correct/_correct_pvalues.py`, shared with MCP. Inputs
+must be a non-empty finite one-dimensional sequence in [0,1]; alpha is a
+finite scalar in [0,1]. Invalid inputs raise `ValueError` before either
+backend; MCP reports `success: false`. Input arrays are not modified.
+
+Methods are `bonferroni`, `holm`, `fdr_bh`, `fdr_by`, and `sidak`. For
+compatibility with the existing operation, unknown names fall back to
+`fdr_bh`. `method` retains the requested name and `method_used` identifies
+the actual calculation. The dict includes original/adjusted p-values,
+rejection flags, significant/test counts and alpha, without transport
+success/timestamp fields. The retained NumPy implementation is used when
+the Statsmodels calculation raises `ImportError`.
+
+For `[0.01, 0.04, 0.03]`, BH returns `[0.03, 0.04, 0.04]` and rejects all
+three at alpha 0.05; BY returns approximately `[0.055, 0.07333, 0.07333]`
+and rejects none. Numerical, fallback, invalid-input and input-preservation
+controls live in `tests/scitex_stats/correct/test__correct_pvalues.py`.
+Existing fallback-versus-Statsmodels comparisons remain in
+`tests/integration/test_correction_fallback_reference.py`; real stdio
+invalid/valid behavior is checked in `test_mcp_describe_stdio.py` there.
 
 ## Tabular file input (`data=`)
 

@@ -7,6 +7,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Add native `correct_pvalues` shared with MCP, validating p-values/alpha
+  before adjustment. Preserve the NumPy fallback and unknown-method BH
+  compatibility, with `method_used` exposing the actual calculation.
+
 - Reject absolute, traversal and symlink escapes from the runtime path
   resolver before creating parent directories. Preserve configured symlinked
   runtime roots and aliases that resolve within the runtime directory.

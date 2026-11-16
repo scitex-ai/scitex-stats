@@ -59,6 +59,13 @@ object. NaNs are omitted and `n` now counts tested values; `n_input` and
 `n_omitted` retain input accounting. Anderson returns a 5% critical value,
 not a p-value. The other three methods report p-values.
 
+The `correct_pvalues` tool delegates to `scitex_stats.correct_pvalues`;
+see [Python API](03_python-api.md#p-value-correction-dispatch). Non-empty,
+finite 1-D p-values and scalar alpha must be in [0,1]; invalid requests
+return `success: false`. Unknown method names retain their legacy BH
+fallback and echoed `method`; additive `method_used` identifies the actual
+calculation. The existing backend-free reference adapter is retained.
+
 ## Handler Organization
 
 MCP handlers are in `scitex_stats/_mcp/_handlers/`:
