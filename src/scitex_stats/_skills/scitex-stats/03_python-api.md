@@ -25,6 +25,27 @@ import scitex_stats as sst
 `"dict"`). All `test_*` functions decorated with `@supports_return_as` accept
 the same kwarg.
 
+## Effect-size dispatch
+
+`sst.effect_size(group1, group2, measure="cohens_d", pooled=True)` is a
+synchronous Python operation owned by `effect_sizes/_effect_size.py`.
+It returns a native dict with group counts, measure, value, interpretation
+and applicable normal-approximation 95% interval bounds. It carries no MCP
+status/timestamp fields. The MCP `effect_size` operation calls this same core.
+
+Supported measures are `cohens_d`, `hedges_g`, `glass_delta` (group2 is the
+control) and `cliffs_delta`. Inputs must be finite one-dimensional groups.
+Cohen/Hedges need at least two observations in each group; Glass needs one
+in group1 and two in group2; Cliff needs one per group. Cliff has no interval.
+Unpooled Cohen/Hedges are not implemented: `pooled=False` raises `ValueError`
+in Python and returns `success: false` over MCP. Pooling does not apply to
+Glass/Cliff. Unknown measures and unusable/undefined groups also fail explicitly.
+
+For example, `sst.effect_size([1, 2, 3], [4, 5, 6])["value"]` is `-3.0`.
+Closed-form, input-contract and native-return controls live in
+`tests/scitex_stats/effect_sizes/test__effect_size.py`; MCP and real stdio
+controls also exercise unsupported pooling requests.
+
 ## Tabular file input (`data=`)
 
 ```python

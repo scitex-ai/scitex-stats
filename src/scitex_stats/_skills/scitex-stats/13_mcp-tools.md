@@ -46,6 +46,12 @@ handler controls and the real stdio-server checks are in
 Descriptive statistics require at least one non-NaN observation. Empty or
 all-NaN input returns `success: false` and `error: "No valid data points"`.
 
+The `effect_size` tool uses the synchronous `scitex_stats.effect_size`
+domain API; see [Python API](03_python-api.md#effect-size-dispatch).
+Unpooled Cohen/Hedges requests (`pooled=False`) are unsupported and return
+`success: false`; they do not silently compute a pooled value. Inputs must
+be finite 1-D groups with the measure-specific sample minimums in that API.
+
 ## Handler Organization
 
 MCP handlers are in `scitex_stats/_mcp/_handlers/`:

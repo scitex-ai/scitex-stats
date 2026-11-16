@@ -98,3 +98,25 @@ def test_stdio_describe_preserves_custom_percentiles(tmp_path, stdio_parameters)
     assert actual == [
         (False, True, pytest.approx(expected, abs=1e-12, rel=0)) for _, expected in cases
     ]
+
+
+def test_stdio_effect_size_rejects_unsupported_unpooled_mode(tmp_path, stdio_parameters):
+    # Arrange
+    arguments = dict(group1=[1, 2, 3], group2=[4, 5, 6], measure="cohens_d")
+
+    async def collect_results():
+        with (tmp_path / "effect-server.log").open("w") as errors:
+            async with (
+                stdio_client(stdio_parameters, errlog=errors) as (read, write),
+                ClientSession(read, write) as session,
+            ):
+                await session.initialize()
+                default = await session.call_tool("effect_size", arguments)
+                unpooled = await session.call_tool("effect_size", {**arguments, "pooled": False})
+                return json.loads(default.content[0].text), json.loads(unpooled.content[0].text)
+
+    # Act
+    default, unpooled = asyncio.run(asyncio.wait_for(collect_results(), timeout=30))
+    # Assert
+    assert (default["success"], default["value"], unpooled["success"],
+            "pooled=False" in unpooled.get("error", "")) == (True, -3.0, False, True)

@@ -363,7 +363,10 @@ def get_tool_schemas() -> list[types.Tool]:
                     },
                     "pooled": {
                         "type": "boolean",
-                        "description": "Use pooled standard deviation",
+                        "description": (
+                            "Cohen/Hedges require True; False is unsupported. "
+                            "Pooling does not apply to Glass/Cliff."
+                        ),
                         "default": True,
                     },
                 },

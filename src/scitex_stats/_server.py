@@ -287,7 +287,11 @@ async def effect_size(
     measure: str = "cohens_d",
     pooled: bool = True,
 ) -> str:
-    """Calculate effect size between groups."""
+    """Calculate effect size through the native synchronous Python dispatcher.
+
+    Inputs are finite 1-D groups. Unpooled Cohen/Hedges (pooled=False) are
+    not implemented and return an explicit failure instead of a pooled result.
+    """
     from scitex_stats._mcp.handlers import effect_size_handler
 
     result = await effect_size_handler(

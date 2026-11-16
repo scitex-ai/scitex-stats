@@ -14,6 +14,8 @@ Functionalities
   `run_all_applicable(data, design)` — data-driven ✓/✗ with reasons per
   test, one pre-specified primary test with its decision path, and
   sensitivity runs that never select by p-value.
+- `effect_size(group1, group2, measure=...)` — synchronous two-group
+  dispatcher shared by Python and MCP; returns native numerical data.
 - `effect_sizes`, `power`, `correct`, `posthoc`, `descriptive`,
   `auto` — submodules exposing the primitives behind `run_test`
   (Cohen's d / Cliff's delta / eta-sq / sample-size-ttest /
@@ -36,10 +38,10 @@ IO
 
 Dependencies
 ------------
-- Hard: `numpy`, `scipy`, `pandas`, `scitex-dev`, `scitex-config`,
-  `scitex-logging`.
-- Optional (`[plot]`): `matplotlib`. (`[mcp]`): `fastmcp`.
-  (`[figrecipe]`): `figrecipe`.
+The authoritative dependencies and extras are in ``pyproject.toml``.
+NumPy, SciPy, pandas, statsmodels, Matplotlib and the MCP server stack ship
+in the base install. Integrations and server/report features use the
+extras declared there.
 
 Standalone import::
 
@@ -119,6 +121,8 @@ _LAZY_ATTRS: dict[str, str] = {
     "power": "power",
     "reporting": "reporting",
     "tests": "tests",
+    # Native two-group effect-size dispatcher
+    "effect_size": "effect_sizes._effect_size",
     # Dispatcher
     "available_tests": "_dispatch",
     "run_test": "_dispatch",
@@ -244,6 +248,8 @@ __all__ = [
     "power",
     "reporting",
     "tests",
+    # Native two-group effect-size dispatcher
+    "effect_size",
     # Dispatcher
     "run_test",
     "available_tests",

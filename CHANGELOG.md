@@ -7,6 +7,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Add a native synchronous `effect_size` API and route MCP calculations through
+  the same domain implementation. Reject unsupported unpooled Cohen/Hedges
+  requests and unusable groups instead of returning misleading calculations.
+
 - Preserve fractional descriptive-statistics percentile labels over MCP,
   including closely spaced values, and honor an explicit empty list without
   substituting default quartiles. Integral label spelling stays compatible.
