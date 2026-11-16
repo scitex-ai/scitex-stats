@@ -308,7 +308,11 @@ async def normality_test(
     data: List[float],
     method: str = "shapiro",
 ) -> str:
-    """Test whether data follows a normal distribution."""
+    """Test normality through the native API; unusable samples fail explicitly.
+
+    NaNs are omitted. n counts tested values; n_input/n_omitted track input.
+    Anderson returns a 5% critical value rather than a p-value.
+    """
     from scitex_stats._mcp.handlers import normality_test_handler
 
     result = await normality_test_handler(

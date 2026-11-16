@@ -7,6 +7,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Add synchronous `normality_test` shared with MCP. Reject unusable samples
+  with explicit failures instead of `success: true` plus an error; report
+  tested/input/omitted counts after NaN filtering. Document Anderson's
+  critical-value response separately from the p-value methods.
+
 - Add a native synchronous `effect_size` API and route MCP calculations through
   the same domain implementation. Reject unsupported unpooled Cohen/Hedges
   requests and unusable groups instead of returning misleading calculations.

@@ -385,7 +385,9 @@ def get_tool_schemas() -> list[types.Tool]:
                 "'Shapiro-Wilk', 'check Gaussian assumption', 'should I use "
                 "parametric or non-parametric?', or before running a t-test/ANOVA "
                 "that assumes normality. Returns test statistic and p-value; p<0.05 "
-                "rejects normality."
+                "rejects normality. Anderson returns a 5% critical value instead of a "
+                "p-value. NaNs are omitted; n counts tested values and n_input/"
+                "n_omitted retain sample accounting. Unusable samples fail explicitly."
             ),
             input_schema={
                 "type": "object",

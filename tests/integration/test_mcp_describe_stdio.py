@@ -120,3 +120,21 @@ def test_stdio_effect_size_rejects_unsupported_unpooled_mode(tmp_path, stdio_par
     # Assert
     assert (default["success"], default["value"], unpooled["success"],
             "pooled=False" in unpooled.get("error", "")) == (True, -3.0, False, True)
+
+
+def test_stdio_normality_never_labels_too_few_samples_as_success(tmp_path, stdio_parameters):
+    async def collect_results():
+        with (tmp_path / "normality-server.log").open("w") as errors:
+            async with (
+                stdio_client(stdio_parameters, errlog=errors) as (read, write),
+                ClientSession(read, write) as session,
+            ):
+                await session.initialize()
+                invalid = await session.call_tool("normality_test", {"data": [1, 2]})
+                valid = await session.call_tool("normality_test", {"data": [1, 2, 3]})
+                return json.loads(invalid.content[0].text), json.loads(valid.content[0].text)
+
+    invalid, valid = asyncio.run(asyncio.wait_for(collect_results(), timeout=30))
+    assert invalid['success'] is False and '3 data points' in invalid['error']
+    assert valid['success'] is True and valid['n'] == 3
+    assert valid['p_value'] == pytest.approx(1.0)

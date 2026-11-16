@@ -52,6 +52,13 @@ Unpooled Cohen/Hedges requests (`pooled=False`) are unsupported and return
 `success: false`; they do not silently compute a pooled value. Inputs must
 be finite 1-D groups with the measure-specific sample minimums in that API.
 
+The `normality_test` tool uses `scitex_stats.normality_test`; see
+[Python API](03_python-api.md#normality-dispatch). Undersized or unusable
+samples return `success: false` with an error, never a successful error
+object. NaNs are omitted and `n` now counts tested values; `n_input` and
+`n_omitted` retain input accounting. Anderson returns a 5% critical value,
+not a p-value. The other three methods report p-values.
+
 ## Handler Organization
 
 MCP handlers are in `scitex_stats/_mcp/_handlers/`:

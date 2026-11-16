@@ -123,6 +123,7 @@ _LAZY_ATTRS: dict[str, str] = {
     "tests": "tests",
     # Native two-group effect-size dispatcher
     "effect_size": "effect_sizes._effect_size",
+    "normality_test": "tests.normality._normality_test",
     # Dispatcher
     "available_tests": "_dispatch",
     "run_test": "_dispatch",
@@ -250,6 +251,7 @@ __all__ = [
     "tests",
     # Native two-group effect-size dispatcher
     "effect_size",
+    "normality_test",
     # Dispatcher
     "run_test",
     "available_tests",

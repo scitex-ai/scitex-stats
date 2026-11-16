@@ -46,6 +46,27 @@ Closed-form, input-contract and native-return controls live in
 `tests/scitex_stats/effect_sizes/test__effect_size.py`; MCP and real stdio
 controls also exercise unsupported pooling requests.
 
+## Normality dispatch
+
+`sst.normality_test(data, method="shapiro")` is a synchronous operation
+owned by `tests/normality/_normality_test.py`, also used by MCP.
+Methods are `shapiro`, `dagostino`, `anderson`, and `lilliefors`.
+NaNs are omitted: `n` counts tested observations, `n_input` the original
+sample and `n_omitted` excluded values. For `[1, NaN, 2, 3]`, those counts
+are 3, 4 and 1. Inputs must be one-dimensional, finite after NaN omission,
+and non-constant. Shapiro/Anderson require three usable observations,
+D'Agostino eight and Lilliefors four; invalid inputs raise `ValueError`.
+
+The native dict has no transport success/timestamp fields. Shapiro,
+D'Agostino and Lilliefors return a statistic, p-value and `is_normal`
+heuristic at alpha 0.05. Failure to reject does not prove normality.
+Anderson returns `critical_value_5pct` and `normal`, without a p-value.
+For `[1, 2, 3]`, Shapiro returns W=1 and p=1.
+Owning numerical/count/input/error controls are in
+`tests/scitex_stats/tests/normality/test__normality_api.py`; real MCP
+error and valid responses are checked by
+`tests/integration/test_mcp_describe_stdio.py`.
+
 ## Tabular file input (`data=`)
 
 ```python
