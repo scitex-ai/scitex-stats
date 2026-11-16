@@ -72,10 +72,14 @@ presets. `apa` selects `apa_latex`, `nature` selects `nature_latex`, and
 additive `style_used` identifies the actual preset. There is no dedicated
 Science preset: `science` and unknown legacy names retain the APA LaTeX
 fallback, now reported explicitly. This is not a new journal-compliance
-certification or a native root `format_results` API. Confidence-interval
-arguments are retained but currently not rendered by this legacy handler;
-a dedicated Science preset and interval rendering remain unfinished
-capabilities. See the native
+certification or a native root `format_results` API. Supplied `ci_lower` and `ci_upper` render as `CI [lower, upper]`
+at the selected preset's effect precision. Both bounds and an effect
+estimate must be finite; bounds must be ordered. A partial pair, reversed
+bounds or missing effect estimate returns `success: false`. Omitting both
+bounds preserves point-only output. No interval is calculated and no
+confidence level (such as 95%) is inferred. A dedicated Science preset,
+confidence-level metadata and complete journal compliance remain unfinished.
+See the native
 [legacy formatter scope](03_python-api.md#legacy-line-formatter-scope).
 
 ## Handler Organization

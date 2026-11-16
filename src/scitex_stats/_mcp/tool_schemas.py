@@ -16,7 +16,8 @@ def get_tool_schemas() -> list[types.Tool]:
     """Return all tool schemas for the Stats MCP server."""
     from ._report_schema import report_tool_schema
 
-    return [report_tool_schema(),
+    return [
+        report_tool_schema(),
         # Test Recommendation
         types.Tool(
             name="recommend_tests",
@@ -161,8 +162,8 @@ def get_tool_schemas() -> list[types.Tool]:
                 "plain text. style echoes the request and style_used identifies the "
                 "actual preset. Science and unknown legacy names currently fall back "
                 "to APA LaTeX; a dedicated Science preset remains unimplemented. "
-                "Confidence-interval arguments are retained but currently not rendered. "
-                "These are unresolved capabilities, not complete journal compliance. "
+                "Supplied finite ordered CI bounds require an effect estimate and render at effect precision without an inferred confidence level. "
+                "This is not complete journal compliance. "
                 "Use run_test's structured apa result where applicable for richer "
                 "reporting. No statistical correction is computed by this formatter."
             ),
@@ -201,11 +202,11 @@ def get_tool_schemas() -> list[types.Tool]:
                     },
                     "ci_lower": {
                         "type": "number",
-                        "description": "Retained confidence-interval argument; currently not rendered",
+                        "description": "Supplied finite effect interval bound; requires both bounds and effect_size (lower <= upper)",
                     },
                     "ci_upper": {
                         "type": "number",
-                        "description": "Retained confidence-interval argument; currently not rendered",
+                        "description": "Supplied finite effect interval bound; requires both bounds and effect_size (lower <= upper)",
                     },
                 },
                 "required": ["test_name", "statistic", "p_value"],

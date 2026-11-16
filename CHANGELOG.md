@@ -7,6 +7,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Render supplied effect confidence-interval bounds in legacy result lines
+  at effect precision. Reject incomplete, reversed or non-finite bounds
+  and missing effect estimates; do not calculate intervals or infer levels.
+
 - Preserve supplied adjusted p-values of zero in legacy report lines.
   Fix MCP Nature/plain-brief preset selection and return `style_used`;
   explicitly retain the legacy Science/unknown-name APA fallback.

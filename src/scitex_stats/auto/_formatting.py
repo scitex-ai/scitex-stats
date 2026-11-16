@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, TypedDict, Union
 
+from ._format_ci import format_effect_interval
 from ._styles import StatStyle, get_stat_style
 from ._summary import (
     compute_summary_from_groups,
@@ -217,8 +218,11 @@ def format_test_line(
         for eff in effects[:max_effects]:
             eff_name = eff.get("name", "")
             eff_value = eff.get("value")
+            interval = format_effect_interval(eff, style.decimal_places_effect)
             if eff_value is not None:
                 eff_part = style.format_effect(eff_name, eff_value)
+                if interval:
+                    eff_part = f"{eff_part}, {interval}"
                 parts.append(eff_part)
 
     # Format sample sizes

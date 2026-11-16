@@ -41,18 +41,18 @@ async def format_results_handler(
             if df is not None:
                 test_result["df"] = df
 
-            # Build effect result if provided
+            # Preserve supplied metadata so the domain formatter can validate it.
             effects = None
-            if effect_size is not None:
-                effects = [
-                    EffectResultDict(
-                        name=effect_size_name or "d",
-                        label=effect_size_name or "Cohen's d",
-                        value=effect_size,
-                        ci_lower=ci_lower,
-                        ci_upper=ci_upper,
-                    )
-                ]
+            if effect_size is not None or ci_lower is not None or ci_upper is not None:
+                effect = EffectResultDict(
+                    name=effect_size_name or "d",
+                    label=effect_size_name or "Cohen's d",
+                    ci_lower=ci_lower,
+                    ci_upper=ci_upper,
+                )
+                if effect_size is not None:
+                    effect["value"] = effect_size
+                effects = [effect]
 
             # Map style names
             style_map = {

@@ -207,7 +207,8 @@ async def format_results(
 
     apa/nature/brief select APA LaTeX/Nature LaTeX/plain. science and
     unknown legacy names retain APA fallback; no Science preset is added.
-    CI arguments are retained but not rendered by this legacy formatter.
+    Supplied finite ordered CI bounds require an effect estimate and render
+    at effect precision. No interval or confidence level is calculated.
     """
     from scitex_stats._mcp.handlers import format_results_handler
 

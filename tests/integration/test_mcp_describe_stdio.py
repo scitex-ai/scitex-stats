@@ -251,3 +251,56 @@ def test_stdio_formatting_reports_real_presets(tmp_path, stdio_parameters):
         (True, "brief", "plain", "t = 2.00, p = 0.040"),
         (True, "science", "apa_latex", r"\mathit{t} = 2.00, \mathit{p} = 0.040"),
     ]
+
+
+def test_stdio_formatting_renders_intervals_and_rejects_partial_bounds(
+    tmp_path, stdio_parameters
+):
+    # Arrange
+    base = {
+        "test_name": "ttest_ind",
+        "statistic": 2.0,
+        "p_value": 0.04,
+        "effect_size": 0.5,
+        "style": "brief",
+    }
+
+    async def collect_results():
+        with (tmp_path / "interval-server.log").open("w") as errors:
+            async with (
+                stdio_client(stdio_parameters, errlog=errors) as (read, write),
+                ClientSession(read, write) as session,
+            ):
+                await session.initialize()
+                valid = await session.call_tool(
+                    "format_results", {**base, "ci_lower": -0.25, "ci_upper": 1.25}
+                )
+                partial = await session.call_tool(
+                    "format_results", {**base, "ci_lower": -0.25}
+                )
+                missing_effect = await session.call_tool(
+                    "format_results",
+                    {
+                        "test_name": "ttest_ind",
+                        "statistic": 2.0,
+                        "p_value": 0.04,
+                        "ci_lower": 0.0,
+                        "ci_upper": 1.0,
+                    },
+                )
+                return [
+                    json.loads(response.content[0].text)
+                    for response in [valid, partial, missing_effect]
+                ]
+
+    # Act
+    valid, partial, missing_effect = asyncio.run(
+        asyncio.wait_for(collect_results(), timeout=30)
+    )
+    # Assert
+    assert (
+        valid["success"],
+        valid["formatted"],
+        partial["success"],
+        missing_effect["success"],
+    ) == (True, "t = 2.00, p = 0.040, d = 0.50, CI [-0.25, 1.25]", False, False)
