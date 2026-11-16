@@ -49,7 +49,10 @@ def runtime_path(*parts: str) -> Path:
 
     Public helper for downstream submodules that need to write cache/db/
     generated outputs. Always returns a path inside the ``runtime/`` tree.
-    The parent directory is created on demand.
+    The parent directory is created on demand. Paths escaping the resolved
+    runtime root raise ValueError before directories are created. Symlinks
+    whose resolved targets remain within that root are supported. This
+    validation does not lock paths against concurrent filesystem changes.
 
     Examples
     --------
@@ -57,5 +60,11 @@ def runtime_path(*parts: str) -> Path:
     PosixPath('/home/.../.scitex/stats/runtime/cache/demo.db')
     """
     p = STATS_RUNTIME.joinpath(*parts)
+    # Follow existing symlinks when validating, including a symlinked root.
+    # Validate before mkdir so a rejected path cannot create outside parents.
+    try:
+        p.resolve().relative_to(STATS_RUNTIME.resolve())
+    except ValueError as error:
+        raise ValueError("Path must remain inside the stats runtime directory") from error
     p.parent.mkdir(parents=True, exist_ok=True)
     return p

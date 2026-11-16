@@ -7,6 +7,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Reject absolute, traversal and symlink escapes from the runtime path
+  resolver before creating parent directories. Preserve configured symlinked
+  runtime roots and aliases that resolve within the runtime directory.
+
 - Add synchronous `normality_test` shared with MCP. Reject unusable samples
   with explicit failures instead of `success: true` plus an error; report
   tested/input/omitted counts after NaN filtering. Document Anderson's
