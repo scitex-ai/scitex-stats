@@ -7,6 +7,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Derive default MCP catalog and CLI discovery from registered wire metadata,
+  including all registered tools. Share the run-test name map with its enum
+  without changing handler validation; support sync and async discovery.
+
 - Add synchronous native `format_results` and delegate MCP to it. Preserve
   existing style/fallback, supplied interval and reporting semantics, with
   transport success/timestamp fields confined to MCP.

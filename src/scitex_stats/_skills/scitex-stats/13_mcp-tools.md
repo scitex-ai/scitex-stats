@@ -105,3 +105,22 @@ MCP handlers are in `scitex_stats/_mcp/_handlers/`:
 - `_stars.py` — p-to-stars conversion
 - `_report.py` — bundled report generation (PDF/HTML)
 - `_verify.py` — result receipt / recompute verification
+
+
+## Authoritative metadata discovery
+
+The default server's registered wire catalog owns tool names, descriptions
+and input schemas. `_mcp.tool_schemas.get_tool_schemas()` returns the same
+MCP Tool models as an in-memory client; the CLI uses this provider too.
+`scitex-stats mcp list-tools --json -v` adds full `schemas` by tool name;
+plain `--json` retains its existing name/module output. Module filters
+also limit the verbose schema map.
+Async consumers can await `get_tool_schemas_async()`. The synchronous
+bridge also works inside an existing event loop, using an owned portal.
+No statistical tools are executed during discovery and no catalog is cached.
+The run-test enum comes from the same 23-name map used by MCP execution;
+this is distinct from the broader Python test facade. Unknown test names
+still reach the existing handler error path; the enum adds metadata only.
+This default catalog is not authenticated hosted-session discovery.
+Behavior/metadata checks are in `tests/scitex_stats/_mcp/test_tool_schemas.py`;
+actual protocol comparison is in `tests/integration/test_mcp_describe_stdio.py`.

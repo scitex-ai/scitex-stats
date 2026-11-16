@@ -9,9 +9,12 @@ This is the main server entry point. Tools are defined here using FastMCP.
 from __future__ import annotations
 
 import json
-from typing import List, Optional
+from typing import Annotated, List, Optional
 
 from fastmcp import FastMCP
+from pydantic import Field
+
+from ._mcp._test_catalog import _TEST_DISPATCH
 
 # =============================================================================
 # FastMCP Server
@@ -143,7 +146,7 @@ async def generate_report(
 
 @mcp.tool()
 async def run_test(
-    test_name: str,
+    test_name: Annotated[str, Field(json_schema_extra={"enum": list(_TEST_DISPATCH)})],
     data: Optional[List[List[float]]] = None,
     data_file: Optional[str] = None,
     columns: Optional[List[str]] = None,

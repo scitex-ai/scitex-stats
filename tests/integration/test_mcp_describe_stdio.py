@@ -342,3 +342,73 @@ def test_stdio_formatter_payload_matches_native_api(tmp_path, stdio_parameters):
             if key not in {"success", "timestamp"}
         },
     ) == (True, expected)
+
+
+def test_stdio_catalog_matches_shared_metadata(tmp_path, stdio_parameters):
+    # Arrange
+    import subprocess
+
+    response = subprocess.run(
+        [
+            stdio_parameters.command,
+            "-m",
+            "scitex_stats",
+            "mcp",
+            "list-tools",
+            "--json",
+            "-v",
+        ],
+        env=stdio_parameters.env,
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=30,
+    )
+    expected = json.loads(response.stdout)["schemas"]
+
+    async def collect():
+        with (tmp_path / "catalog-server.log").open("w") as errors:
+            async with (
+                stdio_client(stdio_parameters, errlog=errors) as (read, write),
+                ClientSession(read, write) as session,
+            ):
+                await session.initialize()
+                result = await session.list_tools()
+                return {
+                    t.name: t.model_dump(mode="json", by_alias=True, exclude_none=True)
+                    for t in result.tools
+                }
+
+    # Act
+    actual = asyncio.run(asyncio.wait_for(collect(), timeout=30))
+    # Assert
+    assert actual == expected
+
+
+def test_stdio_test_enum_preserves_handler_validation(tmp_path, stdio_parameters):
+    # Arrange
+    async def collect():
+        with (tmp_path / "enum-server.log").open("w") as errors:
+            async with (
+                stdio_client(stdio_parameters, errlog=errors) as (read, write),
+                ClientSession(read, write) as session,
+            ):
+                await session.initialize()
+                invalid = await session.call_tool(
+                    "run_test", {"test_name": "not_a_test", "data": [[1, 2, 4]]}
+                )
+                valid = await session.call_tool(
+                    "run_test",
+                    {"test_name": "ttest_paired", "data": [[1, 2, 4], [2, 3, 6]]},
+                )
+                return invalid, valid
+
+    # Act
+    invalid, valid = asyncio.run(asyncio.wait_for(collect(), timeout=30))
+    # Assert
+    assert (
+        invalid.is_error if hasattr(invalid, "is_error") else invalid.isError,
+        json.loads(invalid.content[0].text)["success"],
+        json.loads(valid.content[0].text)["success"],
+    ) == (False, False, True)
