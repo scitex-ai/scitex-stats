@@ -156,14 +156,15 @@ def get_tool_schemas() -> list[types.Tool]:
         types.Tool(
             name="format_results",
             description=(
-                "Format a statistical result as a publication-ready string in "
-                "APA, Nature, Science, or brief style — e.g. "
-                "'t(28) = 2.45, p = .021, d = 0.89, 95% CI [0.12, 1.66]'. "
-                "Use whenever the user asks to 'format results for a paper', "
-                "'write this up in APA', 'give me the stats sentence', 'format "
-                "for Nature', or needs manuscript-ready statistics reporting. "
-                "Handles italicization of statistic symbols, correct significant "
-                "figures, and per-journal conventions."
+                "Format supplied statistical values using legacy result-line presets. "
+                "apa selects APA LaTeX, nature selects Nature LaTeX, and brief selects "
+                "plain text. style echoes the request and style_used identifies the "
+                "actual preset. Science and unknown legacy names currently fall back "
+                "to APA LaTeX; a dedicated Science preset remains unimplemented. "
+                "Confidence-interval arguments are retained but currently not rendered. "
+                "These are unresolved capabilities, not complete journal compliance. "
+                "Use run_test's structured apa result where applicable for richer "
+                "reporting. No statistical correction is computed by this formatter."
             ),
             input_schema={
                 "type": "object",
@@ -194,17 +195,17 @@ def get_tool_schemas() -> list[types.Tool]:
                     },
                     "style": {
                         "type": "string",
-                        "description": "Journal formatting style",
+                        "description": "Legacy preset request; style_used reports the actual preset",
                         "enum": ["apa", "nature", "science", "brief"],
                         "default": "apa",
                     },
                     "ci_lower": {
                         "type": "number",
-                        "description": "Lower bound of confidence interval",
+                        "description": "Retained confidence-interval argument; currently not rendered",
                     },
                     "ci_upper": {
                         "type": "number",
-                        "description": "Upper bound of confidence interval",
+                        "description": "Retained confidence-interval argument; currently not rendered",
                     },
                 },
                 "required": ["test_name", "statistic", "p_value"],

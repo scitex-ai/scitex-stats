@@ -207,3 +207,47 @@ def test_stdio_correction_rejects_out_of_range_and_preserves_valid_result(
         valid["corrected_pvalues"],
         valid["method_used"],
     ) == (False, True, True, pytest.approx([0.03, 0.04, 0.04]), "fdr_bh")
+
+
+def test_stdio_formatting_reports_real_presets(tmp_path, stdio_parameters):
+    # Arrange
+    styles = ["apa", "nature", "brief", "science"]
+
+    async def collect_results():
+        with (tmp_path / "formatting-server.log").open("w") as errors:
+            async with (
+                stdio_client(stdio_parameters, errlog=errors) as (read, write),
+                ClientSession(read, write) as session,
+            ):
+                await session.initialize()
+                results = []
+                for style in styles:
+                    response = await session.call_tool(
+                        "format_results",
+                        {
+                            "test_name": "ttest_ind",
+                            "statistic": 2.0,
+                            "p_value": 0.04,
+                            "style": style,
+                        },
+                    )
+                    body = json.loads(response.content[0].text)
+                    results.append(
+                        (
+                            body["success"],
+                            body["style"],
+                            body["style_used"],
+                            body["formatted"],
+                        )
+                    )
+                return results
+
+    # Act
+    results = asyncio.run(asyncio.wait_for(collect_results(), timeout=30))
+    # Assert
+    assert results == [
+        (True, "apa", "apa_latex", r"\mathit{t} = 2.00, \mathit{p} = 0.040"),
+        (True, "nature", "nature_latex", r"\mathit{t} = 2.00, \mathit{P} = 0.040"),
+        (True, "brief", "plain", "t = 2.00, p = 0.040"),
+        (True, "science", "apa_latex", r"\mathit{t} = 2.00, \mathit{p} = 0.040"),
+    ]

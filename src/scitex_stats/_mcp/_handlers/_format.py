@@ -30,6 +30,7 @@ async def format_results_handler(
         def do_format():
             from scitex_stats.auto import format_test_line, p_to_stars
             from scitex_stats.auto._formatting import EffectResultDict, TestResultDict
+            from scitex_stats.auto._styles import get_stat_style
 
             # Build test result dict
             test_result: TestResultDict = {
@@ -56,26 +57,27 @@ async def format_results_handler(
             # Map style names
             style_map = {
                 "apa": "apa_latex",
-                "nature": "nature",
-                "science": "science",
-                "brief": "brief",
+                "nature": "nature_latex",
+                "science": "apa_latex",  # Retain the legacy fallback; no Science preset.
+                "brief": "plain",
             }
-            style_id = style_map.get(style, "apa_latex")
+            selected_style = get_stat_style(style_map.get(style, "apa_latex"))
 
             # Format the line
             formatted = format_test_line(
                 test_result,
                 effects=effects,
-                style=style_id,
+                style=selected_style,
                 include_n=False,
             )
 
             # Get stars representation
-            stars = p_to_stars(p_value)
+            stars = p_to_stars(p_value, style=selected_style)
 
             return {
                 "formatted": formatted,
                 "stars": stars,
+                "style_used": selected_style.id,
             }
 
         result = await loop.run_in_executor(None, do_format)

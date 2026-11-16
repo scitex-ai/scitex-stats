@@ -17,14 +17,10 @@ All formatting respects journal style presets (APA, Nature, Cell, Elsevier).
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, TypedDict, Union
-
-import numpy as np
 
 from ._styles import StatStyle, get_stat_style
 from ._summary import (
-    SummaryStatsDict,
     compute_summary_from_groups,
     compute_summary_stats,
 )
@@ -209,7 +205,9 @@ def format_test_line(
         parts.append(stat_part)
 
     # Format p-value
-    p = test.get("p_adj") or test.get("p_raw")
+    p = test.get("p_adj")
+    if p is None:
+        p = test.get("p_raw")
     if p is not None:
         p_part = style.format_p(p)
         parts.append(p_part)

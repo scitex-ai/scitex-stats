@@ -66,6 +66,18 @@ return `success: false`. Unknown method names retain their legacy BH
 fallback and echoed `method`; additive `method_used` identifies the actual
 calculation. The existing backend-free reference adapter is retained.
 
+The standalone `format_results` transport uses the existing legacy style
+presets. `apa` selects `apa_latex`, `nature` selects `nature_latex`, and
+`brief` selects `plain`. The returned `style` still echoes the request;
+additive `style_used` identifies the actual preset. There is no dedicated
+Science preset: `science` and unknown legacy names retain the APA LaTeX
+fallback, now reported explicitly. This is not a new journal-compliance
+certification or a native root `format_results` API. Confidence-interval
+arguments are retained but currently not rendered by this legacy handler;
+a dedicated Science preset and interval rendering remain unfinished
+capabilities. See the native
+[legacy formatter scope](03_python-api.md#legacy-line-formatter-scope).
+
 ## Handler Organization
 
 MCP handlers are in `scitex_stats/_mcp/_handlers/`:

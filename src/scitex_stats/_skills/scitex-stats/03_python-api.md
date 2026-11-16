@@ -160,7 +160,10 @@ See [21_effect-sizes.md](21_effect-sizes.md) for interpretation thresholds.
 
 ```python
 sst.p_to_stars(0.003)        # → "**"
-sst.format_results(result)   # publication-style string
+# Native legacy line formatting (the root format_results API is not implemented):
+from scitex_stats.auto import format_test_line
+format_test_line({"test_name": "ttest_ind", "stat": 2.0, "p_adj": 0.0}, style="plain")
+# "t = 2.00, p < 0.001"
 sst.correct_pvalues(pvals, method="fdr_bh")
 sst.posthoc(*groups, method="tukey")
 sst.power_analysis(test="ttest_ind", n=30, effect_size=0.5, alpha=0.05)
@@ -168,3 +171,15 @@ sst.power_analysis(test="ttest_ind", n=30, effect_size=0.5, alpha=0.05)
 
 See [10_quick-start.md](10_quick-start.md) for end-to-end usage and
 [11_workflows.md](11_workflows.md) for common patterns.
+
+### Legacy line formatter scope
+
+`auto.format_test_line` preserves a supplied `p_adj`, including zero; only
+missing/None adjusted values fall back to `p_raw`. It formats supplied
+values and does not calculate a correction. This legacy style-preset line
+is separate from the structured `run_test(...)["apa"]` renderer described
+in [APA reporting](16_apa7-reporting.md). Do not assume it establishes
+complete journal/APA-7 compliance. Owning field-precedence, raw/default
+and MCP preset-selection checks are in
+`tests/integration/test_formatting_values.py` and
+`tests/integration/test_mcp_describe_stdio.py`.

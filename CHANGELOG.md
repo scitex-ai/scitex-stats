@@ -7,6 +7,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Preserve supplied adjusted p-values of zero in legacy report lines.
+  Fix MCP Nature/plain-brief preset selection and return `style_used`;
+  explicitly retain the legacy Science/unknown-name APA fallback.
+
 - Add native `correct_pvalues` shared with MCP, validating p-values/alpha
   before adjustment. Preserve the NumPy fallback and unknown-method BH
   compatibility, with `method_used` exposing the actual calculation.

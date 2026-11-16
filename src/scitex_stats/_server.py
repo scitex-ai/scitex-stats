@@ -203,7 +203,12 @@ async def format_results(
     ci_lower: Optional[float] = None,
     ci_upper: Optional[float] = None,
 ) -> str:
-    """Format statistical results in journal style (APA, Nature, etc.)."""
+    """Format with legacy presets; style_used identifies the applied preset.
+
+    apa/nature/brief select APA LaTeX/Nature LaTeX/plain. science and
+    unknown legacy names retain APA fallback; no Science preset is added.
+    CI arguments are retained but not rendered by this legacy formatter.
+    """
     from scitex_stats._mcp.handlers import format_results_handler
 
     result = await format_results_handler(
