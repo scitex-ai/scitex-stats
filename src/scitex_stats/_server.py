@@ -151,8 +151,13 @@ async def run_test(
     data_file: Optional[str] = None,
     columns: Optional[List[str]] = None,
     alternative: str = "two-sided",
+    sep: Optional[str] = None,
 ) -> str:
-    """Execute a statistical test on provided data."""
+    """Execute a statistical test on provided data.
+
+    For file input, sep overrides delimiter estimation; None keeps Auto.
+    The explicit override is retained in provenance.source.sep.
+    """
     from scitex_stats._mcp.handlers import run_test_handler
 
     result = await run_test_handler(
@@ -161,6 +166,7 @@ async def run_test(
         data_file=data_file,
         columns=columns,
         alternative=alternative,
+        sep=sep,
     )
     return _json(result)
 

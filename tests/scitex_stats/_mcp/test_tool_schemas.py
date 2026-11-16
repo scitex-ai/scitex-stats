@@ -154,3 +154,14 @@ def test_cli_catalog_matches_shared_wire_metadata():
     actual = _metadata(_list_tool_objects())
     # Assert
     assert actual == expected
+
+
+def test_run_test_catalog_exposes_optional_separator():
+    # Arrange
+    # Act
+    schema = _schema_of(next(t for t in _catalog() if t.name == "run_test"))
+    # Assert
+    assert (schema["properties"]["sep"]["default"], "sep" in schema["required"]) == (
+        None,
+        False,
+    )

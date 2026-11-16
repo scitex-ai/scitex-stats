@@ -124,3 +124,9 @@ still reach the existing handler error path; the enum adds metadata only.
 This default catalog is not authenticated hosted-session discovery.
 Behavior/metadata checks are in `tests/scitex_stats/_mcp/test_tool_schemas.py`;
 actual protocol comparison is in `tests/integration/test_mcp_describe_stdio.py`.
+
+
+`run_test` also forwards the optional file `sep` override to the leaf parser.
+Explicit overrides are retained in `provenance.source.sep`; omission keeps
+Auto behavior. See [MCP file input](23_csv-import.md#mcp-file-input) for the
+actual JSON request and the remaining automatic-delimiter metadata limit.

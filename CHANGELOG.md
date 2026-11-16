@@ -7,6 +7,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Expose the existing file separator override through registered MCP
+  `run_test` and bind explicit overrides into source provenance. Preserve
+  Auto behavior and existing parser/statistical implementations.
+
 - Derive default MCP catalog and CLI discovery from registered wire metadata,
   including all registered tools. Share the run-test name map with its enum
   without changing handler validation; support sync and async discovery.

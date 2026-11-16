@@ -101,6 +101,8 @@ async def run_test_handler(  # noqa: C901
             # NaN is kept so the integrity report can say what was excluded.
             data = [df[col].tolist() for col in columns]
             source = {"data_file": str(data_file), "columns": list(columns)}
+            if sep is not None:
+                source["sep"] = sep
         elif data is None:
             raise ValueError("Provide 'data' or 'data_file'+'columns'")
 

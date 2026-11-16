@@ -412,3 +412,64 @@ def test_stdio_test_enum_preserves_handler_validation(tmp_path, stdio_parameters
         json.loads(invalid.content[0].text)["success"],
         json.loads(valid.content[0].text)["success"],
     ) == (False, False, True)
+
+
+def test_stdio_separator_override_resolves_ambiguous_file(tmp_path, stdio_parameters):
+    # Arrange
+    import math
+
+    content = b"x;y;note,tag\n1;2;a,b\n2;4;c,d\n3;6;e,f\n4;8;g,h\n"
+    path = tmp_path / "ambiguous.csv"
+    path.write_bytes(content)
+    base = {"test_name": "ttest_paired", "data_file": str(path), "columns": ["x", "y"]}
+
+    async def collect():
+        observations = []
+        with (tmp_path / "separator-server.log").open("w") as errors:
+            async with (
+                stdio_client(stdio_parameters, errlog=errors) as (read, write),
+                ClientSession(read, write) as session,
+            ):
+                await session.initialize()
+                for arguments in [{**base, "sep": ";"}, base, {**base, "sep": ","}]:
+                    result = await session.call_tool("run_test", arguments)
+                    flag = (
+                        result.is_error
+                        if hasattr(result, "is_error")
+                        else result.isError
+                    )
+                    try:
+                        body = json.loads(result.content[0].text)
+                    except json.JSONDecodeError:
+                        body = {"protocol_error": result.content[0].text}
+                    observations.append((flag, body))
+        return observations
+
+    # Act
+    valid, auto, wrong = asyncio.run(asyncio.wait_for(collect(), timeout=30))
+    # Assert
+    assert (
+        valid[0],
+        valid[1].get("success"),
+        valid[1].get("statistic"),
+        valid[1].get("provenance", {}).get("source", {}).get("sep"),
+        auto[0],
+        auto[1].get("success"),
+        "Ambiguous separator" in auto[1].get("error", ""),
+        wrong[0],
+        wrong[1].get("success"),
+        "Columns not found" in wrong[1].get("error", ""),
+        path.read_bytes(),
+    ) == (
+        False,
+        True,
+        pytest.approx(-math.sqrt(15), rel=1e-12),
+        ";",
+        False,
+        False,
+        True,
+        False,
+        False,
+        True,
+        content,
+    )

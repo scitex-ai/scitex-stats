@@ -43,3 +43,24 @@ Native-browser regression: `_django/check_import_dialog_browser.py` under the
 tests tree runs a disposable standalone app at desktop/phone sizes and checks
 modal focus, Escape/return focus, cancellation, selected-column import and
 theme colors. See `docs/csv-input.md` for the invocation.
+
+
+## MCP file input
+
+The registered `run_test` tool accepts `data_file`, `columns` and optional
+`sep`, using the same leaf file parser as its handler. For an ambiguous
+semicolon/comma file, explicitly choose semicolon:
+
+```json
+{"test_name": "ttest_paired", "data_file": "ambiguous.csv", "columns": ["x", "y"], "sep": ";"}
+```
+
+Omit `sep` or pass null for existing Auto behavior. Ambiguous Auto input
+fails explicitly; choosing a wrong delimiter still fails when selected
+columns are absent. Explicit overrides are recorded as
+`provenance.source.sep`, alongside the existing file digest and columns,
+without changing the source file. This field records the requested override;
+it does not report an automatically detected delimiter. Actual schema,
+ambiguous-file calculation/error and input-preservation checks live in
+`tests/integration/test_mcp_describe_stdio.py` and
+`tests/scitex_stats/_mcp/_handlers/test__run_test.py`.
