@@ -58,7 +58,8 @@ scitex-stats generate-report --help
 scitex-stats gui --help
 ```
 
-`verify` exits 0 only when verified, 1 otherwise. Full reports need their
+`verify` exits 0 when verified, 1 when completed but unverified, and 2 for usage
+or invalid result/source JSON. Full reports need their
 original source result for recomputation; see [17_provenance-verify.md](17_provenance-verify.md).
 For reproducible CSV execution/verification, see [12_cli-reference.md](12_cli-reference.md).
 GUI help describes options; it does not establish that a GUI is running.

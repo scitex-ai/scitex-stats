@@ -153,3 +153,15 @@ Correctly supplied and embedded MCP inputs retain existing behavior.
 Owners: `_verify.py::_supplied_inputs` / `_resolve_inputs`.
 List/NumPy, explicit/embedded input controls:
 `tests/integration/test_verify_supplied_slots.py`.
+
+## CLI diagnostics and exit status
+
+`verify` exits 0 for verified results, 1 for completed but unverified results,
+and 2 for invalid command usage or JSON syntax/text-decoding errors in
+`RESULT_FILE` or `--source-result`. JSON input errors name the file argument or option in
+the CLI diagnostic. Text mode (`--no-json`) also reports a missing receipt as
+unverified; it does not require the optional `warnings` list to be present.
+These diagnostics do not alter native verification or MCP result envelopes.
+Other data-loading failures and invalid receipt structures are separate scope.
+Owner: `_cli/verify.py::verify`; controls:
+`tests/integration/test_verify_cli_errors.py`.
