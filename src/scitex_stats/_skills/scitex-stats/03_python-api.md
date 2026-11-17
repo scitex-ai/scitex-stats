@@ -170,7 +170,7 @@ sst.run_posthoc(groups, equal_variances=True)  # only if declared in advance
 sst.power.power_ttest(effect_size=0.5, n1=30, n2=30, alpha=0.05)
 ```
 
-See [quick start](10_quick-start.md) and [workflows](11_workflows.md).
+See [quick start](10_quick-start.md), [workflows](11_workflows.md), [native power and bounded planning](25_bounded-sample-size.md).
 
 ### Legacy line formatter scope
 
@@ -198,22 +198,3 @@ Both supplied endpoints and the effect must be finite and ordered
 bounds preserves point-only output. No interval or confidence level is calculated or inferred. See [MCP scope](13_mcp-tools.md) for remaining
 Science/journal limitations; actual interval controls:
 `tests/integration/test_effect_interval_reporting.py`.
-
-### Native power dispatcher
-
-```python
-from scitex_stats import power_analysis
-result = power_analysis(test_type="anova", effect_size=0.3, n_groups=3)
-# result["mode"] == "sample_size_calculation"
-# result["required_n_per_group"] is the bounded planning answer
-```
-
-The synchronous function is also `scitex_stats.power.power_analysis`.
-`ttest`, `anova`, `correlation` and goodness-of-fit `chi2` retain their existing
-method policies and parameters; supplying `n` calculates power instead.
-The native numerical payload includes `test_type` and `mode`. Errors raise
-normally; MCP delegates to this function and adds its success/error envelope
-and timestamp. This does not qualify new formulas or general input validation.
-See [bounded planning](25_bounded-sample-size.md) for ANOVA/chi-square limits.
-Implementation: `power/_power_analysis.py::power_analysis`; method/error/
-transport-free controls: `tests/integration/test_native_power_api.py`.

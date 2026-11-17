@@ -43,3 +43,14 @@ with thin `_mcp/_handlers/_power.py` adapters. Actual handler and independent
 statsmodels power controls are in
 `tests/integration/test_bounded_power_search.py`: unattained targets, inclusive
 bounds, normal minimums, invalid targets and unchanged fixed-sample values.
+
+The native dispatcher supports `ttest`, `anova`, `correlation` and `chi2`.
+Supplying `n` calculates power; omitting it plans a sample size. It preserves
+the existing t-test and Fisher-z correlation approximations; this extraction
+is not new scientific qualification for those methods or arbitrary inputs.
+
+```python
+from scitex_stats import power_analysis
+result = power_analysis(test_type="anova", effect_size=0.3, n_groups=3)
+# result["mode"] == "sample_size_calculation"
+```

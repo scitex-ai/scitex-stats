@@ -28,14 +28,18 @@ def test_native_and_mcp_share_all_method_results(method, n):
     # Act
     result = native(**arguments)
     wire = asyncio.run(power_analysis_handler(**arguments))
-    # Assert
-    assert not inspect.isawaitable(result)
-    assert wire.pop("success") is True
-    assert isinstance(wire.pop("timestamp"), str)
-    assert result == wire
-    assert result["test_type"] == method
-    assert result["mode"] == ("power_calculation" if n else "sample_size_calculation")
+    success, timestamp = wire.pop("success"), wire.pop("timestamp")
     json.dumps(result, allow_nan=False)
+    # Assert
+    assert {
+        "synchronous": not inspect.isawaitable(result), "success": success,
+        "timestamp": isinstance(timestamp, str), "payload": result,
+        "test_type": result["test_type"], "mode": result["mode"],
+    } == {
+        "synchronous": True, "success": True, "timestamp": True,
+        "payload": wire, "test_type": method,
+        "mode": "power_calculation" if n else "sample_size_calculation",
+    }
 
 
 @pytest.mark.parametrize("arguments,message", [
@@ -52,21 +56,30 @@ def test_native_and_mcp_share_all_method_results(method, n):
 def test_native_raises_while_mcp_retains_error_envelope(arguments, message):
     # Arrange
     native = _native()
-    # Act / Assert
-    with pytest.raises(ValueError, match=message):
+    # Act
+    failure = None
+    try:
         native(**arguments)
+    except Exception as error:
+        failure = error
     wire = asyncio.run(power_analysis_handler(**arguments))
-    assert wire["success"] is False and message in wire["error"]
+    # Assert
+    assert {"type": type(failure), "message": message in str(failure),
+            "wire_error": wire["success"] is False and message in wire["error"]} == {
+        "type": ValueError, "message": True, "wire_error": True,
+    }
 
 
 def test_root_and_power_namespace_expose_one_synchronous_function():
     # Arrange
     native = _native()
-    # Act / Assert
-    assert stats.power.power_analysis is native
-    assert "power_analysis" in stats.__all__
-    assert "power_analysis" in stats.power.__all__
-    assert not inspect.iscoroutinefunction(native)
+    # Act
+    exposure = {"same_native": stats.power.power_analysis is native,
+                "root_export": "power_analysis" in stats.__all__,
+                "power_export": "power_analysis" in stats.power.__all__,
+                "synchronous": not inspect.iscoroutinefunction(native)}
+    # Assert
+    assert exposure == dict.fromkeys(exposure, True)
 
 
 def test_native_power_does_not_load_mcp_transport_in_a_real_process():
