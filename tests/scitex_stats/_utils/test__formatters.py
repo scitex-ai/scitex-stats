@@ -51,42 +51,42 @@ class TestP2stars:
     """Test p2stars function."""
 
     def test_highly_significant_p2stars(self):
-        """Test p < 0.001."""
+        """Test p <= 0.001."""
         # Arrange
         # Act
         # Assert
         assert p2stars(0.0001) == "***"
 
     def test_highly_significant_p2stars_2(self):
-        """Test p < 0.001."""
+        """Test p <= 0.001."""
         # Arrange
         # Act
         # Assert
         assert p2stars(0.0005) == "***"
 
     def test_very_significant_p2stars(self):
-        """Test 0.001 <= p < 0.01."""
+        """Test 0.001 < p <= 0.01."""
         # Arrange
         # Act
         # Assert
         assert p2stars(0.005) == "**"
 
     def test_very_significant_p2stars_2(self):
-        """Test 0.001 <= p < 0.01."""
+        """Test 0.001 < p <= 0.01."""
         # Arrange
         # Act
         # Assert
         assert p2stars(0.009) == "**"
 
     def test_significant_p2stars_1(self):
-        """Test 0.01 <= p < 0.05."""
+        """Test 0.01 < p <= 0.05."""
         # Arrange
         # Act
         # Assert
         assert p2stars(0.023) == "*"
 
     def test_significant_p2stars_2(self):
-        """Test 0.01 <= p < 0.05."""
+        """Test 0.01 < p <= 0.05."""
         # Arrange
         # Act
         # Assert

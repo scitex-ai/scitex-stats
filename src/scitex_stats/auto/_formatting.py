@@ -342,7 +342,7 @@ def p_to_stars(
     """
     Convert p-value to significance stars.
 
-    Uses the alpha thresholds from the specified style.
+    Uses strict comparisons against the alpha thresholds of the specified style.
 
     Parameters
     ----------
@@ -359,7 +359,7 @@ def p_to_stars(
     Examples
     --------
     >>> p_to_stars(0.001)
-    '***'
+    '**'
     >>> p_to_stars(0.03)
     '*'
     >>> p_to_stars(0.10)

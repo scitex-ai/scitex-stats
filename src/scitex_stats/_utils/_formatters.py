@@ -263,10 +263,10 @@ def p2stars(
     Notes
     -----
     Default thresholds and symbols:
-    - p < 0.001: '***' (highly significant)
-    - p < 0.01:  '**'  (very significant)
-    - p < 0.05:  '*'   (significant)
-    - p >= 0.05: 'ns'  (not significant)
+    - p <= 0.001: '***' (highly significant)
+    - 0.001 < p <= 0.01: '**' (very significant)
+    - 0.01 < p <= 0.05: '*' (significant)
+    - p > 0.05: 'ns' (not significant)
 
     Examples
     --------

@@ -23,7 +23,7 @@ All tools are prefixed `stats_` under the scitex MCP server
 | `stats_power_analysis` | Power analysis and sample size estimation |
 | `stats_normality_test` | Test data for normality |
 | `stats_format_results` | Format statistical results for publication |
-| `stats_p_to_stars` | Convert p-value to significance stars |
+| `stats_p_to_stars` | Significance stars ([boundaries](27_star-boundaries.md)) |
 | `stats_generate_report` | Write a bundled statistical report (PDF/HTML) |
 | `stats_verify_result` | Verify a result's receipt, data hashes and statistics |
 | `stats_validate_apa` | Report APA 7 violations in a results string |
