@@ -3,19 +3,11 @@
 # Timestamp: "2025-10-01 20:30:00 (ywatanabe)"
 # File: scitex_stats/posthoc/_dunnett.py
 # ----------------------------------------
-from __future__ import annotations
-
-import os
-
-__FILE__ = __file__
-__DIR__ = os.path.dirname(__FILE__)
-# ----------------------------------------
-
 """
 Functionalities:
-  - Perform Dunnett's test post-hoc comparison
+  - Legacy Bonferroni approximation for control comparisons
   - Compare multiple treatment groups vs single control
-  - Control family-wise error rate
+  - Use Bonferroni family probabilities and t bounds
   - Two-sided or one-sided comparisons
 
 Dependencies:
@@ -26,7 +18,9 @@ IO:
   - output: Comparison results vs control (DataFrame)
 """
 
-"""Imports"""
+from __future__ import annotations
+
+import os
 from typing import List, Literal, Optional, Union
 
 import numpy as np
@@ -35,12 +29,15 @@ from scipy import stats
 
 from scitex_stats._utils._formatters import p2stars
 
+__FILE__ = __file__
+__DIR__ = os.path.dirname(__FILE__)
+
 
 def dunnett_critical_value(
     k: int, df: int, alpha: float = 0.05, alternative: str = "two-sided"
 ) -> float:
     """
-    Get critical value for Dunnett's test.
+    Return the legacy Bonferroni t bound, not a Dunnett quantile.
 
     Parameters
     ----------
@@ -60,9 +57,10 @@ def dunnett_critical_value(
 
     Notes
     -----
-    Uses conservative approximation based on t-distribution with
-    Bonferroni-like adjustment. For exact values, specialized tables
-    or software (R, SAS) would be needed.
+    This is the conservative Bonferroni bound used by the legacy
+    ``posthoc_dunnett`` approximation: alpha/(2*k) per upper tail for
+    two-sided comparisons, or alpha/k for one-sided comparisons.
+    It does not compute the original single-step Dunnett distribution.
     """
     # Conservative approximation using Bonferroni adjustment
     if alternative == "two-sided":
@@ -72,9 +70,8 @@ def dunnett_critical_value(
 
     t_crit = stats.t.ppf(1 - alpha_adj, df)
 
-    # Dunnett critical value is typically slightly smaller than Bonferroni
-    # This approximation is conservative
-    d_crit = t_crit * 0.95  # Slight correction factor
+    # Retain the full Bonferroni bound used by the reported probabilities.
+    d_crit = t_crit
 
     return float(d_crit)
 
@@ -89,10 +86,11 @@ def posthoc_dunnett(
     return_as: str = "dataframe",
 ) -> Union[pd.DataFrame, List[dict]]:
     """
-    Perform Dunnett's test for comparing treatments vs control.
+    Legacy Bonferroni approximation for treatments versus control.
 
-    Conducts multiple comparisons of treatment groups against a single
-    control group, controlling the family-wise error rate.
+    Uses shared-error t tests with Bonferroni probabilities and confidence
+    bounds. This is not the original single-step Dunnett procedure; the MCP
+    ``posthoc_test(method="dunnett")`` has a separate genuine backend.
 
     Parameters
     ----------
@@ -133,9 +131,9 @@ def posthoc_dunnett(
 
     Notes
     -----
-    Dunnett's test is specifically designed for comparing multiple treatment
-    groups against a single control group, which is more powerful than
-    using Tukey HSD for this purpose.
+    This API retains its historical name for compatibility. Its reported
+    probabilities and critical bounds use Bonferroni allocation. Degenerate
+    inputs and presentation-rounding limits remain unqualified.
 
     **Test Statistic**:
 
@@ -148,8 +146,8 @@ def posthoc_dunnett(
     - MS_error: Pooled mean square error
 
     **Critical Value**:
-    Uses Dunnett distribution tables (approximated here via conservative
-    t-distribution adjustment).
+    Uses the Bonferroni t quantile without an extra shrink factor;
+    no original Dunnett distribution quantile is calculated here.
 
     **Assumptions**:
     1. Independence of observations
@@ -158,10 +156,10 @@ def posthoc_dunnett(
     4. One group designated as control
 
     **Advantages**:
-    - More powerful than Tukey HSD for control comparisons
-    - More powerful than Bonferroni for this specific design
-    - Controls family-wise error rate exactly
+    - Limits comparisons to treatments versus one control
+    - Bonferroni-adjusted probabilities and t bounds
     - Provides directional tests (one-sided)
+    - Preserves the legacy dictionary/DataFrame result format
 
     **Disadvantages**:
     - Only compares vs control (not all pairwise)

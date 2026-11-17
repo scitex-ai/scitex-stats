@@ -78,5 +78,10 @@ and its [SciPy 1.11.4 example](https://docs.scipy.org/doc/scipy-1.11.4/reference
 These describe a numerical single-step procedure, not exact arithmetic.
 
 The separate legacy Python API `posthoc.posthoc_dunnett` and
-`dunnett_critical_value` are unchanged and still approximate. MCP checks do not
-qualify those functions, every invalid input, other interfaces or hosted UI.
+`dunnett_critical_value` use a Bonferroni approximation, not this single-step
+procedure. Their t bound retains the full Bonferroni allocation; the former
+0.95 shrink factor is removed so selected valid decisions/intervals agree with
+their reported adjusted probabilities. Their degenerate-input and rounding
+limits remain unqualified. Controls: `tests/integration/test_legacy_dunnett_bound.py`.
+MCP checks do not qualify the legacy method as genuine Dunnett, every invalid
+input, other interfaces or hosted UI.
