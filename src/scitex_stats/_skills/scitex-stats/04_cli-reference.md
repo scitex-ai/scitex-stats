@@ -1,7 +1,7 @@
 ---
 description: |
   [TOPIC] CLI Reference
-  [DETAILS] tests / mcp / python-api / skills / format-pvalue command surface.
+  [DETAILS] Current tests, verification, report, GUI, MCP, skills and introspection commands.
 tags: [scitex-stats-cli-reference, scitex-stats]
 ---
 
@@ -14,13 +14,17 @@ scitex-stats --help-recursive   # full tree (root + every subcommand)
 scitex-stats --version
 ```
 
-Top-level groups: `tests`, `mcp`, `python-api`, `skills`. Top-level leaves:
-`list-python-apis`, `format-pvalue`.
+Base groups: `tests`, `mcp`, `python-api`, `skills`, `gui`, `completion`.
+Top-level leaves: `list-python-apis`, `format-pvalue`, `validate-apa`,
+`verify`, `generate-report`, `print-shell-completion`, `install-shell-completion`.
+Optional Dev integrations can add commands when their registration API is
+available. Use `--help-recursive` for the installed full tree;
+the sections below cover common entry points.
 
 ## tests — run / describe / recommend statistical tests
 
 ```bash
-scitex-stats tests list                            # all 22 test names (aliases included)
+scitex-stats tests list                            # registered test names
 scitex-stats tests execute ttest_ind data.csv \
     --x group_a --y group_b
 scitex-stats tests execute anova data.csv --groups col1,col2,col3
@@ -33,6 +37,32 @@ scitex-stats tests recommend --n-groups 2 --sample-sizes 30,28
 where the underlying test supports them. All commands accept
 `--json/--no-json` (default JSON).
 
+For data-based design checks and recommendations, use:
+
+```bash
+scitex-stats tests check-applicability data.csv --groups group_a,group_b --design independent
+scitex-stats tests recommend-test data.csv --groups group_a,group_b --design independent
+scitex-stats tests execute-all data.csv --groups group_a,group_b --design independent
+```
+
+These `--design` choices differ from `tests recommend`, which describes a
+study using `--n-groups`, `--sample-sizes` and `--design {between,within,mixed}`.
+
+## Verification, reporting and GUI
+
+```bash
+scitex-stats verify result.json
+scitex-stats verify report.json --source-result original-result.json
+scitex-stats validate-apa --help
+scitex-stats generate-report --help
+scitex-stats gui --help
+```
+
+`verify` exits 0 only when verified, 1 otherwise. Full reports need their
+original source result for recomputation; see [17_provenance-verify.md](17_provenance-verify.md).
+For reproducible CSV execution/verification, see [12_cli-reference.md](12_cli-reference.md).
+GUI help describes options; it does not establish that a GUI is running.
+
 ## mcp — MCP server commands
 
 ```bash
@@ -44,8 +74,8 @@ scitex-stats mcp start -t sse         # SSE for HTTP clients
 scitex-stats mcp start --dry-run      # preview launch plan
 ```
 
-MCP support is included in the base install. `start` is mutating (long-running server) — use
-`-y/--yes` to skip the confirmation prompt in scripts.
+MCP support is included in the base install. `start` launches a long-running
+server; use `--dry-run` to inspect its launch plan.
 
 ## python-api / list-python-apis — package introspection
 
@@ -76,9 +106,23 @@ scitex-stats skills install --dry-run
 ## format-pvalue — p-value to significance stars
 
 ```bash
-scitex-stats format-pvalue 0.001    # → ***
+scitex-stats format-pvalue 0.001    # → **
 scitex-stats format-pvalue 0.5      # → ns
 ```
+
+`format-pvalue` calls the public formatter and uses strict default thresholds.
+The legacy formatter has different exact-threshold symbols; see [27_star-boundaries.md](27_star-boundaries.md).
+
+## Shell completion
+
+```bash
+scitex-stats completion --help
+scitex-stats print-shell-completion --help
+scitex-stats install-shell-completion --help
+```
+
+The completion group is owned by `_cli/_completion.py` and registered through
+`_cli/_integrations.py`; see [14_env-vars.md](14_env-vars.md) for its path setting.
 
 ## Configuration
 
@@ -94,3 +138,12 @@ The optional `--claude-symlink` compatibility flag remains available.
 
 See [14_env-vars.md](14_env-vars.md) for the env vars `scitex-stats`
 reads at runtime.
+
+## Owning source and checks
+
+`_cli/__init__.py` registers the root commands; `_cli/tests_group.py` defines
+statistical argument shapes and `_cli/stats.py` reads/selects data and executes
+the owning API. Existing controls include `tests/scitex_stats/_cli/test_tests_group.py`,
+`test_stats.py`, `test___init__.py`, `test_recommend.py` and
+`tests/scitex_stats/test__verify.py`. Runtime help and installed command
+behavior must be checked separately from this reference's syntax.
