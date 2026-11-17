@@ -3,14 +3,6 @@
 # Timestamp: "2025-10-01 20:47:38 (ywatanabe)"
 # File: scitex_stats/correct/_correct_bonferroni.py
 # ----------------------------------------
-from __future__ import annotations
-
-import os
-
-__FILE__ = __file__
-__DIR__ = os.path.dirname(__FILE__)
-# ----------------------------------------
-
 """
 Functionalities:
   - Apply Bonferroni correction for multiple comparisons
@@ -26,7 +18,9 @@ IO:
   - output: Results with adjusted p-values and significance (same format as input)
 """
 
-"""Imports"""
+from __future__ import annotations
+
+import os
 from typing import Any, Dict, List, Optional, Union
 
 import matplotlib
@@ -35,6 +29,9 @@ import numpy as np
 import pandas as pd
 
 from scitex_stats._logging import getLogger
+
+__FILE__ = __file__
+__DIR__ = os.path.dirname(__FILE__)
 
 logger = getLogger(__name__)
 
@@ -248,9 +245,9 @@ def correct_bonferroni(
             return df.to_dict("records")
     else:
         # Match input format
-        if input_type == dict:
+        if input_type is dict:
             return to_dict(df, row=0)
-        elif input_type == list:
+        elif input_type is list:
             return df.to_dict("records")
         else:  # DataFrame
             return df
