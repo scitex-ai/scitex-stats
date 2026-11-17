@@ -66,7 +66,7 @@ location and reload procedure. A valid snippet or launch preview does not prove
 that a desktop client or hosted service has connected.
 
 Interpret results at the appropriate layer
------------------------------------------
+------------------------------------------
 
 A request rejected by the published schema can return an MCP protocol error.
 An admitted request can instead return a JSON handler payload with
@@ -86,9 +86,10 @@ Diagnostics and scope
    scitex-stats mcp doctor
 
 The current doctor checks FastMCP availability, default catalog discovery and
-whether ``scitex-stats`` is on PATH. It does not perform a client handshake or
-execute a statistical tool, so it does not establish remote/hosted server
-health or scientific validity.
+whether ``scitex-stats`` is on PATH. Catalog discovery initializes an in-memory
+client for the default server. Doctor does not connect to a desktop client or a
+remote/hosted service, and it executes no statistical tool. Its result does not
+establish hosted service health or scientific validity.
 
 Owning sources are ``_server.py``, ``_mcp/tool_schemas.py`` and ``_cli/mcp.py``.
 Existing discovery controls live in
