@@ -59,8 +59,13 @@ Omit `sep` or pass null for existing Auto behavior. Ambiguous Auto input
 fails explicitly; choosing a wrong delimiter still fails when selected
 columns are absent. Explicit overrides are recorded as
 `provenance.source.sep`, alongside the existing file digest and columns,
-without changing the source file. This field records the requested override;
-it does not report an automatically detected delimiter. Actual schema,
+without changing the source file. Every successful file result also includes
+`provenance.source.sep_used`, the token chosen by the leaf parser for that read,
+including Auto and the `.tsv` tab contract. A space token (`" "`) means
+whitespace runs; an explicit regex token is preserved. `source.sep` still
+records only an explicit request. Both fields are covered by the receipt.
+Actual schema,
 ambiguous-file calculation/error and input-preservation checks live in
+`tests/scitex_stats/_mcp/_handlers/test__run_test.py`,
 `tests/integration/test_mcp_describe_stdio.py` and
 `tests/scitex_stats/_mcp/_handlers/test__run_test.py`.

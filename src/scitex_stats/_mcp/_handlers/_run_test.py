@@ -90,9 +90,9 @@ async def run_test_handler(  # noqa: C901
         source = None
         # Resolve data from CSV if needed
         if data_file and columns:
-            from scitex_stats._utils._csv_support import _load_file
+            from scitex_stats._utils._csv_support import _load_file_with_separator
 
-            df = _load_file(data_file, sep=sep)
+            df, sep_used = _load_file_with_separator(data_file, sep=sep)
             missing = [c for c in columns if c not in df.columns]
             if missing:
                 raise ValueError(
@@ -100,7 +100,10 @@ async def run_test_handler(  # noqa: C901
                 )
             # NaN is kept so the integrity report can say what was excluded.
             data = [df[col].tolist() for col in columns]
-            source = {"data_file": str(data_file), "columns": list(columns)}
+            source = {
+                "data_file": str(data_file), "columns": list(columns),
+                "sep_used": sep_used,
+            }
             if sep is not None:
                 source["sep"] = sep
         elif data is None:

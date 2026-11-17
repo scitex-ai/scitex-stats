@@ -129,4 +129,5 @@ actual protocol comparison is in `tests/integration/test_mcp_describe_stdio.py`.
 `run_test` also forwards the optional file `sep` override to the leaf parser.
 Explicit overrides are retained in `provenance.source.sep`; omission keeps
 Auto behavior. See [MCP file input](23_csv-import.md#mcp-file-input) for the
-actual JSON request and the remaining automatic-delimiter metadata limit.
+actual JSON request. Every successful file result records the chosen token in
+`provenance.source.sep_used` (a space token means whitespace runs).
