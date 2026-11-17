@@ -146,24 +146,29 @@ Reference: [SciPy Games–Howell](https://docs.scipy.org/doc/scipy/reference/gen
 `tests/scitex_stats/_mcp/_handlers/test__posthoc.py`.
 
 
-For all `posthoc_test` methods, supplied `group_names` must contain exactly
-one unique label per input group. Empty, incomplete, extra or repeated labels
-return `success=false` with an explicit `group_names` error and no comparisons;
-this prevents silent group merging or dropped comparisons. Omitting names
-(`null`) keeps automatic `Group_1`, `Group_2`, … labels.
+`posthoc_test` requires one unique `group_names` label per input group.
+Empty, incomplete, extra or repeated labels return `success=false`, a
+`group_names` error and no comparisons. Omitting names (`null`) uses
+`Group_1`, `Group_2`, … without merging or dropping groups.
 Controls: `tests/integration/test_posthoc_group_names.py` and
 `_mcp/_handlers/_posthoc.py::posthoc_test_handler`.
 
 
-For `posthoc_test` with `method="tukey"`, the declared statsmodels backend
-must be usable. If its import or a backend dependency import fails, the tool
-returns `success=false` with an explicit Tukey HSD error and no comparisons.
-It does not substitute Bonferroni-corrected t-tests under the Tukey label.
-Available-backend probabilities, mean differences and simultaneous confidence
-intervals use the backend numeric arrays before display rounding. Pairs retain
-the backend sorted label order; `mean_diff` and its interval describe group2
-minus group1. `reject` retains the backend decision as a JSON boolean.
-Controls: `tests/integration/test_tukey_numeric_precision.py`, `tests/integration/test_tukey_backend_availability.py` and
+`method="dunnett"` requires `0 <= control_group < len(groups)` (zero-based).
+Invalid indices return `success=false`, a `control_group` error and no
+comparisons; valid controls exclude themselves. This adapter still uses
+Bonferroni-adjusted pairwise t-tests, not genuine Dunnett probabilities.
+Controls: `tests/integration/test_posthoc_control_index.py` and
+`_mcp/_handlers/_posthoc.py::_dunnett`.
+
+
+`method="tukey"` requires usable statsmodels. Backend import failures return
+`success=false`, a Tukey HSD error and no comparisons; no substitute test
+is run. Backend arrays supply probabilities, mean differences and simultaneous
+intervals before display rounding. Pairs use sorted labels; `mean_diff` and
+its interval are group2 minus group1. `reject` is the backend JSON boolean.
+Controls: `tests/integration/test_tukey_numeric_precision.py`,
+`tests/integration/test_tukey_backend_availability.py` and
 `_mcp/_handlers/_posthoc.py::_tukey_hsd`.
 
 

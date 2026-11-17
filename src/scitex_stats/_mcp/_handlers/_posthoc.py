@@ -101,6 +101,8 @@ def _dunnett(group_arrays, names, control_group):
     """Dunnett's test (compare all to control)."""
     from scipy import stats as scipy_stats
 
+    if not 0 <= control_group < len(group_arrays):
+        raise ValueError("control_group must be a zero-based index of an input group")
     control = group_arrays[control_group]
     n_comparisons = len(group_arrays) - 1
 
