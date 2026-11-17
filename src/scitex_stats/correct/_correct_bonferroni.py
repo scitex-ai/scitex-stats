@@ -170,7 +170,10 @@ def correct_bonferroni(
 
     if results_list is not None:
         # Supply the caller alpha before normalization can insert its 0.05 default.
-        records = [{**row, "alpha": row.get("alpha", alpha)} for row in results_list]
+        records = [
+            {**row, "alpha": alpha if row.get("alpha") is None else row["alpha"]}
+            for row in results_list
+        ]
         df = force_dataframe(records, fill_na=False, enforce_types=False)
     else:
         df = results.copy()

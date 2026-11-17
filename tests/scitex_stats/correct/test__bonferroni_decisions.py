@@ -88,3 +88,20 @@ def test_single_dict_and_explicit_dict_shape_remain_supported():
     assert isinstance(records, list) and records[0]["rejected"]
     assert records[0]["pvalue_adjusted"] == 0.04
     assert original == {"pvalue": 0.02, "name": "one"}
+
+
+def test_record_alpha_overrides_preserve_missing_and_null_fallbacks():
+    # Arrange
+    records = [{"pvalue": 0.02, "alpha": 0.1}, {"pvalue": 0.02},
+               {"pvalue": 0.02, "alpha": None}]
+    original = deepcopy(records)
+
+    # Act
+    corrected = correct_bonferroni(records, alpha=0.05, verbose=False)
+
+    # Assert
+    assert [bool(row["rejected"]) for row in corrected] == [True, False, False]
+    np.testing.assert_allclose([row["pvalue_adjusted"] for row in corrected], [.06] * 3)
+    np.testing.assert_allclose([row["alpha_adjusted"] for row in corrected],
+                               np.array([.1, .05, .05]) / 3)
+    assert records == original
