@@ -683,3 +683,19 @@ def test_the_index_never_exports_its_project_id_as_the_hubs_current_project(clie
             os.environ[_projects.ROOT_ENV] = previous
     # Assert
     assert (hub_rendered.strip(), 'data-stats-project="cohort"' in page, exported_bare) == ("7 and cohort", True, False)
+
+
+@pytest.mark.parametrize("endpoint", [
+    "recommend", "recommend-test", "run-all", "run", "describe",
+    "effect-size", "power", "posthoc", "correct",
+])
+@pytest.mark.parametrize("payload", [None, [], [1, 2], "text", 1, True])
+def test_analysis_rejects_non_object_json(client, endpoint, payload):
+    # Arrange: valid JSON whose root cannot carry named analysis parameters.
+    path = f"/api/{endpoint}"
+    # Act
+    response = _post(client, path, payload)
+    # Assert
+    assert (response.status_code, response.json()) == (
+        400, {"error": "JSON body must be an object"},
+    )

@@ -22,7 +22,11 @@ try:
     from django.http import HttpResponse, JsonResponse
     from django.template.loader import render_to_string
     from django.views.decorators.csrf import csrf_exempt
-    from django.views.decorators.http import require_GET, require_http_methods, require_POST
+    from django.views.decorators.http import (
+        require_GET,
+        require_http_methods,
+        require_POST,
+    )
 except ImportError as exc:
     raise ImportError(
         "scitex_stats._django.views needs Django, which is not installed. "
@@ -432,9 +436,12 @@ def correct(request):
 
 def _parse_body(request, json):
     try:
-        return json.loads(request.body.decode("utf-8") or "{}")
+        body = json.loads(request.body.decode("utf-8") or "{}")
     except (ValueError, UnicodeDecodeError):
         return {"error": "invalid JSON body", "status": 400}
+    if not isinstance(body, dict):
+        return {"error": "JSON body must be an object", "status": 400}
+    return body
 
 
 # ---------------------------------------------------------------------------
