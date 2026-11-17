@@ -154,12 +154,8 @@ Controls: `tests/integration/test_posthoc_group_names.py` and
 `_mcp/_handlers/_posthoc.py::posthoc_test_handler`.
 
 
-`method="dunnett"` requires `0 <= control_group < len(groups)` (zero-based).
-Invalid indices return `success=false`, a `control_group` error and no
-comparisons; valid controls exclude themselves. This adapter still uses
-Bonferroni-adjusted pairwise t-tests, not genuine Dunnett probabilities.
-Controls: `tests/integration/test_posthoc_control_index.py` and
-`_mcp/_handlers/_posthoc.py::_dunnett`.
+For `method="dunnett"`, see [Dunnett control comparisons](24_mcp-dunnett.md)
+for shared-error probabilities, zero-based control indices and backend requirements.
 
 
 `method="tukey"` requires usable statsmodels. Backend import failures return

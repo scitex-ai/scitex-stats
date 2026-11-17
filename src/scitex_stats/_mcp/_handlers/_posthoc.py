@@ -98,33 +98,15 @@ def _tukey_hsd(group_arrays, names):
 
 
 def _dunnett(group_arrays, names, control_group):
-    """Dunnett's test (compare all to control)."""
-    from scipy import stats as scipy_stats
+    """Adapt native shared-error Dunnett comparisons to the MCP result fields."""
+    from scitex_stats.posthoc._control import _dunnett_control
 
-    if not 0 <= control_group < len(group_arrays):
-        raise ValueError("control_group must be a zero-based index of an input group")
-    control = group_arrays[control_group]
-    n_comparisons = len(group_arrays) - 1
-
-    comparisons = []
-    for i, (name, group) in enumerate(zip(names, group_arrays)):
-        if i == control_group:
-            continue
-        stat, p = scipy_stats.ttest_ind(group, control)
-        p_adj = min(p * n_comparisons, 1.0)
-        comparisons.append(
-            {
-                "group": name,
-                "vs_control": names[control_group],
-                "mean_diff": float(np.mean(group) - np.mean(control)),
-                "t_statistic": float(stat),
-                "p_value": float(p),
-                "p_adj": float(p_adj),
-                "reject": p_adj < 0.05,
-            }
-        )
-
-    return comparisons
+    return [{
+        "group": names[row["i"]], "vs_control": names[row["control"]],
+        "mean_diff": row["mean_diff"], "t_statistic": row["statistic"],
+        "df": row["df"], "p_value": row["p_unadjusted"],
+        "p_adj": row["p_adjusted"], "reject": bool(row["p_adjusted"] < 0.05),
+    } for row in _dunnett_control(group_arrays, control_group)]
 
 
 def _games_howell(group_arrays, names):
