@@ -8,7 +8,8 @@ tags: [scitex-stats-bounded-sample-size, scitex-stats]
 
 # Bounded sample-size planning
 
-For standalone MCP `power_analysis`, omit `n` to request a sample size.
+For native `scitex_stats.power_analysis` or standalone MCP `power_analysis`,
+omit `n` to request a sample size.
 `test_type="anova"` uses Cohen's f and searches 2..1000 observations per
 balanced group. `test_type="chi2"` uses Cohen's w and searches 10..10000
 observations total. For chi-square, `n_groups` means the number of
@@ -27,10 +28,17 @@ ANOVA returns `required_n_per_group` and `total_n`; chi-square returns
 Supplying `n` retains the existing fixed-sample noncentral-F or noncentral
 chi-square calculation and response fields. This correction does not qualify
 all invalid effect sizes, alpha values or group counts, other power methods,
-or a hosted GUI. The separate public Python `power_analysis` counterpart
-remains an interface gap; private helpers are not a new public API.
+or a hosted GUI. The synchronous Python dispatcher returns the same numerical payload, including
+`test_type`, without MCP success/timestamp fields. Invalid requests raise
+exceptions in Python; MCP retains its `success: false` error envelope.
+`scitex_stats.power.power_analysis` exposes the same native function.
 
-Implementation: `power/_omnibus.py::_minimum_n`, `_power_anova`, `_power_chi2`,
+Dispatch: `power/_power_analysis.py::power_analysis`; transport:
+`_mcp/_handlers/_power.py::power_analysis_handler`. Native/MCP method parity,
+namespace exports, errors and transport-free use are exercised by
+`tests/integration/test_native_power_api.py`.
+
+Bounded search: `power/_omnibus.py::_minimum_n`, `_power_anova`, `_power_chi2`,
 with thin `_mcp/_handlers/_power.py` adapters. Actual handler and independent
 statsmodels power controls are in
 `tests/integration/test_bounded_power_search.py`: unattained targets, inclusive

@@ -125,6 +125,7 @@ _LAZY_ATTRS: dict[str, str] = {
     "tests": "tests",
     # Native two-group effect-size dispatcher
     "effect_size": "effect_sizes._effect_size",
+    "power_analysis": "power._power_analysis",
     "normality_test": "tests.normality._normality_test",
     "correct_pvalues": "correct._correct_pvalues",
     "format_results": "auto._format_results",
@@ -243,6 +244,7 @@ def __dir__() -> list[str]:
 
 
 __all__ = [
+    "power_analysis",
     "__version__",
     # Submodules
     "auto",

@@ -32,6 +32,8 @@ All tools are prefixed `stats_` under the scitex MCP server
 | `stats_recommend_test` | Recommend ONE primary test with reason |
 | `stats_run_all_applicable` | Run every applicable test (primary + sensitivity) |
 
+The `power_analysis` transport delegates to native `scitex_stats.power_analysis`;
+Python returns numerical fields and raises errors, while MCP retains its envelope.
 For ANOVA and chi-square sample-size bounds and target errors, see
 [bounded planning](25_bounded-sample-size.md).
 
