@@ -247,11 +247,12 @@ def _dunn(groups, alpha, level, *, correction="holm"):
         raise ValueError("Dunn requires at least two non-empty finite 1D groups")
     k = len(groups)
     pooled = np.concatenate(groups)
-    n_total = pooled.size
+    n_total = int(pooled.size)
     ranks = stats.rankdata(pooled)
     _, counts = np.unique(pooled, return_counts=True)
-    ties = float(((counts ** 3) - counts).sum())
-    sigma2 = n_total * (n_total + 1) / 12 - ties / (12 * (n_total - 1))
+    # Keep the numerator exact to avoid integer overflow and cancellation.
+    ties = sum(int(count) ** 3 - int(count) for count in counts[counts > 1])
+    sigma2 = (n_total ** 3 - n_total - ties) / (12 * (n_total - 1))
     if not np.isfinite(sigma2) or sigma2 <= 0:
         raise ValueError("Dunn is undefined for zero or non-finite pooled rank variance")
     bounds = np.cumsum([0] + [len(g) for g in groups])
