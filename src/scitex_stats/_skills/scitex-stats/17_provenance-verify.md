@@ -79,3 +79,13 @@ Save the result with `scitex_io.save(result, "result.json")` inside a clew
 session: clew records the file as an output node (and files read with
 `scitex_io.load` as inputs) and hashes it, receipt included.
 `scitex-stats verify result.json` then recomputes from the embedded inputs.
+
+## Grouped NumPy inputs
+
+Native receipts accept a 2-D NumPy array in `verify(result, groups=array)`;
+for an MCP-origin receipt, pass the grouped array as `data=array`. Supplied
+arrays retain the same input-hash and recomputation checks as lists. A changed
+value or shape still fails verification. Container selection checks for None
+explicitly, so NumPy's ambiguous boolean conversion is not involved.
+Owner: `_verify.py::_supplied_inputs`; native/MCP-origin list/array, tamper and
+shape controls: `tests/integration/test_verify_array_inputs.py`.

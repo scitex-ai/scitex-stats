@@ -53,14 +53,14 @@ def _load(result: Union[Dict[str, Any], str, Path]) -> Dict[str, Any]:
 def _supplied_inputs(prov, data, data2, groups) -> Dict[str, Any]:
     supplied: Dict[str, Any] = {}
     if prov["api"] == "mcp.run_test":
-        for i, g in enumerate(data or []):
+        for i, g in enumerate(data if data is not None else []):
             supplied[f"data[{i}]"] = g
         return supplied
     if data is not None:
         supplied["data"] = data
     if data2 is not None:
         supplied["data2"] = data2
-    for i, g in enumerate(groups or []):
+    for i, g in enumerate(groups if groups is not None else []):
         supplied[f"groups[{i}]"] = g
     return supplied
 
