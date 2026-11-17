@@ -146,6 +146,15 @@ Reference: [SciPy Games–Howell](https://docs.scipy.org/doc/scipy/reference/gen
 `tests/scitex_stats/_mcp/_handlers/test__posthoc.py`.
 
 
+For all `posthoc_test` methods, supplied `group_names` must contain exactly
+one unique label per input group. Empty, incomplete, extra or repeated labels
+return `success=false` with an explicit `group_names` error and no comparisons;
+this prevents silent group merging or dropped comparisons. Omitting names
+(`null`) keeps automatic `Group_1`, `Group_2`, … labels.
+Controls: `tests/integration/test_posthoc_group_names.py` and
+`_mcp/_handlers/_posthoc.py::posthoc_test_handler`.
+
+
 For `posthoc_test` with `method="tukey"`, the declared statsmodels backend
 must be usable. If its import or a backend dependency import fails, the tool
 returns `success=false` with an explicit Tukey HSD error and no comparisons.

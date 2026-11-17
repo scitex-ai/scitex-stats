@@ -26,6 +26,11 @@ async def posthoc_test_handler(
         loop = asyncio.get_event_loop()
 
         def do_posthoc():
+            if group_names is not None and (
+                len(group_names) != len(groups)
+                or len(set(group_names)) != len(group_names)
+            ):
+                raise ValueError("group_names must contain one unique name per group")
             group_arrays = [np.array(g, dtype=float) for g in groups]
             names = group_names or [f"Group_{i + 1}" for i in range(len(groups))]
 
