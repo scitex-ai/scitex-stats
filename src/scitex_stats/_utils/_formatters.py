@@ -17,15 +17,14 @@ IO:
   - output: formatted strings with significance indicators
 """
 
-"""Imports"""
-import argparse  # noqa: E402
-import re  # noqa: E402
-from typing import Union  # noqa: E402
+import argparse
+import re
+from typing import Union
 
-import numpy as np  # noqa: E402
-import pandas as pd  # noqa: E402
+import matplotlib.pyplot as _mpl_plt
+import numpy as np
+import pandas as pd
 
-import matplotlib.pyplot as _mpl_plt  # noqa: E402
 from scitex_stats._logging import getLogger
 
 logger = getLogger(__name__)
