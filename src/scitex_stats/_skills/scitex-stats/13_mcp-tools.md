@@ -32,6 +32,9 @@ All tools are prefixed `stats_` under the scitex MCP server
 | `stats_recommend_test` | Recommend ONE primary test with reason |
 | `stats_run_all_applicable` | Run every applicable test (primary + sensitivity) |
 
+For ANOVA and chi-square sample-size bounds and target errors, see
+[bounded planning](25_bounded-sample-size.md).
+
 The standalone server exposes `describe`; the table uses the umbrella
 `stats_` namespace. Its optional `percentiles` argument accepts numbers from
 0 to 100. Omission uses `[25, 50, 75]`; an explicit `[]` returns an empty

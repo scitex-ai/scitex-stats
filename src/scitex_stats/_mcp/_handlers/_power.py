@@ -104,50 +104,10 @@ def _power_anova(
     n: int | None,
     n_groups: int,
 ) -> dict:
-    """ANOVA power calculation."""
-    from scipy import stats as scipy_stats
+    """Delegate to the leaf-owned bounded power calculation."""
+    from scitex_stats.power._omnibus import _power_anova as native
 
-    if effect_size is None:
-        raise ValueError("effect_size required for ANOVA power")
-
-    if n is not None:
-        df1 = n_groups - 1
-        df2 = n_groups * n - n_groups
-        nc = effect_size**2 * n * n_groups
-        f_crit = scipy_stats.f.ppf(1 - alpha, df1, df2)
-        power_val = 1 - scipy_stats.ncf.cdf(f_crit, df1, df2, nc)
-        return {
-            "mode": "power_calculation",
-            "power": power_val,
-            "n_per_group": n,
-            "n_groups": n_groups,
-            "effect_size_f": effect_size,
-            "alpha": alpha,
-        }
-    else:
-        # Binary search for n
-        n_min, n_max = 2, 1000
-        while n_max - n_min > 1:
-            n_mid = (n_min + n_max) // 2
-            df1 = n_groups - 1
-            df2 = n_groups * n_mid - n_groups
-            nc = effect_size**2 * n_mid * n_groups
-            f_crit = scipy_stats.f.ppf(1 - alpha, df1, df2)
-            power_val = 1 - scipy_stats.ncf.cdf(f_crit, df1, df2, nc)
-            if power_val < power:
-                n_min = n_mid
-            else:
-                n_max = n_mid
-
-        return {
-            "mode": "sample_size_calculation",
-            "required_n_per_group": n_max,
-            "total_n": n_max * n_groups,
-            "n_groups": n_groups,
-            "effect_size_f": effect_size,
-            "target_power": power,
-            "alpha": alpha,
-        }
+    return native(effect_size, alpha, power, n, n_groups)
 
 
 def _power_correlation(
@@ -201,47 +161,10 @@ def _power_chi2(
     n: int | None,
     n_groups: int,
 ) -> dict:
-    """Chi-square power calculation."""
-    from scipy import stats as scipy_stats
+    """Delegate to the leaf-owned bounded power calculation."""
+    from scitex_stats.power._omnibus import _power_chi2 as native
 
-    if effect_size is None:
-        raise ValueError("effect_size (w) required for chi2 power")
-
-    df = n_groups - 1  # Simplified: using n_groups as number of cells
-
-    if n is not None:
-        nc = effect_size**2 * n
-        chi2_crit = scipy_stats.chi2.ppf(1 - alpha, df)
-        power_val = 1 - scipy_stats.ncx2.cdf(chi2_crit, df, nc)
-        return {
-            "mode": "power_calculation",
-            "power": power_val,
-            "n": n,
-            "df": df,
-            "effect_size_w": effect_size,
-            "alpha": alpha,
-        }
-    else:
-        # Binary search for n
-        n_min, n_max = 10, 10000
-        while n_max - n_min > 1:
-            n_mid = (n_min + n_max) // 2
-            nc = effect_size**2 * n_mid
-            chi2_crit = scipy_stats.chi2.ppf(1 - alpha, df)
-            power_val = 1 - scipy_stats.ncx2.cdf(chi2_crit, df, nc)
-            if power_val < power:
-                n_min = n_mid
-            else:
-                n_max = n_mid
-
-        return {
-            "mode": "sample_size_calculation",
-            "required_n": n_max,
-            "df": df,
-            "effect_size_w": effect_size,
-            "target_power": power,
-            "alpha": alpha,
-        }
+    return native(effect_size, alpha, power, n, n_groups)
 
 
 # EOF
