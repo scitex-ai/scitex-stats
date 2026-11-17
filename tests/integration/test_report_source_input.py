@@ -40,19 +40,33 @@ def test_mcp_full_report_verifies_with_source_result(report_pair, tmp_path, file
     )
 
 
-@pytest.mark.parametrize("changed", ["source", "report", "data"])
-def test_mcp_full_report_keeps_tamper_checks(report_pair, changed):
+def test_mcp_changed_source_statistic_stays_unverified(report_pair):
     # Arrange
     base, report = deepcopy(report_pair)
-    arguments = {"result": report, "source_result": base, "data": X.copy()}
-    if changed == "source":
-        base["statistic"] += 1.
-    elif changed == "report":
-        report["statistic"] += 1.
-    else:
-        arguments["data"][0] += 1.
+    base["statistic"] += 1.
     # Act
-    actual = asyncio.run(verify_result_handler(**arguments))
+    actual = asyncio.run(verify_result_handler(result=report, source_result=base))
+    # Assert
+    assert (actual["success"], actual["verified"]) == (True, False)
+
+
+def test_mcp_changed_report_statistic_stays_unverified(report_pair):
+    # Arrange
+    base, report = deepcopy(report_pair)
+    report["statistic"] += 1.
+    # Act
+    actual = asyncio.run(verify_result_handler(result=report, source_result=base))
+    # Assert
+    assert (actual["success"], actual["verified"]) == (True, False)
+
+
+def test_mcp_changed_supplied_data_stays_unverified(report_pair):
+    # Arrange
+    base, report = deepcopy(report_pair)
+    data = X.copy()
+    data[0] += 1.
+    # Act
+    actual = asyncio.run(verify_result_handler(result=report, source_result=base, data=data))
     # Assert
     assert (actual["success"], actual["verified"]) == (True, False)
 
