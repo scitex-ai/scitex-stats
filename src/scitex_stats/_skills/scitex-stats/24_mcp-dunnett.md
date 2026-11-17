@@ -10,7 +10,8 @@ tags: [scitex-stats-mcp-dunnett, scitex-stats]
 This page covers `posthoc_test` with `method="dunnett"`. The owning native
 helper, `posthoc/_control.py::_dunnett_control`, uses SciPy's original
 single-step Dunnett procedure, rather than Bonferroni-adjusted pairwise tests.
-The MCP adapter only maps labels and result fields.
+The native explicit-method adapter maps labels and result fields; MCP delegates
+to native dispatch. See [native post-hoc API](26_posthoc-api.md).
 
 ## Request and assumptions
 
@@ -68,7 +69,8 @@ is not promised. Published-reference controls allow numerical integration error.
 ## Ownership and verification
 
 Owner: `posthoc/_control.py::_dunnett_control`; adapter:
-`_mcp/_handlers/_posthoc.py::_dunnett`. Controls:
+`posthoc/_posthoc_test.py::_dunnett`. MCP transport delegates to this native
+dispatch; the old private transport helper remains a forwarder. Controls:
 `tests/integration/test_dunnett_backend.py`,
 `tests/integration/test_posthoc_control_index.py` and
 `tests/integration/test_posthoc_group_names.py`.
