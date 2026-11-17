@@ -165,3 +165,16 @@ These diagnostics do not alter native verification or MCP result envelopes.
 Other data-loading failures and invalid receipt structures are separate scope.
 Owner: `_cli/verify.py::verify`; controls:
 `tests/integration/test_verify_cli_errors.py`.
+
+## Corrupted embedded numeric values
+
+Numeric-conversion failures in a receipt's embedded values are reported by
+the `inputs` check with `match: false` and an error. Recompute is skipped and
+`verified` is false, including when the caller supplies the original data:
+a corrupted embedded copy is not silently ignored. The independent receipt
+hash check still reports edits. Valid embedded/supplied values keep their
+existing hashes and recomputation behavior. This covers numeric conversion,
+not every possible malformed receipt structure.
+Owner: `_verify.py::_resolve_inputs`; native/MCP-origin, embedded/supplied,
+invalid numeric text/tag and unchanged-input controls:
+`tests/integration/test_verify_embedded_values.py`.

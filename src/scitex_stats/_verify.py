@@ -71,19 +71,21 @@ def _resolve_inputs(prov, supplied):
         if name in supplied:
             values, origin = supplied[name], "supplied"
         elif "values" in rec:
-            values, origin = _decode_values(rec["values"]), "embedded"
+            values, origin = rec["values"], "embedded"
         else:
             rows.append({"input": name, "match": None, "origin": "missing"})
             continue
         try:
+            if origin == "embedded":
+                values = _decode_values(values)
             arr = np.asarray(values, dtype=float)
+            got = hash_array(arr)
+            match = got == rec["sha256"]
+            if origin == "supplied" and "values" in rec:
+                match = match and hash_array(np.asarray(_decode_values(rec["values"]), float)) == got
         except (TypeError, ValueError) as exc:
             rows.append({"input": name, "match": False, "origin": origin, "error": str(exc)})
             continue
-        got = hash_array(arr)
-        match = got == rec["sha256"]
-        if origin == "supplied" and "values" in rec:
-            match = match and hash_array(np.asarray(_decode_values(rec["values"]), float)) == got
         rows.append({"input": name, "match": match, "origin": origin, "sha256": got})
         resolved[name] = values
     extra = sorted(set(supplied) - set(prov["inputs"]))
