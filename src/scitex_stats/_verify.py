@@ -114,6 +114,11 @@ def _recompute(prov: Dict[str, Any], inputs: Dict[str, Any], source_result) -> D
 
         if source_result is None:
             raise LookupError("full_report recompute needs source_result= (the run_test result)")
+        if hash_result(source_result) != prov.get("source_result_sha256"):
+            raise ValueError("source result does not match recorded source_result_sha256")
+        source_receipt = (source_result.get("provenance") or {}).get("receipt_sha256")
+        if source_receipt != prov.get("source_receipt_sha256"):
+            raise ValueError("source receipt does not match recorded source_receipt_sha256")
         return full_report(source_result, data=inputs.get("data"), data2=inputs.get("data2"), **params)
     if api == "mcp.run_test":
         from ._mcp._handlers._run_test import run_test_sync

@@ -118,3 +118,21 @@ Owners: `_verify.py::verify` / `_recompute`; adapters are
 `_mcp/_handlers/_verify.py::verify_result_handler`.
 Controls: `tests/integration/test_report_source_input.py` and
 `tests/scitex_stats/test__verify.py`.
+
+## Recorded source identity
+
+Full-report recomputation first compares the supplied source with the report's
+`source_result_sha256` and `source_receipt_sha256`. A mismatch fails the
+existing `recompute` check, even if the changed source would render identical
+report fields. The source-result digest uses the existing canonical hash:
+`timestamp` and `provenance` are excluded. Its recorded receipt reference is
+compared separately. A source originally recorded without a receipt still
+works with the same source and absent receipt reference.
+
+These are consistency checks against the report's recorded values. They do
+not authenticate authorship, recursively validate every field of a source
+receipt, or establish external data origin. Verify the original run-test
+result separately when checking its own receipt, inputs and recomputation.
+Owners: `_verify.py::_recompute`, `_provenance.py::hash_result` and
+`reporting/_full_report.py::full_report`. Controls:
+`tests/integration/test_report_source_digest.py`.
