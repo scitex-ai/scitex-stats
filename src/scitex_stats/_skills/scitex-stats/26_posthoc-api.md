@@ -23,6 +23,10 @@ Methods retain the existing explicit-request policies:
 
 - `tukey`: numeric statsmodels Tukey HSD output, with sorted labels and
   group2-minus-group1 differences. Missing backend imports raise explicitly.
+  Groups must be nonempty, finite and 1-D, with positive finite pooled error
+  variance and residual degrees of freedom. Undefined requests raise in Python
+  and return MCP errors without comparisons. Individual constant/singleton
+  groups remain usable when the overall pooled error supports the calculation.
 - `dunnett`: shared-error SciPy single-step comparisons against `control_group`.
   See [Dunnett details](24_mcp-dunnett.md) for random-state/backend scope.
 - `games_howell`: native studentized-range comparisons and simultaneous 95%
@@ -50,3 +54,10 @@ and `tests/integration/test_dunnett_backend.py`, `test_tukey_numeric_precision.p
 `test_dunn_tie_correction.py`, `test_dunn_large_tie_counts.py` and
 `test_tukey_backend_availability.py`. Extraction preserves their formulas;
 these controls qualify only the scopes they exercise.
+
+Tukey admission and unchanged positive Tukey-Kramer values/intervals are checked
+against independent SciPy studentized-range calculations in
+`tests/integration/test_tukey_admission.py`. Zero/nonfinite pooled error is an
+explicit error rather than a successful undefined probability or degenerate
+confidence interval. This is scoped admission, not general numerical-stability
+qualification for every finite magnitude or generated output.

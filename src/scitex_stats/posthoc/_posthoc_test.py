@@ -49,7 +49,21 @@ def posthoc_test(
 
 
 def _tukey_hsd(group_arrays, names):
-    """Tukey HSD test."""
+    """Tukey HSD test with usable finite groups and positive pooled error."""
+    if len(group_arrays) < 2 or any(
+        group.ndim != 1 or group.size == 0 or not np.isfinite(group).all()
+        for group in group_arrays
+    ):
+        raise ValueError("Tukey HSD requires at least two nonempty finite 1D groups")
+    df = sum(group.size for group in group_arrays) - len(group_arrays)
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        residual_ss = sum(
+            float(np.sum((group - np.mean(group)) ** 2)) for group in group_arrays
+        )
+        pooled_variance = residual_ss / df if df > 0 else float("nan")
+    if not np.isfinite(pooled_variance) or pooled_variance <= 0:
+        raise ValueError("Tukey HSD requires finite positive pooled error variance and df")
+
     all_data = np.concatenate(group_arrays)
     group_labels = np.concatenate(
         [[names[i]] * len(g) for i, g in enumerate(group_arrays)]
