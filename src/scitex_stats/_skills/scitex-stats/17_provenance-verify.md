@@ -28,6 +28,7 @@ scitex-stats verify result.json data.csv --x group_a --y group_b
 ```
 
 MCP: `verify_result(result=...)` or `verify_result(result_file=...)`.
+For `full_report` results, also pass `source_result` as described below.
 
 ## What `verify` checks
 
@@ -89,3 +90,31 @@ value or shape still fails verification. Container selection checks for None
 explicitly, so NumPy's ambiguous boolean conversion is not involved.
 Owner: `_verify.py::_supplied_inputs`; native/MCP-origin list/array, tamper and
 shape controls: `tests/integration/test_verify_array_inputs.py`.
+
+## Verifying a full report
+
+Recomputing `full_report` requires the original `run_test` result as well as
+its data (embedded or supplied). The report alone does not embed that source
+result. Omitting it leaves `recompute` failed and `verified: false`.
+
+Python: `ss.verify(report, source_result=base)`.
+MCP: `verify_result(result=report, source_result=base)`, or use `result_file`
+for the saved report while still supplying the source-result object.
+CLI accepts the saved source-result JSON:
+
+```bash
+scitex-stats verify report.json --source-result base.json
+```
+
+CLI retains exit 0 only for verified results and 1 for unverified results.
+MCP `success: true` means the verification ran; check `verified` separately.
+Supplying a source result does not bypass receipt, result, input-hash or
+recomputation checks. A changed report, source statistic or supplied data
+remains unverified. This is local recomputation evidence, not proof of the
+external origin or scientific validity of the data.
+
+Owners: `_verify.py::verify` / `_recompute`; adapters are
+`_cli/verify.py::verify`, `_server.py::verify_result` and
+`_mcp/_handlers/_verify.py::verify_result_handler`.
+Controls: `tests/integration/test_report_source_input.py` and
+`tests/scitex_stats/test__verify.py`.

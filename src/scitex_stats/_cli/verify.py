@@ -17,13 +17,20 @@ import click
 @click.option("--x", default=None, help="Column holding `data` (CSV input).")
 @click.option("--y", default=None, help="Column holding `data2` (CSV input).")
 @click.option("--groups", default=None, help="Comma-separated columns for `groups`.")
+@click.option(
+    "--source-result",
+    type=click.File("r", encoding="utf-8"),
+    default=None,
+    help="Original run_test result JSON needed to recompute a full_report.",
+)
 @click.option("--no-recompute", is_flag=True, default=False, help="Only check hashes.")
 @click.option("--json/--no-json", "as_json", default=True, help="JSON report (default).")
-def verify(result_file, data, x, y, groups, no_recompute, as_json):
+def verify(result_file, data, x, y, groups, no_recompute, as_json, source_result):
     """Verify RESULT_FILE (a saved result JSON) bit-for-bit.
 
     Checks the receipt hash, the result hash, the input-data hashes and a
     recompute. Without DATA the copy embedded in the receipt is used.
+    Full reports need --source-result with their original run_test result JSON.
     Exit code 0 when verified, 1 otherwise.
 
     \b
@@ -37,6 +44,8 @@ def verify(result_file, data, x, y, groups, no_recompute, as_json):
     from .stats import _read_data, _select_column
 
     kwargs = {}
+    if source_result is not None:
+        kwargs["source_result"] = json.load(source_result)
     if data is not None:
         table = _read_data(data)
         if groups:

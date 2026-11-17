@@ -190,12 +190,18 @@ async def verify_result(
     data: Optional[list] = None,
     data2: Optional[List[float]] = None,
     groups: Optional[List[List[float]]] = None,
+    source_result: Optional[dict] = None,
 ) -> str:
-    """Verify a result's provenance receipt, input hashes and statistics by recomputing."""
+    """Verify provenance and recompute; full reports need their source_result."""
     from scitex_stats._mcp.handlers import verify_result_handler
 
     report = await verify_result_handler(
-        result=result, result_file=result_file, data=data, data2=data2, groups=groups
+        result=result,
+        result_file=result_file,
+        data=data,
+        data2=data2,
+        groups=groups,
+        source_result=source_result,
     )
     return _json(report)
 
