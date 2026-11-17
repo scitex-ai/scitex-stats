@@ -131,3 +131,16 @@ Explicit overrides are retained in `provenance.source.sep`; omission keeps
 Auto behavior. See [MCP file input](23_csv-import.md#mcp-file-input) for the
 actual JSON request. Every successful file result records the chosen token in
 `provenance.source.sep_used` (a space token means whitespace runs).
+
+
+For `posthoc_test` with `method="games_howell"`, report `p_adj`: it is the
+Games–Howell studentized-range family-wise probability. `p_value` remains the
+unadjusted Welch diagnostic; it is not the post-hoc decision probability.
+Comparisons include signed mean differences, Welch t/df, q, 95% simultaneous
+`ci_lower`/`ci_upper` with `confidence_level=0.95`, and JSON boolean `reject`.
+The implementation delegates to `posthoc._auto._games_howell`; no Bonferroni
+multiplier is applied. Finite 1D samples need at least two observations each;
+a pair of constant samples is undefined and returns an explicit error.
+Reference: [SciPy Games–Howell](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.tukey_hsd.html)
+(`equal_var=False`). Numerical/interval/wire controls are in
+`tests/scitex_stats/_mcp/_handlers/test__posthoc.py`.

@@ -138,43 +138,40 @@ def _dunnett(group_arrays, names, control_group):
 
 
 def _games_howell(group_arrays, names):
-    """Games-Howell test (doesn't assume equal variances)."""
+    """Adapt the native studentized-range Games–Howell comparisons."""
     from scipy import stats as scipy_stats
 
+    from scitex_stats.posthoc._auto import _games_howell as native_games_howell
+
+    if len(group_arrays) < 2 or any(
+        group.ndim != 1 or group.size < 2 or not np.isfinite(group).all()
+        for group in group_arrays
+    ):
+        raise ValueError("Games-Howell requires at least two finite 1D groups of size >= 2")
+    variances = [float(np.var(group, ddof=1)) for group in group_arrays]
+    if not np.isfinite(variances).all():
+        raise ValueError("Games-Howell sample variances must be finite")
+    if any(
+        variances[i] == variances[j] == 0
+        for i in range(len(variances)) for j in range(i + 1, len(variances))
+    ):
+        raise ValueError("Games-Howell is undefined for a pair of constant groups")
+
     comparisons = []
-    n_comparisons = len(group_arrays) * (len(group_arrays) - 1) // 2
-
-    for i in range(len(group_arrays)):
-        for j in range(i + 1, len(group_arrays)):
-            g1, g2 = group_arrays[i], group_arrays[j]
-            n1, n2 = len(g1), len(g2)
-            m1, m2 = np.mean(g1), np.mean(g2)
-            v1, v2 = np.var(g1, ddof=1), np.var(g2, ddof=1)
-
-            se = np.sqrt(v1 / n1 + v2 / n2)
-            t_stat = (m1 - m2) / se
-
-            # Welch-Satterthwaite df
-            df = (v1 / n1 + v2 / n2) ** 2 / (
-                (v1 / n1) ** 2 / (n1 - 1) + (v2 / n2) ** 2 / (n2 - 1)
-            )
-
-            p = 2 * (1 - scipy_stats.t.cdf(abs(t_stat), df))
-            p_adj = min(p * n_comparisons, 1.0)
-
-            comparisons.append(
-                {
-                    "group1": names[i],
-                    "group2": names[j],
-                    "mean_diff": float(m1 - m2),
-                    "t_statistic": float(t_stat),
-                    "df": float(df),
-                    "p_value": float(p),
-                    "p_adj": float(p_adj),
-                    "reject": p_adj < 0.05,
-                }
-            )
-
+    for row in native_games_howell(group_arrays, alpha=0.05, level=0.95):
+        # Retain the signed Welch diagnostic fields. The decision uses the
+        # native Games–Howell family-wise p, not a Bonferroni multiplier.
+        t_stat = float(np.copysign(row["statistic"] / np.sqrt(2), row["mean_diff"]))
+        raw_p = float(2 * scipy_stats.t.sf(abs(t_stat), row["df"]))
+        comparisons.append({
+            "group1": names[row["i"]], "group2": names[row["j"]],
+            "mean_diff": row["mean_diff"], "t_statistic": t_stat,
+            "df": row["df"], "p_value": raw_p, "p_adj": row["p_adjusted"],
+            "reject": bool(row["p_adjusted"] < 0.05),
+            "q_statistic": row["statistic"],
+            "ci_lower": row["diff_ci"][0], "ci_upper": row["diff_ci"][1],
+            "confidence_level": 0.95,
+        })
     return comparisons
 
 
