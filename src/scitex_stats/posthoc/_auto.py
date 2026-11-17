@@ -12,8 +12,9 @@ Selection (3 or more groups only):
 - repeated-measures ANOVA -> pairwise paired t-tests, Holm-adjusted.
 
 Comparisons carry available p values (APA formatted), a pairwise effect size
-and a 95% CI where computable. Games–Howell pairs with unusable standard errors
-or degrees of freedom carry null statistics and probabilities with a reason. p values for
+and a 95% CI where computable. Tukey and Games–Howell comparisons with unusable
+standard errors or degrees of freedom carry null statistics and probabilities
+with a reason. P values for
 Tukey, Games–Howell and Nemenyi come from the exact studentized range
 distribution (``scipy.stats.studentized_range``). Bootstrap CIs for rank
 effect sizes use ``numpy.random.default_rng(seed)`` so repeated runs match.
@@ -205,8 +206,14 @@ def _tukey(groups, alpha, level):
     for i, j in _pairs(k):
         diff = groups[i].mean() - groups[j].mean()
         se = np.sqrt(mse / 2 * (1 / ns[i] + 1 / ns[j]))
-        q = abs(diff) / se if se > 0 else 0.0
-        p = float(stats.studentized_range.sf(q, k, df)) if se > 0 else 1.0
+        if not (np.isfinite(se) and se > 0 and np.isfinite(df) and df > 0):
+            out.append({"i": i, "j": j, "statistic": None, "stat_symbol": "q", "df": None,
+                        "p_unadjusted": None, "p_adjusted": None, "mean_diff": float(diff),
+                        "diff_ci": None,
+                        "undefined": "Tukey HSD needs a finite positive standard error and degrees of freedom."})
+            continue
+        q = abs(diff) / se
+        p = float(stats.studentized_range.sf(q, k, df))
         out.append({"i": i, "j": j, "statistic": float(q), "stat_symbol": "q", "df": float(df),
                     "p_unadjusted": None, "p_adjusted": min(1.0, p), "mean_diff": float(diff),
                     "diff_ci": (float(diff - q_crit * se), float(diff + q_crit * se))})

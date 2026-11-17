@@ -56,6 +56,15 @@ Owning sources: `_dispatch.py`, `posthoc/_auto.py`.
 Controls: `tests/scitex_stats/posthoc/test__auto.py`. This example does not
 qualify the separate legacy post-hoc implementations or degenerate inputs.
 
+Native Tukey comparisons with zero or non-finite pooled standard error, or
+unusable degrees of freedom, carry null statistics, adjusted probabilities
+and mean-difference intervals, with `significant=false` and an `undefined`
+reason. Two constant groups can still have a defined Tukey comparison when
+the error pooled across all groups is positive. These comparison checks do
+not establish finite diagnostics for the entire degenerate omnibus result.
+Controls: `tests/integration/test_tukey_undefined.py` and
+`posthoc/_auto.py::_tukey`.
+
 ## "Check correlation"
 
 ```python
