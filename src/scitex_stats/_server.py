@@ -363,9 +363,12 @@ async def posthoc_test(
 @mcp.tool()
 async def p_to_stars(
     p_value: Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)],
-    thresholds: Optional[List[float]] = None,
+    thresholds: Annotated[
+        Optional[List[Annotated[float, Field(gt=0, le=1, allow_inf_nan=False)]]],
+        Field(min_length=3, max_length=3),
+    ] = None,
 ) -> str:
-    """Convert a finite probability in [0, 1] to stars (*, **, ***, ns)."""
+    """Convert a probability to stars using three increasing finite cutoffs."""
     from scitex_stats._mcp.handlers import p_to_stars_handler
 
     result = await p_to_stars_handler(

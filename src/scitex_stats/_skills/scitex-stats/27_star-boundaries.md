@@ -21,7 +21,7 @@ also used by result normalization, includes exact threshold values.
 
 These rows describe current default behavior, not an interface-consistency
 pass. Harmonizing the legacy and public policies remains a compatibility task.
-This documentation correction changes no runtime comparison or symbol.
+The default comparisons and symbols are unchanged by input admission checks.
 
 ```python
 from scitex_stats.auto._formatting import p_to_stars
@@ -60,3 +60,18 @@ Owners: `_server.py::p_to_stars` (schema) and
 `_mcp/_handlers/_stars.py::p_to_stars_handler` (handler admission).
 Behavior and authoritative-schema controls:
 `tests/integration/test_star_probability_input.py`.
+
+## MCP custom cutoffs
+
+Omit `thresholds` or pass `null` to use `[0.001, 0.01, 0.05]`.
+An explicit list must contain exactly three finite probabilities in (0, 1],
+strictly increasing. Empty, short, long, repeated, descending, nonfinite or
+out-of-range cutoffs return errors without stars. The schema rejects invalid
+lengths and probability bounds; ordering is checked by the leaf handler.
+Valid custom cutoffs retain strict `<` comparisons: with
+`[0.0001, 0.001, 0.01]`, p = 0.0001 gives `**`, p = 0.001 gives `*`,
+and p = 0.01 gives `ns`. A final cutoff of 1 is valid.
+
+Owners are the same MCP schema and handler above. Controls:
+`tests/integration/test_star_cutoff_input.py`. This does not harmonize native
+styles, legacy formatters, missing-value decisions or normalization policies.
