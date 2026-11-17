@@ -16,6 +16,7 @@ async def verify_result_handler(
     data: list | None = None,
     data2: list | None = None,
     groups: list | None = None,
+    source_result: dict | None = None,
 ) -> dict:
     """Run :func:`scitex_stats.verify` off the event loop; never raises."""
     try:
@@ -26,7 +27,13 @@ async def verify_result_handler(
         loop = asyncio.get_event_loop()
         report = await loop.run_in_executor(
             None,
-            lambda: verify(result if result is not None else result_file, data, data2, groups),
+            lambda: verify(
+                result if result is not None else result_file,
+                data,
+                data2,
+                groups,
+                source_result=source_result,
+            ),
         )
         return {"success": True, **report}
     except Exception as e:

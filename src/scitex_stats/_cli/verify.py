@@ -17,14 +17,21 @@ import click
 @click.option("--x", default=None, help="Column holding `data` (CSV input).")
 @click.option("--y", default=None, help="Column holding `data2` (CSV input).")
 @click.option("--groups", default=None, help="Comma-separated columns for `groups`.")
+@click.option(
+    "--source-result",
+    type=click.File("r", encoding="utf-8"),
+    default=None,
+    help="Original run_test result JSON needed to recompute a full_report.",
+)
 @click.option("--no-recompute", is_flag=True, default=False, help="Only check hashes.")
 @click.option("--json/--no-json", "as_json", default=True, help="JSON report (default).")
-def verify(result_file, data, x, y, groups, no_recompute, as_json):
+def verify(result_file, data, x, y, groups, no_recompute, as_json, source_result):
     """Verify RESULT_FILE (a saved result JSON) bit-for-bit.
 
     Checks the receipt hash, the result hash, the input-data hashes and a
     recompute. Without DATA the copy embedded in the receipt is used.
-    Exit code 0 when verified, 1 otherwise.
+    Full reports need --source-result with their original run_test result JSON.
+    Exit 0 when verified, 1 when unverified, 2 for invalid input JSON or usage.
 
     \b
     Example:
@@ -37,6 +44,11 @@ def verify(result_file, data, x, y, groups, no_recompute, as_json):
     from .stats import _read_data, _select_column
 
     kwargs = {}
+    if source_result is not None:
+        try:
+            kwargs["source_result"] = json.load(source_result)
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            raise click.BadParameter(f"Invalid JSON: {exc}", param_hint="--source-result") from exc
     if data is not None:
         table = _read_data(data)
         if groups:
@@ -48,14 +60,17 @@ def verify(result_file, data, x, y, groups, no_recompute, as_json):
         else:
             kwargs["data"] = table.to_numpy() if hasattr(table, "to_numpy") else table
 
-    report = _verify(result_file, recompute=not no_recompute, **kwargs)
+    try:
+        report = _verify(result_file, recompute=not no_recompute, **kwargs)
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise click.BadParameter(f"Invalid JSON: {exc}", param_hint="RESULT_FILE") from exc
     if as_json:
         click.echo(json.dumps(report, indent=2, default=str))
     else:
         click.echo(report["summary"])
         for check in report["checks"]:
             click.echo(f"  {check['status']:4s}  {check['name']:9s}  {check['detail']}")
-        for warning in report["warnings"]:
+        for warning in report.get("warnings", []):
             click.echo(f"  warn  {warning}")
     sys.exit(0 if report["verified"] else 1)
 

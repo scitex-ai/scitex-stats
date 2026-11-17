@@ -80,6 +80,17 @@ def _load_file(path: str, sep: str | None = None) -> pd.DataFrame:
         Hard separator specification; ``" "`` splits on whitespace runs.
         None (default) estimates via :func:`detect_separator`.
     """
+    return _load_file_with_separator(path, sep=sep)[0]
+
+
+def _load_file_with_separator(
+    path: str, sep: str | None = None
+) -> tuple[pd.DataFrame, str]:
+    """Return the parsed frame and the separator token chosen for its read.
+
+    The space token retains the existing whitespace-runs meaning. Detection,
+    TSV precedence and explicit overrides use the same loader as plain frames.
+    """
     if sep is None:
         if str(path).lower().endswith(".tsv"):
             sep = "\t"
@@ -87,8 +98,8 @@ def _load_file(path: str, sep: str | None = None) -> pd.DataFrame:
             with open(path, encoding="utf-8-sig") as f:
                 sep = detect_separator(f.read(65536))
     if sep == " ":
-        return pd.read_csv(path, sep=r"\s+", encoding="utf-8-sig")
-    return pd.read_csv(path, sep=sep, encoding="utf-8-sig")
+        return pd.read_csv(path, sep=r"\s+", encoding="utf-8-sig"), sep
+    return pd.read_csv(path, sep=sep, encoding="utf-8-sig"), sep
 
 
 def resolve_columns(

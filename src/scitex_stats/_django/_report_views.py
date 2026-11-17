@@ -60,6 +60,8 @@ def _payload(request) -> Tuple[Optional[Dict[str, Any]], Optional[JsonResponse]]
         body = json.loads(request.body.decode("utf-8") or "{}")
     except (ValueError, UnicodeDecodeError):
         return None, JsonResponse({"error": _("Invalid request body.")}, status=400)
+    if not isinstance(body, dict):
+        return None, JsonResponse({"error": _("Invalid request body.")}, status=400)
     groups = body.get("groups")
     if not isinstance(groups, list) or len([g for g in groups if g]) < 2:
         return None, JsonResponse({"error": _("A report needs at least two groups of numbers.")}, status=400)

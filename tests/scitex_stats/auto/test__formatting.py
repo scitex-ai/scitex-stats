@@ -1442,7 +1442,7 @@ if __name__ == "__main__":
 #     Examples
 #     --------
 #     >>> p_to_stars(0.001)
-#     '***'
+#     '**'
 #     >>> p_to_stars(0.03)
 #     '*'
 #     >>> p_to_stars(0.10)

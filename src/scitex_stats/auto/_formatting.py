@@ -17,14 +17,11 @@ All formatting respects journal style presets (APA, Nature, Cell, Elsevier).
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, TypedDict, Union
 
-import numpy as np
-
+from ._format_ci import format_effect_interval
 from ._styles import StatStyle, get_stat_style
 from ._summary import (
-    SummaryStatsDict,
     compute_summary_from_groups,
     compute_summary_stats,
 )
@@ -209,7 +206,9 @@ def format_test_line(
         parts.append(stat_part)
 
     # Format p-value
-    p = test.get("p_adj") or test.get("p_raw")
+    p = test.get("p_adj")
+    if p is None:
+        p = test.get("p_raw")
     if p is not None:
         p_part = style.format_p(p)
         parts.append(p_part)
@@ -219,8 +218,11 @@ def format_test_line(
         for eff in effects[:max_effects]:
             eff_name = eff.get("name", "")
             eff_value = eff.get("value")
+            interval = format_effect_interval(eff, style.decimal_places_effect)
             if eff_value is not None:
                 eff_part = style.format_effect(eff_name, eff_value)
+                if interval:
+                    eff_part = f"{eff_part}, {interval}"
                 parts.append(eff_part)
 
     # Format sample sizes
@@ -340,7 +342,7 @@ def p_to_stars(
     """
     Convert p-value to significance stars.
 
-    Uses the alpha thresholds from the specified style.
+    Uses strict comparisons against the alpha thresholds of the specified style.
 
     Parameters
     ----------
@@ -357,7 +359,7 @@ def p_to_stars(
     Examples
     --------
     >>> p_to_stars(0.001)
-    '***'
+    '**'
     >>> p_to_stars(0.03)
     '*'
     >>> p_to_stars(0.10)

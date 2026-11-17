@@ -53,14 +53,13 @@ def _load(result: Union[Dict[str, Any], str, Path]) -> Dict[str, Any]:
 def _supplied_inputs(prov, data, data2, groups) -> Dict[str, Any]:
     supplied: Dict[str, Any] = {}
     if prov["api"] == "mcp.run_test":
-        for i, g in enumerate(data or []):
+        for i, g in enumerate(data if data is not None else []):
             supplied[f"data[{i}]"] = g
-        return supplied
-    if data is not None:
+    elif data is not None:
         supplied["data"] = data
     if data2 is not None:
         supplied["data2"] = data2
-    for i, g in enumerate(groups or []):
+    for i, g in enumerate(groups if groups is not None else []):
         supplied[f"groups[{i}]"] = g
     return supplied
 
@@ -72,19 +71,21 @@ def _resolve_inputs(prov, supplied):
         if name in supplied:
             values, origin = supplied[name], "supplied"
         elif "values" in rec:
-            values, origin = _decode_values(rec["values"]), "embedded"
+            values, origin = rec["values"], "embedded"
         else:
             rows.append({"input": name, "match": None, "origin": "missing"})
             continue
         try:
+            if origin == "embedded":
+                values = _decode_values(values)
             arr = np.asarray(values, dtype=float)
+            got = hash_array(arr)
+            match = got == rec["sha256"]
+            if origin == "supplied" and "values" in rec:
+                match = match and hash_array(np.asarray(_decode_values(rec["values"]), float)) == got
         except (TypeError, ValueError) as exc:
             rows.append({"input": name, "match": False, "origin": origin, "error": str(exc)})
             continue
-        got = hash_array(arr)
-        match = got == rec["sha256"]
-        if origin == "supplied" and "values" in rec:
-            match = match and hash_array(np.asarray(_decode_values(rec["values"]), float)) == got
         rows.append({"input": name, "match": match, "origin": origin, "sha256": got})
         resolved[name] = values
     extra = sorted(set(supplied) - set(prov["inputs"]))
@@ -114,6 +115,11 @@ def _recompute(prov: Dict[str, Any], inputs: Dict[str, Any], source_result) -> D
 
         if source_result is None:
             raise LookupError("full_report recompute needs source_result= (the run_test result)")
+        if hash_result(source_result) != prov.get("source_result_sha256"):
+            raise ValueError("source result does not match recorded source_result_sha256")
+        source_receipt = (source_result.get("provenance") or {}).get("receipt_sha256")
+        if source_receipt != prov.get("source_receipt_sha256"):
+            raise ValueError("source receipt does not match recorded source_receipt_sha256")
         return full_report(source_result, data=inputs.get("data"), data2=inputs.get("data2"), **params)
     if api == "mcp.run_test":
         from ._mcp._handlers._run_test import run_test_sync

@@ -3,14 +3,6 @@
 # Timestamp: "2025-10-01 20:47:38 (ywatanabe)"
 # File: scitex_stats/correct/_correct_bonferroni.py
 # ----------------------------------------
-from __future__ import annotations
-
-import os
-
-__FILE__ = __file__
-__DIR__ = os.path.dirname(__FILE__)
-# ----------------------------------------
-
 """
 Functionalities:
   - Apply Bonferroni correction for multiple comparisons
@@ -26,7 +18,9 @@ IO:
   - output: Results with adjusted p-values and significance (same format as input)
 """
 
-"""Imports"""
+from __future__ import annotations
+
+import os
 from typing import Any, Dict, List, Optional, Union
 
 import matplotlib
@@ -35,6 +29,9 @@ import numpy as np
 import pandas as pd
 
 from scitex_stats._logging import getLogger
+
+__FILE__ = __file__
+__DIR__ = os.path.dirname(__FILE__)
 
 logger = getLogger(__name__)
 
@@ -76,14 +73,19 @@ def correct_bonferroni(
     results : dict, list of dict, or DataFrame
         Results with added fields:
         - pvalue_adjusted: Bonferroni-adjusted p-value
-        - alpha_adjusted: Bonferroni-adjusted alpha threshold
-        - rejected: Whether null hypothesis is rejected (using adjusted values)
+        - alpha_adjusted: Threshold for comparing unadjusted p-values
+        - rejected: Whether adjusted p-value is strictly below the original alpha
         - pstars: Significance stars (using adjusted p-value)
 
     Notes
     -----
     The Bonferroni correction is the most conservative method for controlling
     the family-wise error rate (FWER) in multiple comparisons.
+
+    Decisions compare adjusted p-values with the original family alpha using
+    strict ``<``. A non-missing per-row ``alpha`` overrides the function value.
+    ``alpha_adjusted`` remains the threshold for unadjusted p-values; comparing
+    an adjusted p-value to it would apply the correction twice.
 
     For m tests with family-wise error rate α:
 
@@ -164,7 +166,12 @@ def correct_bonferroni(
         results_list = None
 
     if results_list is not None:
-        df = force_dataframe(results_list, fill_na=False, enforce_types=False)
+        # Supply the caller alpha before normalization can insert its 0.05 default.
+        records = [
+            {**row, "alpha": alpha if row.get("alpha") is None else row["alpha"]}
+            for row in results_list
+        ]
+        df = force_dataframe(records, fill_na=False, enforce_types=False)
     else:
         df = results.copy()
 
@@ -184,8 +191,8 @@ def correct_bonferroni(
 
     df["alpha_adjusted"] = alpha_values / m
 
-    # Update rejection decisions based on adjusted values
-    df["rejected"] = df["pvalue_adjusted"] < df["alpha_adjusted"]
+    # Adjust the probability or the threshold, never both.
+    df["rejected"] = df["pvalue_adjusted"] < alpha_values
 
     # Update significance stars based on adjusted p-values
     df["pstars"] = df["pvalue_adjusted"].apply(p2stars)
@@ -238,9 +245,9 @@ def correct_bonferroni(
             return df.to_dict("records")
     else:
         # Match input format
-        if input_type == dict:
+        if input_type is dict:
             return to_dict(df, row=0)
-        elif input_type == list:
+        elif input_type is list:
             return df.to_dict("records")
         else:  # DataFrame
             return df

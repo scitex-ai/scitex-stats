@@ -7,6 +7,47 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Expose the existing file separator override through registered MCP
+  `run_test` and bind explicit overrides into source provenance. Preserve
+  Auto behavior and existing parser/statistical implementations.
+
+- Derive default MCP catalog and CLI discovery from registered wire metadata,
+  including all registered tools. Share the run-test name map with its enum
+  without changing handler validation; support sync and async discovery.
+
+- Add synchronous native `format_results` and delegate MCP to it. Preserve
+  existing style/fallback, supplied interval and reporting semantics, with
+  transport success/timestamp fields confined to MCP.
+
+- Render supplied effect confidence-interval bounds in legacy result lines
+  at effect precision. Reject incomplete, reversed or non-finite bounds
+  and missing effect estimates; do not calculate intervals or infer levels.
+
+- Preserve supplied adjusted p-values of zero in legacy report lines.
+  Fix MCP Nature/plain-brief preset selection and return `style_used`;
+  explicitly retain the legacy Science/unknown-name APA fallback.
+
+- Add native `correct_pvalues` shared with MCP, validating p-values/alpha
+  before adjustment. Preserve the NumPy fallback and unknown-method BH
+  compatibility, with `method_used` exposing the actual calculation.
+
+- Reject absolute, traversal and symlink escapes from the runtime path
+  resolver before creating parent directories. Preserve configured symlinked
+  runtime roots and aliases that resolve within the runtime directory.
+
+- Add synchronous `normality_test` shared with MCP. Reject unusable samples
+  with explicit failures instead of `success: true` plus an error; report
+  tested/input/omitted counts after NaN filtering. Document Anderson's
+  critical-value response separately from the p-value methods.
+
+- Add a native synchronous `effect_size` API and route MCP calculations through
+  the same domain implementation. Reject unsupported unpooled Cohen/Hedges
+  requests and unusable groups instead of returning misleading calculations.
+
+- Preserve fractional descriptive-statistics percentile labels over MCP,
+  including closely spaced values, and honor an explicit empty list without
+  substituting default quartiles. Integral label spelling stays compatible.
+
 - Use package-owned subprocess coverage support instead of writing startup
   hooks into shared Python environments during test collection.
 

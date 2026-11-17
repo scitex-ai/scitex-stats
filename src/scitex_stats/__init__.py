@@ -14,6 +14,8 @@ Functionalities
   `run_all_applicable(data, design)` — data-driven ✓/✗ with reasons per
   test, one pre-specified primary test with its decision path, and
   sensitivity runs that never select by p-value.
+- `effect_size(group1, group2, measure=...)` — synchronous two-group
+  dispatcher shared by Python and MCP; returns native numerical data.
 - `effect_sizes`, `power`, `correct`, `posthoc`, `descriptive`,
   `auto` — submodules exposing the primitives behind `run_test`
   (Cohen's d / Cliff's delta / eta-sq / sample-size-ttest /
@@ -36,10 +38,10 @@ IO
 
 Dependencies
 ------------
-- Hard: `numpy`, `scipy`, `pandas`, `scitex-dev`, `scitex-config`,
-  `scitex-logging`.
-- Optional (`[plot]`): `matplotlib`. (`[mcp]`): `fastmcp`.
-  (`[figrecipe]`): `figrecipe`.
+The authoritative dependencies and extras are in ``pyproject.toml``.
+NumPy, SciPy, pandas, statsmodels, Matplotlib and the MCP server stack ship
+in the base install. Integrations and server/report features use the
+extras declared there.
 
 Standalone import::
 
@@ -78,9 +80,11 @@ except Exception:
 # __init__.py thin and let the audit-mirror test (PS-204) find a real
 # src file to pair the test against.
 # ---------------------------------------------------------------------------
-from ._runtime_paths import migrate_runtime_dirs as _migrate_runtime_dirs
-from ._runtime_paths import runtime_path as _runtime_path  # re-export
+from . import _runtime_paths
 
+# Preserve the existing private helper bindings without unused imports.
+_migrate_runtime_dirs = _runtime_paths.migrate_runtime_dirs
+_runtime_path = _runtime_paths.runtime_path
 _migrate_runtime_dirs()
 
 try:
@@ -119,6 +123,12 @@ _LAZY_ATTRS: dict[str, str] = {
     "power": "power",
     "reporting": "reporting",
     "tests": "tests",
+    # Native two-group effect-size dispatcher
+    "effect_size": "effect_sizes._effect_size",
+    "power_analysis": "power._power_analysis",
+    "normality_test": "tests.normality._normality_test",
+    "correct_pvalues": "correct._correct_pvalues",
+    "format_results": "auto._format_results",
     # Dispatcher
     "available_tests": "_dispatch",
     "run_test": "_dispatch",
@@ -128,6 +138,7 @@ _LAZY_ATTRS: dict[str, str] = {
     # Bundled PDF/HTML/Markdown report (assumptions, primary, sensitivity, post-hoc)
     "report": "reporting",
     "build_report": "reporting",
+    "posthoc_test": "posthoc._posthoc_test",
     "run_posthoc": "posthoc",
     "select_posthoc": "posthoc",
     # JSON
@@ -234,6 +245,8 @@ def __dir__() -> list[str]:
 
 
 __all__ = [
+    "posthoc_test",
+    "power_analysis",
     "__version__",
     # Submodules
     "auto",
@@ -244,6 +257,11 @@ __all__ = [
     "power",
     "reporting",
     "tests",
+    # Native two-group effect-size dispatcher
+    "effect_size",
+    "normality_test",
+    "correct_pvalues",
+    "format_results",
     # Dispatcher
     "run_test",
     "available_tests",

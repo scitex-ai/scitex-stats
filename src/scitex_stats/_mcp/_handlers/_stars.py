@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from math import isfinite
 
 __all__ = ["p_to_stars_handler"]
 
@@ -15,9 +16,20 @@ async def p_to_stars_handler(
     p_value: float,
     thresholds: list[float] | None = None,
 ) -> dict:
-    """Convert p-value to significance stars."""
+    """Convert a finite probability in [0, 1] to significance stars."""
     try:
-        thresh = thresholds or [0.001, 0.01, 0.05]
+        if not isfinite(p_value) or not 0 <= p_value <= 1:
+            raise ValueError("p_value must be a finite probability between 0 and 1")
+        thresh = [0.001, 0.01, 0.05] if thresholds is None else thresholds
+        if (
+            len(thresh) != 3
+            or not all(isfinite(value) and 0 < value <= 1 for value in thresh)
+            or not thresh[0] < thresh[1] < thresh[2]
+        ):
+            raise ValueError(
+                "thresholds must contain exactly three strictly increasing "
+                "finite probabilities in (0, 1]"
+            )
 
         if p_value < thresh[0]:
             stars = "***"

@@ -1,17 +1,18 @@
-"""Direct test for `scitex_stats._mcp.tool_schemas.get_tool_schemas`.
-
-The module is mostly a single big `return [...]` of `mcp.types.Tool`
-instances. Coverage was 0 % only because nothing imported and called
-it. Calling it once verifies the shape and registers the lines.
-"""
+"""Default catalog schemas, derived from the actual registered MCP server."""
 
 from __future__ import annotations
+
+import asyncio
 
 import pytest
 
 mcp_types = pytest.importorskip("mcp.types")
 
-from scitex_stats._mcp.tool_schemas import get_tool_schemas
+
+def _catalog():
+    from scitex_stats._mcp.tool_schemas import get_tool_schemas
+
+    return get_tool_schemas()
 
 
 def _schema_of(tool):
@@ -20,6 +21,7 @@ def _schema_of(tool):
     if schema is None:
         schema = getattr(tool, "inputSchema", None)
     return schema
+
 
 EXPECTED_TOOLS = {
     "recommend_tests",
@@ -38,14 +40,15 @@ EXPECTED_TOOLS = {
 def test_get_tool_schemas_returns_list_of_tools_case_1():
     # Arrange
     # Act
-    tools = get_tool_schemas()
+    tools = _catalog()
     # Assert
     assert isinstance(tools, list) and tools
+
 
 def test_get_tool_schemas_returns_list_of_tools_all_mcp_types():
     # Arrange
     # Act
-    tools = get_tool_schemas()
+    tools = _catalog()
     # Assert
     assert all(isinstance(t, mcp_types.Tool) for t in tools)
 
@@ -53,7 +56,7 @@ def test_get_tool_schemas_returns_list_of_tools_all_mcp_types():
 def test_get_tool_schemas_covers_every_expected_tool():
     # Arrange
     # Act
-    tools = get_tool_schemas()
+    tools = _catalog()
     names = {t.name for t in tools}
     missing = EXPECTED_TOOLS - names
     # Assert
@@ -63,7 +66,7 @@ def test_get_tool_schemas_covers_every_expected_tool():
 def test_each_schema_has_description_and_object_input_schema_with_properties():
     # Arrange
     # Act
-    schemas = get_tool_schemas()
+    schemas = _catalog()
     # Assert
     for t in schemas:
         # Each tool must carry a non-empty str description and an object
@@ -85,7 +88,80 @@ def test_run_test_schema_lists_all_23_tests():
     early."""
     # Arrange
     # Act
-    schema = _schema_of(next(t for t in get_tool_schemas() if t.name == "run_test"))
+    schema = _schema_of(next(t for t in _catalog() if t.name == "run_test"))
     enum_vals = (schema or {})["properties"]["test_name"]["enum"]
     # Assert
     assert len(enum_vals) == 23, f"expected 23 tests, got {len(enum_vals)}"
+
+
+def _metadata(tools):
+    return {
+        t.name: t.model_dump(mode="json", by_alias=True, exclude_none=True)
+        for t in tools
+    }
+
+
+async def _registered_metadata():
+    from fastmcp import Client
+
+    from scitex_stats._server import mcp
+
+    async with Client(mcp) as client:
+        return _metadata(await client.list_tools())
+
+
+def test_sync_catalog_matches_registered_wire_metadata():
+    # Arrange
+    expected = asyncio.run(_registered_metadata())
+    # Act
+    result = _metadata(_catalog())
+    # Assert
+    assert result == expected
+
+
+def test_sync_catalog_works_inside_a_running_event_loop():
+    # Arrange
+    async def collect():
+        expected = await _registered_metadata()
+        return _metadata(_catalog()), expected
+
+    # Act
+    actual, expected = asyncio.run(collect())
+    # Assert
+    assert actual == expected
+
+
+def test_async_catalog_matches_registered_wire_metadata():
+    # Arrange
+    from scitex_stats._mcp.tool_schemas import get_tool_schemas_async
+
+    async def collect():
+        expected = await _registered_metadata()
+        return _metadata(await get_tool_schemas_async()), expected
+
+    # Act
+    actual, expected = asyncio.run(collect())
+    # Assert
+    assert actual == expected
+
+
+def test_cli_catalog_matches_shared_wire_metadata():
+    # Arrange
+    from scitex_stats._cli.mcp import _list_tool_objects
+
+    expected = asyncio.run(_registered_metadata())
+    # Act
+    actual = _metadata(_list_tool_objects())
+    # Assert
+    assert actual == expected
+
+
+def test_run_test_catalog_exposes_optional_separator():
+    # Arrange
+    # Act
+    schema = _schema_of(next(t for t in _catalog() if t.name == "run_test"))
+    # Assert
+    assert (schema["properties"]["sep"]["default"], "sep" in schema["required"]) == (
+        None,
+        False,
+    )

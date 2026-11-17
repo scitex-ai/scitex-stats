@@ -9,9 +9,12 @@ This is the main server entry point. Tools are defined here using FastMCP.
 from __future__ import annotations
 
 import json
-from typing import List, Optional
+from typing import Annotated, List, Optional
 
 from fastmcp import FastMCP
+from pydantic import Field
+
+from ._mcp._test_catalog import _TEST_DISPATCH
 
 # =============================================================================
 # FastMCP Server
@@ -143,13 +146,18 @@ async def generate_report(
 
 @mcp.tool()
 async def run_test(
-    test_name: str,
+    test_name: Annotated[str, Field(json_schema_extra={"enum": list(_TEST_DISPATCH)})],
     data: Optional[List[List[float]]] = None,
     data_file: Optional[str] = None,
     columns: Optional[List[str]] = None,
     alternative: str = "two-sided",
+    sep: Optional[str] = None,
 ) -> str:
-    """Execute a statistical test on provided data."""
+    """Execute a statistical test on provided data.
+
+    For file input, sep overrides delimiter estimation; None keeps Auto.
+    The explicit override is retained in provenance.source.sep.
+    """
     from scitex_stats._mcp.handlers import run_test_handler
 
     result = await run_test_handler(
@@ -158,6 +166,7 @@ async def run_test(
         data_file=data_file,
         columns=columns,
         alternative=alternative,
+        sep=sep,
     )
     return _json(result)
 
@@ -181,12 +190,18 @@ async def verify_result(
     data: Optional[list] = None,
     data2: Optional[List[float]] = None,
     groups: Optional[List[List[float]]] = None,
+    source_result: Optional[dict] = None,
 ) -> str:
-    """Verify a result's provenance receipt, input hashes and statistics by recomputing."""
+    """Verify provenance and recompute; full reports need their source_result."""
     from scitex_stats._mcp.handlers import verify_result_handler
 
     report = await verify_result_handler(
-        result=result, result_file=result_file, data=data, data2=data2, groups=groups
+        result=result,
+        result_file=result_file,
+        data=data,
+        data2=data2,
+        groups=groups,
+        source_result=source_result,
     )
     return _json(report)
 
@@ -203,7 +218,13 @@ async def format_results(
     ci_lower: Optional[float] = None,
     ci_upper: Optional[float] = None,
 ) -> str:
-    """Format statistical results in journal style (APA, Nature, etc.)."""
+    """Format with legacy presets; style_used identifies the applied preset.
+
+    apa/nature/brief select APA LaTeX/Nature LaTeX/plain. science and
+    unknown legacy names retain APA fallback; no Science preset is added.
+    Supplied finite ordered CI bounds require an effect estimate and render
+    at effect precision. No interval or confidence level is calculated.
+    """
     from scitex_stats._mcp.handlers import format_results_handler
 
     result = await format_results_handler(
@@ -251,7 +272,11 @@ async def correct_pvalues(
     method: str = "fdr_bh",
     alpha: float = 0.05,
 ) -> str:
-    """Apply multiple comparison correction to p-values."""
+    """Correct finite 1-D p-values in [0,1] through the native API.
+
+    Unknown method names retain the legacy fdr_bh fallback; method_used
+    reports the actual calculation. Invalid values or alpha fail explicitly.
+    """
     from scitex_stats._mcp.handlers import correct_pvalues_handler
 
     result = await correct_pvalues_handler(
@@ -287,7 +312,11 @@ async def effect_size(
     measure: str = "cohens_d",
     pooled: bool = True,
 ) -> str:
-    """Calculate effect size between groups."""
+    """Calculate effect size through the native synchronous Python dispatcher.
+
+    Inputs are finite 1-D groups. Unpooled Cohen/Hedges (pooled=False) are
+    not implemented and return an explicit failure instead of a pooled result.
+    """
     from scitex_stats._mcp.handlers import effect_size_handler
 
     result = await effect_size_handler(
@@ -304,7 +333,11 @@ async def normality_test(
     data: List[float],
     method: str = "shapiro",
 ) -> str:
-    """Test whether data follows a normal distribution."""
+    """Test normality through the native API; unusable samples fail explicitly.
+
+    NaNs are omitted. n counts tested values; n_input/n_omitted track input.
+    Anderson returns a 5% critical value rather than a p-value.
+    """
     from scitex_stats._mcp.handlers import normality_test_handler
 
     result = await normality_test_handler(
@@ -335,10 +368,13 @@ async def posthoc_test(
 
 @mcp.tool()
 async def p_to_stars(
-    p_value: float,
-    thresholds: Optional[List[float]] = None,
+    p_value: Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)],
+    thresholds: Annotated[
+        Optional[List[Annotated[float, Field(gt=0, le=1, allow_inf_nan=False)]]],
+        Field(min_length=3, max_length=3),
+    ] = None,
 ) -> str:
-    """Convert p-value to significance stars (*, **, ***, ns)."""
+    """Convert a probability to stars using three increasing finite cutoffs."""
     from scitex_stats._mcp.handlers import p_to_stars_handler
 
     result = await p_to_stars_handler(

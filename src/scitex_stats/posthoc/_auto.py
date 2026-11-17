@@ -4,15 +4,17 @@
 
 Selection (3 or more groups only):
 
-- one-way ANOVA  -> Tukey HSD when Brown–Forsythe (median-centred Levene)
-  p >= alpha, else Games–Howell;
+- one-way ANOVA  -> Tukey HSD when equal variances are declared in advance,
+  otherwise Games–Howell; Brown–Forsythe is a reported diagnostic;
 - Welch's ANOVA  -> Games–Howell;
 - Kruskal–Wallis -> Dunn's test, Holm-adjusted;
 - Friedman       -> Nemenyi (default) or pairwise Wilcoxon signed-rank, Holm-adjusted;
 - repeated-measures ANOVA -> pairwise paired t-tests, Holm-adjusted.
 
-Every comparison carries the unadjusted and adjusted p (APA formatted), a
-pairwise effect size, and a 95% CI where one is computable. p values for
+Comparisons carry available p values (APA formatted), a pairwise effect size
+and a 95% CI where computable. Tukey and Games–Howell comparisons with unusable
+standard errors or degrees of freedom carry null statistics and probabilities
+with a reason. P values for
 Tukey, Games–Howell and Nemenyi come from the exact studentized range
 distribution (``scipy.stats.studentized_range``). Bootstrap CIs for rank
 effect sizes use ``numpy.random.default_rng(seed)`` so repeated runs match.
@@ -204,8 +206,14 @@ def _tukey(groups, alpha, level):
     for i, j in _pairs(k):
         diff = groups[i].mean() - groups[j].mean()
         se = np.sqrt(mse / 2 * (1 / ns[i] + 1 / ns[j]))
-        q = abs(diff) / se if se > 0 else 0.0
-        p = float(stats.studentized_range.sf(q, k, df)) if se > 0 else 1.0
+        if not (np.isfinite(se) and se > 0 and np.isfinite(df) and df > 0):
+            out.append({"i": i, "j": j, "statistic": None, "stat_symbol": "q", "df": None,
+                        "p_unadjusted": None, "p_adjusted": None, "mean_diff": float(diff),
+                        "diff_ci": None,
+                        "undefined": "Tukey HSD needs a finite positive standard error and degrees of freedom."})
+            continue
+        q = abs(diff) / se
+        p = float(stats.studentized_range.sf(q, k, df))
         out.append({"i": i, "j": j, "statistic": float(q), "stat_symbol": "q", "df": float(df),
                     "p_unadjusted": None, "p_adjusted": min(1.0, p), "mean_diff": float(diff),
                     "diff_ci": (float(diff - q_crit * se), float(diff + q_crit * se))})
@@ -221,27 +229,39 @@ def _games_howell(groups, alpha, level):
         se = np.sqrt(vx + vy)
         df = (vx + vy) ** 2 / (vx ** 2 / (len(x) - 1) + vy ** 2 / (len(y) - 1)) if se > 0 else np.nan
         diff = x.mean() - y.mean()
-        if se > 0:
-            q = abs(diff) / se * np.sqrt(2)
-            p = float(stats.studentized_range.sf(q, k, df))
-            margin = stats.studentized_range.ppf(level, k, df) / np.sqrt(2) * se
-            ci = (float(diff - margin), float(diff + margin))
-        else:
-            q, p, ci = 0.0, 1.0, None
+        if not (np.isfinite(se) and se > 0 and np.isfinite(df) and df > 0):
+            out.append({"i": i, "j": j, "statistic": None, "stat_symbol": "q",
+                        "df": None, "p_unadjusted": None, "p_adjusted": None,
+                        "mean_diff": float(diff), "diff_ci": None,
+                        "undefined": "Games–Howell needs a finite positive standard error and degrees of freedom."})
+            continue
+        q = abs(diff) / se * np.sqrt(2)
+        p = float(stats.studentized_range.sf(q, k, df))
+        margin = stats.studentized_range.ppf(level, k, df) / np.sqrt(2) * se
+        ci = (float(diff - margin), float(diff + margin))
         out.append({"i": i, "j": j, "statistic": float(q), "stat_symbol": "q",
                     "df": float(df) if np.isfinite(df) else None, "p_unadjusted": None,
                     "p_adjusted": min(1.0, p), "mean_diff": float(diff), "diff_ci": ci})
     return out
 
 
-def _dunn(groups, alpha, level):
+def _dunn(groups, alpha, level, *, correction="holm"):
+    """Joint-rank Dunn probabilities with tie correction and explicit adjustment."""
+    if correction not in ("holm", "bonferroni"):
+        raise ValueError("Dunn correction must be 'holm' or 'bonferroni'")
+    if len(groups) < 2 or any(np.asarray(g).ndim != 1 or len(g) == 0
+                              or not np.isfinite(g).all() for g in groups):
+        raise ValueError("Dunn requires at least two non-empty finite 1D groups")
     k = len(groups)
     pooled = np.concatenate(groups)
-    n_total = pooled.size
+    n_total = int(pooled.size)
     ranks = stats.rankdata(pooled)
     _, counts = np.unique(pooled, return_counts=True)
-    ties = float(((counts ** 3) - counts).sum())
-    sigma2 = n_total * (n_total + 1) / 12 - ties / (12 * (n_total - 1))
+    # Keep the numerator exact to avoid integer overflow and cancellation.
+    ties = sum(int(count) ** 3 - int(count) for count in counts[counts > 1])
+    sigma2 = (n_total ** 3 - n_total - ties) / (12 * (n_total - 1))
+    if not np.isfinite(sigma2) or sigma2 <= 0:
+        raise ValueError("Dunn is undefined for zero or non-finite pooled rank variance")
     bounds = np.cumsum([0] + [len(g) for g in groups])
     mean_ranks = [ranks[bounds[g]:bounds[g + 1]].mean() for g in range(k)]
     out, raw = [], []
@@ -252,7 +272,13 @@ def _dunn(groups, alpha, level):
         raw.append(p)
         out.append({"i": i, "j": j, "statistic": float(z), "stat_symbol": "z", "df": None,
                     "p_unadjusted": p, "mean_rank_diff": float(mean_ranks[i] - mean_ranks[j])})
-    for row, adj in zip(out, _holm(raw)):
+    if correction == "holm":
+        adjusted = _holm(raw)
+    else:
+        from scitex_stats import correct_pvalues
+
+        adjusted = correct_pvalues(raw, method="bonferroni", alpha=alpha)["corrected_pvalues"]
+    for row, adj in zip(out, adjusted):
         row["p_adjusted"] = adj
     return out
 

@@ -14,37 +14,10 @@ from .. import __version__
 
 
 def _list_tool_objects():
-    """Return the MCP server's registered tool objects (version-robust).
+    """Return the same wire catalog used by package metadata discovery."""
+    from .._mcp.tool_schemas import get_tool_schemas
 
-    The FastMCP tool-enumeration API has churned across releases:
-
-    - 1.x exposed ``FastMCP.list_tools()`` (removed in 2.x).
-    - 2.x exposes ``FastMCP.get_tools()`` (async ``{name: Tool}`` map);
-      its internal Tool exposes ``.parameters`` and ``.fn``.
-    - 3.x dropped ``get_tools()``.
-
-    The one accessor stable across every major is the in-memory
-    ``fastmcp.Client`` transport, which returns MCP wire ``Tool`` objects
-    exposing ``.name`` / ``.description`` / ``.input_schema``. Prefer the
-    richer in-process ``get_tools()`` when present (keeps return-type
-    annotations in signatures), and fall back to the client otherwise.
-    """
-    import asyncio
-
-    from .._mcp import mcp
-
-    get_tools = getattr(mcp, "get_tools", None)
-    if callable(get_tools):
-        tools = asyncio.run(get_tools())
-        return list(tools.values()) if isinstance(tools, dict) else list(tools)
-
-    from fastmcp import Client
-
-    async def _collect():
-        async with Client(mcp) as client:
-            return await client.list_tools()
-
-    return asyncio.run(_collect())
+    return get_tool_schemas()
 
 
 CLAUDE_DESKTOP_CONFIG_CLI = """{
@@ -217,6 +190,14 @@ def cmd_list_tools(
             output["modules"][mod] = {
                 "count": len(tool_list),
                 "tools": tool_list,
+            }
+        if verbose:
+            output["schemas"] = {
+                name: tools_by_name[name].model_dump(
+                    mode="json", by_alias=True, exclude_none=True
+                )
+                for module in modules.values()
+                for name in module
             }
         click.echo(json.dumps(output, indent=2))
         return 0

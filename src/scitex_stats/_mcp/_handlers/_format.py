@@ -27,62 +27,25 @@ async def format_results_handler(
     try:
         loop = asyncio.get_event_loop()
 
-        def do_format():
-            from scitex_stats.auto import format_test_line, p_to_stars
-            from scitex_stats.auto._formatting import EffectResultDict, TestResultDict
+        from scitex_stats.auto._format_results import format_results
 
-            # Build test result dict
-            test_result: TestResultDict = {
-                "test_name": test_name,
-                "stat": statistic,
-                "p_raw": p_value,
-            }
-            if df is not None:
-                test_result["df"] = df
-
-            # Build effect result if provided
-            effects = None
-            if effect_size is not None:
-                effects = [
-                    EffectResultDict(
-                        name=effect_size_name or "d",
-                        label=effect_size_name or "Cohen's d",
-                        value=effect_size,
-                        ci_lower=ci_lower,
-                        ci_upper=ci_upper,
-                    )
-                ]
-
-            # Map style names
-            style_map = {
-                "apa": "apa_latex",
-                "nature": "nature",
-                "science": "science",
-                "brief": "brief",
-            }
-            style_id = style_map.get(style, "apa_latex")
-
-            # Format the line
-            formatted = format_test_line(
-                test_result,
-                effects=effects,
-                style=style_id,
-                include_n=False,
-            )
-
-            # Get stars representation
-            stars = p_to_stars(p_value)
-
-            return {
-                "formatted": formatted,
-                "stars": stars,
-            }
-
-        result = await loop.run_in_executor(None, do_format)
+        result = await loop.run_in_executor(
+            None,
+            lambda: format_results(
+                test_name=test_name,
+                statistic=statistic,
+                p_value=p_value,
+                df=df,
+                effect_size=effect_size,
+                effect_size_name=effect_size_name,
+                style=style,
+                ci_lower=ci_lower,
+                ci_upper=ci_upper,
+            ),
+        )
 
         return {
             "success": True,
-            "style": style,
             **result,
             "timestamp": datetime.now().isoformat(),
         }

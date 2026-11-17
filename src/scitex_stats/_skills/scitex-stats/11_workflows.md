@@ -1,80 +1,155 @@
 ---
 description: |
   [TOPIC] Workflows
-  [DETAILS] group comparisons, correlations, normality, post-hoc, power.
+  [DETAILS] design context, group comparisons, correlations, normality, post-hoc, power.
 tags: [scitex-stats-workflows, scitex-stats]
 ---
 
-
 # Common Workflows
+
+Each example uses synthetic data and can run independently. Choose the analysis
+from the study design and declared assumptions; a recommendation is not a
+substitute for specifying the scientific question.
 
 ## "Compare two groups"
 
+`recommend_tests` takes a `StatContext`, not two data arrays. It returns test
+names. This example runs a separately specified independent-samples test.
+
 ```python
-import scitex_stats as ss
+from scitex_stats import run_test
+from scitex_stats.auto import StatContext, recommend_tests
 
-# Auto-recommend the right test
-recs = ss.recommend_tests(group1, group2)
-# Uses normality check, sample size, paired/independent to suggest
-
-# Then run it
-result = ss.run_test("ttest_ind", group1, group2)
-# result = {statistic, p_value, effect_size, ci, power, n1, n2, ...}
+x, y = [1, 2, 4, 5, 7], [0, 3, 6, 9, 12, 15]
+context = StatContext(
+    n_groups=2, sample_sizes=[len(x), len(y)],
+    outcome_type="continuous", design="between", paired=False,
+)
+recommendations = recommend_tests(context)
+result = run_test("ttest_ind", x, y, equal_var=False)
+# Dict fields include statistic, pvalue, formatted and provenance.
 ```
+
+Owning sources: `auto/_context.py`, `auto/_selector.py`, `_dispatch.py`.
+Controls: `tests/scitex_stats/auto/test__selector.py`,
+`tests/scitex_stats/auto/test__context.py` and
+`tests/integration/test_owned_dispatcher.py`.
 
 ## "Compare multiple groups"
 
+Pass a list of groups. `run_posthoc` computes the omnibus result when its p-value
+is omitted and, by default, runs comparisons only when it is significant.
+For ANOVA, Games–Howell is selected unless equal variances were declared in
+advance with `equal_variances=True`; the reported variance check is diagnostic.
+
 ```python
-result = ss.test_anova(group1, group2, group3)
-# If significant, follow up with post-hoc:
-from scitex_stats.posthoc import tukey_hsd, games_howell
-posthoc = tukey_hsd(group1, group2, group3)
+from scitex_stats import run_test
+from scitex_stats.posthoc import run_posthoc
+
+groups = [[1, 2, 4, 5, 7], [30, 33, 36, 39, 42, 45], [62, 63, 64, 66, 68, 70, 73]]
+omnibus = run_test("anova", groups=groups)
+posthoc = run_posthoc(groups, omnibus="anova", group_names=["A", "B", "C"])
+# Inspect ran, method, omnibus and comparisons; comparisons may be empty.
 ```
+
+Owning sources: `_dispatch.py`, `posthoc/_auto.py`.
+Controls: `tests/scitex_stats/posthoc/test__auto.py`. This example does not
+qualify the separate legacy post-hoc implementations or degenerate inputs.
+
+Native Tukey comparisons with zero or non-finite pooled standard error, or
+unusable degrees of freedom, carry null statistics, adjusted probabilities
+and mean-difference intervals, with `significant=false` and an `undefined`
+reason. Two constant groups can still have a defined Tukey comparison when
+the error pooled across all groups is positive. These comparison checks do
+not establish finite diagnostics for the entire degenerate omnibus result.
+Controls: `tests/integration/test_tukey_undefined.py` and
+`posthoc/_auto.py::_tukey`.
 
 ## "Check correlation"
 
 ```python
-result = ss.test_pearson(x, y)    # parametric
-result = ss.test_spearman(x, y)   # nonparametric
-result = ss.test_kendall(x, y)    # ordinal
+from scitex_stats import test_kendall, test_pearson, test_spearman
+
+x, y = [1, 2, 3, 4, 5, 6], [2, 1, 4, 3, 6, 5]
+pearson = test_pearson(x, y)
+spearman = test_spearman(x, y)
+kendall = test_kendall(x, y)
+# Each dict contains statistic and pvalue; select the method from the design.
 ```
+
+Owning source: `tests/correlation/`.
+Controls: `tests/scitex_stats/tests/correlation/`.
 
 ## "Correct for multiple comparisons"
 
-```python
-from scitex_stats.correct import bonferroni, fdr, holm
-
-p_values = [0.01, 0.04, 0.03, 0.08]
-corrected = fdr(p_values)             # Benjamini-Hochberg
-corrected = bonferroni(p_values)      # Bonferroni
-corrected = holm(p_values)            # Holm-Bonferroni
-```
-
-## "Check normality before choosing test"
+The correction functions consume result dictionaries with `pvalue` fields,
+not a bare list of numbers. Read the adjusted probabilities from
+`pvalue_adjusted`. Specify the family and correction in the analysis plan.
 
 ```python
-result = ss.test_shapiro(data)
-result = ss.test_normality(data)   # combined normality check
-result = ss.test_ks_1samp(data)    # Kolmogorov-Smirnov
+from scitex_stats.correct import correct_fdr, correct_holm
+
+results = [{"pvalue": p} for p in [0.01, 0.04, 0.03, 0.08]]
+fdr_results = correct_fdr(results, method="bh", verbose=False)
+holm_results = correct_holm(results, verbose=False)
+fdr_probabilities = [row["pvalue_adjusted"] for row in fdr_results]
+holm_probabilities = [row["pvalue_adjusted"] for row in holm_results]
 ```
+
+Owning sources: `correct/_correct_fdr.py`, `correct/_correct_holm.py`.
+Controls: `tests/scitex_stats/correct/`. This example covers adjusted
+probabilities, not every correction provider's decision metadata.
+
+When inferring a decision from a raw p-value, `normalize_result` treats
+`None`, NaN and `pandas.NA` in the optional `alpha_adjusted` field as unset,
+using family `alpha` (0.05 if omitted). A defined adjusted threshold still
+applies to raw p-values; adjusted p-values use family alpha. Explicit caller
+decisions/stars are preserved. `pvalue_adjusted=None` remains undefined;
+it does not fall back to raw-p significance. This does not validate every
+nonfinite/invalid metadata field or override missing family alpha values.
+Controls: `tests/integration/test_normalizer_missing_alpha.py` and
+`_utils/_normalize_core.py::normalize_result`.
+
+## "Inspect a normality diagnostic"
+
+```python
+from scitex_stats import test_shapiro
+
+data = [-1.4, -0.9, -0.5, -0.2, 0.1, 0.3, 0.7, 1.0, 1.4, 1.8]
+normality = test_shapiro(data)
+# Dict with statistic and pvalue; retain the study's planned analysis.
+```
+
+Owning source: `tests/normality/_test_shapiro.py`.
+Controls: `tests/scitex_stats/tests/normality/test__test_shapiro.py`.
 
 ## "Calculate power / sample size"
 
-```python
-from scitex_stats.power import power_analysis
+The two-sample sample-size function returns a pair of integers. Power is a
+float; these functions do not return a `n_per_group` attribute.
 
-result = power_analysis(
-    test="ttest_ind",
-    effect_size=0.5,    # Cohen's d
-    alpha=0.05,
-    power=0.8,
-)
-# result.n_per_group → required sample size
+```python
+from scitex_stats.power import power_ttest, sample_size_ttest
+
+n1, n2 = sample_size_ttest(effect_size=0.5, power=0.8, alpha=0.05)
+achieved_power = power_ttest(effect_size=0.5, n1=n1, n2=n2, alpha=0.05)
 ```
+
+Owning source: `power/_power.py`.
+Controls: `tests/scitex_stats/power/test__power.py`.
 
 ## "Format results for publication"
 
+Use the native result's `formatted` field for its report sentence. Do not
+assume `run_test(..., return_as="latex")` produces a sentence: output support
+varies by the underlying test. Keep provenance alongside the formatted report.
+
 ```python
-result = ss.run_test("ttest_ind", g1, g2, return_as="latex")
-# → "t(28) = 2.45, p = .021, d = 0.89"
+from scitex_stats import run_test
+
+result = run_test("ttest_ind", [1, 2, 4, 5, 7], [0, 3, 6, 9, 12, 15])
+report = result["formatted"]
 ```
+
+Owning sources: `_dispatch.py`, `auto/_format_results.py`.
+Controls: `tests/integration/test_formatting_values.py`.

@@ -15,42 +15,14 @@ from datetime import datetime
 
 import numpy as np
 
+from .._test_catalog import _TEST_DISPATCH
+
 __all__ = ["run_test_handler", "run_test_sync"]
 
 # =============================================================================
 # Test Dispatch Registry - Maps MCP test names to (category, function_name)
 # =============================================================================
 
-_TEST_DISPATCH = {
-    # Parametric tests
-    "ttest_ind": ("parametric", "test_ttest_ind"),
-    "ttest_paired": ("parametric", "test_ttest_rel"),
-    "ttest_1samp": ("parametric", "test_ttest_1samp"),
-    "anova": ("parametric", "test_anova"),
-    "anova_rm": ("parametric", "test_anova_rm"),
-    "anova_2way": ("parametric", "test_anova_2way"),
-    # Nonparametric tests
-    "brunner_munzel": ("nonparametric", "test_brunner_munzel"),
-    "mannwhitneyu": ("nonparametric", "test_mannwhitneyu"),
-    "wilcoxon": ("nonparametric", "test_wilcoxon"),
-    "kruskal": ("nonparametric", "test_kruskal"),
-    "friedman": ("nonparametric", "test_friedman"),
-    # Correlation tests
-    "pearson": ("correlation", "test_pearson"),
-    "spearman": ("correlation", "test_spearman"),
-    "kendall": ("correlation", "test_kendall"),
-    "theilsen": ("correlation", "test_theilsen"),
-    # Categorical tests
-    "chi2": ("categorical", "test_chi2"),
-    "fisher_exact": ("categorical", "test_fisher"),
-    "mcnemar": ("categorical", "test_mcnemar"),
-    "cochran_q": ("categorical", "test_cochran_q"),
-    # Normality tests
-    "shapiro": ("normality", "test_shapiro"),
-    "normality": ("normality", "test_normality"),
-    "ks_1samp": ("normality", "test_ks_1samp"),
-    "ks_2samp": ("normality", "test_ks_2samp"),
-}
 
 # Tests that need special input handling
 _TWO_GROUP = {
@@ -118,9 +90,9 @@ async def run_test_handler(  # noqa: C901
         source = None
         # Resolve data from CSV if needed
         if data_file and columns:
-            from scitex_stats._utils._csv_support import _load_file
+            from scitex_stats._utils._csv_support import _load_file_with_separator
 
-            df = _load_file(data_file, sep=sep)
+            df, sep_used = _load_file_with_separator(data_file, sep=sep)
             missing = [c for c in columns if c not in df.columns]
             if missing:
                 raise ValueError(
@@ -128,7 +100,12 @@ async def run_test_handler(  # noqa: C901
                 )
             # NaN is kept so the integrity report can say what was excluded.
             data = [df[col].tolist() for col in columns]
-            source = {"data_file": str(data_file), "columns": list(columns)}
+            source = {
+                "data_file": str(data_file), "columns": list(columns),
+                "sep_used": sep_used,
+            }
+            if sep is not None:
+                source["sep"] = sep
         elif data is None:
             raise ValueError("Provide 'data' or 'data_file'+'columns'")
 
