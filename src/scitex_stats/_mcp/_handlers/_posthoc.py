@@ -58,8 +58,6 @@ async def posthoc_test_handler(
 
 def _tukey_hsd(group_arrays, names):
     """Tukey HSD test."""
-    from scipy import stats as scipy_stats
-
     all_data = np.concatenate(group_arrays)
     group_labels = np.concatenate(
         [[names[i]] * len(g) for i, g in enumerate(group_arrays)]
@@ -85,26 +83,10 @@ def _tukey_hsd(group_arrays, names):
                     "reject": bool(row[6]),
                 }
             )
-    except ImportError:
-        # Fallback: Bonferroni-corrected t-tests
-        n_comparisons = len(group_arrays) * (len(group_arrays) - 1) // 2
-        for i in range(len(group_arrays)):
-            for j in range(i + 1, len(group_arrays)):
-                stat, p = scipy_stats.ttest_ind(group_arrays[i], group_arrays[j])
-                p_adj = min(p * n_comparisons, 1.0)
-                comparisons.append(
-                    {
-                        "group1": names[i],
-                        "group2": names[j],
-                        "mean_diff": float(
-                            np.mean(group_arrays[i]) - np.mean(group_arrays[j])
-                        ),
-                        "t_statistic": float(stat),
-                        "p_value": float(p),
-                        "p_adj": float(p_adj),
-                        "reject": p_adj < 0.05,
-                    }
-                )
+    except ImportError as error:
+        raise ImportError(
+            "Tukey HSD backend is unavailable; cannot run the requested method."
+        ) from error
 
     return comparisons
 

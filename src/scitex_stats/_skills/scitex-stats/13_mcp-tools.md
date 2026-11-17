@@ -144,3 +144,12 @@ a pair of constant samples is undefined and returns an explicit error.
 Reference: [SciPy Games–Howell](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.tukey_hsd.html)
 (`equal_var=False`). Numerical/interval/wire controls are in
 `tests/scitex_stats/_mcp/_handlers/test__posthoc.py`.
+
+
+For `posthoc_test` with `method="tukey"`, the declared statsmodels backend
+must be usable. If its import or a backend dependency import fails, the tool
+returns `success=false` with an explicit Tukey HSD error and no comparisons.
+It does not substitute Bonferroni-corrected t-tests under the Tukey label.
+The available-backend comparison fields and existing precision are unchanged.
+Controls: `tests/integration/test_tukey_backend_availability.py` and
+`_mcp/_handlers/_posthoc.py::_tukey_hsd`.
