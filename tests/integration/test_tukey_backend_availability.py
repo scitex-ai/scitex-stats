@@ -66,7 +66,7 @@ print(json.dumps({'missing':missing,'result':result}))
 
 
 def test_available_tukey_retains_reference_values_and_result_contract():
-    # Arrange: independent SciPy1.18.1 reference at existing adapter 4dp precision.
+    # Arrange: independent SciPy1.18.1 reference before presentation rounding.
     groups = [list(group) for group in GROUPS]
     # Act
     result = asyncio.run(posthoc_test_handler(groups, ["A", "B", "C"], "tukey"))
@@ -75,6 +75,7 @@ def test_available_tukey_retains_reference_values_and_result_contract():
             "p": [row["p_adj"] for row in result["comparisons"]],
             "boolean_decisions": [type(row["reject"]) is bool for row in result["comparisons"]],
             "inputs_unchanged": groups == GROUPS} == {
-        "success": True, "method": "tukey", "p": [.3539, .5266, .9204],
+        "success": True, "method": "tukey", "p": pytest.approx([0.3539129796144884, 0.5266372523778904,
+                             0.9203741958565332], rel=1e-10, abs=1e-12),
         "boolean_decisions": [True] * 3, "inputs_unchanged": True,
     }

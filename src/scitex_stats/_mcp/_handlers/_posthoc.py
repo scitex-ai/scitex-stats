@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime
+from itertools import combinations
 
 import numpy as np
 
@@ -70,17 +71,17 @@ def _tukey_hsd(group_arrays, names):
 
         tukey = pairwise_tukeyhsd(all_data, group_labels)
 
-        for i in range(len(tukey.summary().data) - 1):
-            row = tukey.summary().data[i + 1]
+        # Numeric arrays retain precision lost by the formatted summary table.
+        for i, (group1, group2) in enumerate(combinations(tukey.groupsunique, 2)):
             comparisons.append(
                 {
-                    "group1": str(row[0]),
-                    "group2": str(row[1]),
-                    "mean_diff": float(row[2]),
-                    "p_adj": float(row[3]),
-                    "ci_lower": float(row[4]),
-                    "ci_upper": float(row[5]),
-                    "reject": bool(row[6]),
+                    "group1": str(group1),
+                    "group2": str(group2),
+                    "mean_diff": float(tukey.meandiffs[i]),
+                    "p_adj": float(tukey.pvalues[i]),
+                    "ci_lower": float(tukey.confint[i, 0]),
+                    "ci_upper": float(tukey.confint[i, 1]),
+                    "reject": bool(tukey.reject[i]),
                 }
             )
     except ImportError as error:

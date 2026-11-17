@@ -150,8 +150,11 @@ For `posthoc_test` with `method="tukey"`, the declared statsmodels backend
 must be usable. If its import or a backend dependency import fails, the tool
 returns `success=false` with an explicit Tukey HSD error and no comparisons.
 It does not substitute Bonferroni-corrected t-tests under the Tukey label.
-The available-backend comparison fields and existing precision are unchanged.
-Controls: `tests/integration/test_tukey_backend_availability.py` and
+Available-backend probabilities, mean differences and simultaneous confidence
+intervals use the backend numeric arrays before display rounding. Pairs retain
+the backend sorted label order; `mean_diff` and its interval describe group2
+minus group1. `reject` retains the backend decision as a JSON boolean.
+Controls: `tests/integration/test_tukey_numeric_precision.py`, `tests/integration/test_tukey_backend_availability.py` and
 `_mcp/_handlers/_posthoc.py::_tukey_hsd`.
 
 
