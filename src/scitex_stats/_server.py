@@ -362,10 +362,10 @@ async def posthoc_test(
 
 @mcp.tool()
 async def p_to_stars(
-    p_value: float,
+    p_value: Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)],
     thresholds: Optional[List[float]] = None,
 ) -> str:
-    """Convert p-value to significance stars (*, **, ***, ns)."""
+    """Convert a finite probability in [0, 1] to stars (*, **, ***, ns)."""
     from scitex_stats._mcp.handlers import p_to_stars_handler
 
     result = await p_to_stars_handler(
