@@ -100,6 +100,16 @@ Owning sources: `correct/_correct_fdr.py`, `correct/_correct_holm.py`.
 Controls: `tests/scitex_stats/correct/`. This example covers adjusted
 probabilities, not every correction provider's decision metadata.
 
+When inferring a decision from a raw p-value, `normalize_result` treats
+`None`, NaN and `pandas.NA` in the optional `alpha_adjusted` field as unset,
+using family `alpha` (0.05 if omitted). A defined adjusted threshold still
+applies to raw p-values; adjusted p-values use family alpha. Explicit caller
+decisions/stars are preserved. `pvalue_adjusted=None` remains undefined;
+it does not fall back to raw-p significance. This does not validate every
+nonfinite/invalid metadata field or override missing family alpha values.
+Controls: `tests/integration/test_normalizer_missing_alpha.py` and
+`_utils/_normalize_core.py::normalize_result`.
+
 ## "Inspect a normality diagnostic"
 
 ```python

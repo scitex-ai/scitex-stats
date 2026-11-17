@@ -97,7 +97,7 @@ def normalize_result(
     """Normalize a result without overwriting caller decisions or stars.
 
     Adjusted probabilities use family ``alpha`` (default 0.05); raw
-    probabilities use ``alpha_adjusted`` when supplied, otherwise family alpha.
+    probabilities use non-missing ``alpha_adjusted``, otherwise family alpha.
     Inferred rejection retains the strict ``<`` comparison.
     """
     normalized = result.copy()
@@ -105,7 +105,9 @@ def normalize_result(
     pvalue_for_decision = normalized.get("pvalue_adjusted", normalized.get("pvalue"))
     alpha_for_decision = normalized.get("alpha", 0.05)
     if "pvalue_adjusted" not in normalized:
-        alpha_for_decision = normalized.get("alpha_adjusted", alpha_for_decision)
+        adjusted_alpha = normalized.get("alpha_adjusted")
+        if adjusted_alpha is not None and not pd.isna(adjusted_alpha):
+            alpha_for_decision = adjusted_alpha
 
     if "pstars" not in normalized and pvalue_for_decision is not None:
         from ._formatters import p2stars
