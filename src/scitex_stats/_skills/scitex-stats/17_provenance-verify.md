@@ -136,3 +136,20 @@ result separately when checking its own receipt, inputs and recomputation.
 Owners: `_verify.py::_recompute`, `_provenance.py::hash_result` and
 `reporting/_full_report.py::full_report`. Controls:
 `tests/integration/test_report_source_digest.py`.
+
+## Supplied input slots must match the receipt
+
+For native `run_test` receipts, use `data`, `data2` and `groups` in their
+original native slots. For MCP-origin receipts, pass the original list of
+groups in `data`; the receipt names those inputs `data[0]`, `data[1]`, etc.
+Supplying `data2` or nonempty `groups` for an MCP-origin receipt does not match
+its recorded slots: the `inputs` check fails with `not in receipt`, recompute
+is skipped, and `verified` is false. Those arguments are not silently ignored,
+even when valid `data` is also supplied or embedded data remains available.
+
+The same native verifier backs CLI and MCP. A completed MCP verification still
+returns `success: true` when `verified` is false; inspect the check statuses.
+Correctly supplied and embedded MCP inputs retain existing behavior.
+Owners: `_verify.py::_supplied_inputs` / `_resolve_inputs`.
+List/NumPy, explicit/embedded input controls:
+`tests/integration/test_verify_supplied_slots.py`.
