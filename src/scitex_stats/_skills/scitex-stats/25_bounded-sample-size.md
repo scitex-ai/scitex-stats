@@ -3,7 +3,7 @@ description: |
   [TOPIC] Bounded sample-size planning
   [DETAILS] ANOVA and goodness-of-fit chi-square MCP search bounds, feasible
   targets, minimum sample sizes and explicit unattained-target errors.
-tags: [scitex-stats-power, scitex-stats]
+tags: [scitex-stats-bounded-sample-size, scitex-stats]
 ---
 
 # Bounded sample-size planning
