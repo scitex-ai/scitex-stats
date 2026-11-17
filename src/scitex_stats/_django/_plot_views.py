@@ -112,13 +112,16 @@ def _data_uri(mime: str, payload: bytes) -> str:
 @require_POST
 def plot(request):
     """Run the test, build its plot spec, return the spec plus SVG and 300 dpi PNG."""
-    from scitex_stats import plot as render, plot_spec, run_test
+    from scitex_stats import plot as render
+    from scitex_stats import plot_spec, run_test
     from scitex_stats._utils._serialize import to_json_safe
 
     try:
         body = json.loads(request.body.decode("utf-8") or "{}")
     except (ValueError, UnicodeDecodeError):
         return JsonResponse({"error": "invalid JSON body"}, status=400)
+    if not isinstance(body, dict):
+        return JsonResponse({"error": "JSON body must be an object"}, status=400)
     test_name = body.get("test_name") or body.get("name")
     if not test_name:
         return JsonResponse({"error": "test_name required"}, status=400)

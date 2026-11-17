@@ -699,3 +699,17 @@ def test_analysis_rejects_non_object_json(client, endpoint, payload):
     assert (response.status_code, response.json()) == (
         400, {"error": "JSON body must be an object"},
     )
+
+
+@pytest.mark.parametrize(("endpoint", "message"), [
+    ("plot", "JSON body must be an object"),
+    ("report/pdf", "Invalid request body."),
+])
+@pytest.mark.parametrize("payload", [None, [], [1, 2], "text", 1, True])
+def test_render_rejects_non_object_json(client, endpoint, message, payload):
+    # Arrange: rendering requires a mapping of named parameters too.
+    path = f"/api/{endpoint}"
+    # Act
+    response = _post(client, path, payload)
+    # Assert
+    assert (response.status_code, response.json()) == (400, {"error": message})
