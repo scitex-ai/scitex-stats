@@ -37,10 +37,7 @@ def test_decisions_and_probabilities_match_independent_reference(form, pvalues, 
     np.testing.assert_array_equal(frame["rejected"], expected_reject)
     np.testing.assert_allclose(frame["alpha_adjusted"], expected_alpha)
     assert frame["label"].tolist() == [str(i) for i in range(len(pvalues))]
-    if isinstance(data, pd.DataFrame):
-        pd.testing.assert_frame_equal(data, before)
-    else:
-        assert data == before
+    pd.testing.assert_frame_equal(pd.DataFrame(data), pd.DataFrame(before))
 
 
 def test_per_row_alpha_and_missing_alpha_use_original_family_threshold():
@@ -68,9 +65,9 @@ def test_existing_strict_boundary_is_preserved():
     corrected = correct_bonferroni(records, alpha=0.05, verbose=False)
 
     # Assert: the leaf retains p_adjusted < alpha, not the reference's <=.
-    assert corrected[0]["pvalue_adjusted"] == 0.05
-    assert not corrected[0]["rejected"]
-    assert corrected[0]["alpha_adjusted"] == 0.025
+    assert {k: corrected[0][k] for k in ["pvalue_adjusted", "rejected", "alpha_adjusted"]} == {
+        "pvalue_adjusted": .05, "rejected": False, "alpha_adjusted": .025,
+    }
 
 
 def test_single_dict_and_explicit_dict_shape_remain_supported():
@@ -83,11 +80,14 @@ def test_single_dict_and_explicit_dict_shape_remain_supported():
                                 return_as="dict", verbose=False)
 
     # Assert
-    assert isinstance(single, dict) and single["rejected"]
-    assert single["pvalue_adjusted"] == 0.02
-    assert isinstance(records, list) and records[0]["rejected"]
-    assert records[0]["pvalue_adjusted"] == 0.04
-    assert original == {"pvalue": 0.02, "name": "one"}
+    assert {"single_type": type(single), "single_p": single["pvalue_adjusted"],
+            "single_rejected": single["rejected"], "records_type": type(records),
+            "records_p": records[0]["pvalue_adjusted"],
+            "records_rejected": records[0]["rejected"], "original": original} == {
+        "single_type": dict, "single_p": .02, "single_rejected": True,
+        "records_type": list, "records_p": .04, "records_rejected": True,
+        "original": {"pvalue": .02, "name": "one"},
+    }
 
 
 def test_record_alpha_overrides_preserve_missing_and_null_fallbacks():
@@ -100,7 +100,7 @@ def test_record_alpha_overrides_preserve_missing_and_null_fallbacks():
     corrected = correct_bonferroni(records, alpha=0.05, verbose=False)
 
     # Assert
-    assert [bool(row["rejected"]) for row in corrected] == [True, False, False]
+    np.testing.assert_array_equal([row["rejected"] for row in corrected], [True, False, False])
     np.testing.assert_allclose([row["pvalue_adjusted"] for row in corrected], [.06] * 3)
     np.testing.assert_allclose([row["alpha_adjusted"] for row in corrected],
                                np.array([.1, .05, .05]) / 3)

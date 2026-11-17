@@ -357,8 +357,10 @@ class TestBonferroniComparison:
         np.testing.assert_allclose(
             [row["pvalue_adjusted"] for row in corrected], [.005, .025, .05, .1, .25]
         )
-        assert [bool(row["rejected"]) for row in corrected] == [True, True, False, False, False]
-        assert n_rejected == 2
+        assert {"decisions": [bool(row["rejected"]) for row in corrected],
+                "count": n_rejected} == {
+            "decisions": [True, True, False, False, False], "count": 2,
+        }
 
 
 class TestBonferroniOutput:
