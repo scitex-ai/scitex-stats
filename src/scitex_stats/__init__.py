@@ -138,6 +138,7 @@ _LAZY_ATTRS: dict[str, str] = {
     # Bundled PDF/HTML/Markdown report (assumptions, primary, sensitivity, post-hoc)
     "report": "reporting",
     "build_report": "reporting",
+    "posthoc_test": "posthoc._posthoc_test",
     "run_posthoc": "posthoc",
     "select_posthoc": "posthoc",
     # JSON
@@ -244,6 +245,7 @@ def __dir__() -> list[str]:
 
 
 __all__ = [
+    "posthoc_test",
     "power_analysis",
     "__version__",
     # Submodules

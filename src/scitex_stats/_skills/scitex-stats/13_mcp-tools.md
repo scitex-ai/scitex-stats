@@ -19,7 +19,7 @@ All tools are prefixed `stats_` under the scitex MCP server
 | `stats_describe` | Compute count, mean, std, percentiles, IQR, skewness and kurtosis |
 | `stats_effect_size` | Calculate effect size between groups |
 | `stats_correct_pvalues` | Apply multiple comparison correction |
-| `stats_posthoc_test` | Run post-hoc pairwise comparisons |
+| `stats_posthoc_test` | Native pairwise comparisons ([guide](26_posthoc-api.md)) |
 | `stats_power_analysis` | Power analysis and sample size estimation |
 | `stats_normality_test` | Test data for normality |
 | `stats_format_results` | Format statistical results for publication |
