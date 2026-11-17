@@ -353,7 +353,12 @@ class TestBonferroniComparison:
         # Act
         n_rejected = sum(r["rejected"] for r in corrected)
         # Assert
-        assert n_rejected == 1
+        # Adjusted p=.005 and .025 are below .05; .05 itself stays excluded.
+        np.testing.assert_allclose(
+            [row["pvalue_adjusted"] for row in corrected], [.005, .025, .05, .1, .25]
+        )
+        assert [bool(row["rejected"]) for row in corrected] == [True, True, False, False, False]
+        assert n_rejected == 2
 
 
 class TestBonferroniOutput:

@@ -76,14 +76,19 @@ def correct_bonferroni(
     results : dict, list of dict, or DataFrame
         Results with added fields:
         - pvalue_adjusted: Bonferroni-adjusted p-value
-        - alpha_adjusted: Bonferroni-adjusted alpha threshold
-        - rejected: Whether null hypothesis is rejected (using adjusted values)
+        - alpha_adjusted: Threshold for comparing unadjusted p-values
+        - rejected: Whether adjusted p-value is strictly below the original alpha
         - pstars: Significance stars (using adjusted p-value)
 
     Notes
     -----
     The Bonferroni correction is the most conservative method for controlling
     the family-wise error rate (FWER) in multiple comparisons.
+
+    Decisions compare adjusted p-values with the original family alpha using
+    strict ``<``. A non-missing per-row ``alpha`` overrides the function value.
+    ``alpha_adjusted`` remains the threshold for unadjusted p-values; comparing
+    an adjusted p-value to it would apply the correction twice.
 
     For m tests with family-wise error rate α:
 
@@ -164,7 +169,9 @@ def correct_bonferroni(
         results_list = None
 
     if results_list is not None:
-        df = force_dataframe(results_list, fill_na=False, enforce_types=False)
+        # Supply the caller alpha before normalization can insert its 0.05 default.
+        records = [{**row, "alpha": row.get("alpha", alpha)} for row in results_list]
+        df = force_dataframe(records, fill_na=False, enforce_types=False)
     else:
         df = results.copy()
 
@@ -184,8 +191,8 @@ def correct_bonferroni(
 
     df["alpha_adjusted"] = alpha_values / m
 
-    # Update rejection decisions based on adjusted values
-    df["rejected"] = df["pvalue_adjusted"] < df["alpha_adjusted"]
+    # Adjust the probability or the threshold, never both.
+    df["rejected"] = df["pvalue_adjusted"] < alpha_values
 
     # Update significance stars based on adjusted p-values
     df["pstars"] = df["pvalue_adjusted"].apply(p2stars)
