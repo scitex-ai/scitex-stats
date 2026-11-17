@@ -153,3 +153,13 @@ It does not substitute Bonferroni-corrected t-tests under the Tukey label.
 The available-backend comparison fields and existing precision are unchanged.
 Controls: `tests/integration/test_tukey_backend_availability.py` and
 `_mcp/_handlers/_posthoc.py::_tukey_hsd`.
+
+
+For `method="dunn"`, joint ranks include the pooled tie correction.
+`p_value` is the two-sided normal-tail probability; `p_adj` retains the
+Bonferroni family adjustment and `reject` is a JSON boolean using the existing
+strict 0.05 threshold. Non-empty finite 1D groups are required; a pooled sample
+with no rank variance returns an explicit error. The adapter delegates to
+`posthoc._auto._dunn`; automatic native `run_posthoc(..., omnibus="kruskal")`
+retains its default Holm adjustment. Controls and independent reference values:
+`tests/integration/test_dunn_tie_correction.py`.

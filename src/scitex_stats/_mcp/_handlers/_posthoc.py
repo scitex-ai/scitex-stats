@@ -158,46 +158,16 @@ def _games_howell(group_arrays, names):
 
 
 def _dunn(group_arrays, names):
-    """Dunn's test for Kruskal-Wallis post-hoc."""
-    from scipy import stats as scipy_stats
+    """Adapt the native tie-corrected Dunn calculation with Bonferroni adjustment."""
+    from scitex_stats.posthoc._auto import _dunn as native_dunn
 
-    all_data = np.concatenate(group_arrays)
-    ranks = scipy_stats.rankdata(all_data)
-
-    # Assign ranks to groups
-    idx = 0
-    group_ranks = []
-    for g in group_arrays:
-        group_ranks.append(ranks[idx : idx + len(g)])
-        idx += len(g)
-
-    n_total = len(all_data)
-    n_comparisons = len(group_arrays) * (len(group_arrays) - 1) // 2
-
-    comparisons = []
-    for i in range(len(group_arrays)):
-        for j in range(i + 1, len(group_arrays)):
-            n_i, n_j = len(group_arrays[i]), len(group_arrays[j])
-            r_i, r_j = np.mean(group_ranks[i]), np.mean(group_ranks[j])
-
-            se = np.sqrt(n_total * (n_total + 1) / 12 * (1 / n_i + 1 / n_j))
-            z = (r_i - r_j) / se
-            p = 2 * (1 - scipy_stats.norm.cdf(abs(z)))
-            p_adj = min(p * n_comparisons, 1.0)
-
-            comparisons.append(
-                {
-                    "group1": names[i],
-                    "group2": names[j],
-                    "mean_rank_diff": float(r_i - r_j),
-                    "z_statistic": float(z),
-                    "p_value": float(p),
-                    "p_adj": float(p_adj),
-                    "reject": p_adj < 0.05,
-                }
-            )
-
-    return comparisons
+    rows = native_dunn(group_arrays, alpha=0.05, level=0.95, correction="bonferroni")
+    return [{
+        "group1": names[row["i"]], "group2": names[row["j"]],
+        "mean_rank_diff": row["mean_rank_diff"], "z_statistic": row["statistic"],
+        "p_value": row["p_unadjusted"], "p_adj": row["p_adjusted"],
+        "reject": bool(row["p_adjusted"] < 0.05),
+    } for row in rows]
 
 
 # EOF

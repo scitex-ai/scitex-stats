@@ -238,7 +238,13 @@ def _games_howell(groups, alpha, level):
     return out
 
 
-def _dunn(groups, alpha, level):
+def _dunn(groups, alpha, level, *, correction="holm"):
+    """Joint-rank Dunn probabilities with tie correction and explicit adjustment."""
+    if correction not in ("holm", "bonferroni"):
+        raise ValueError("Dunn correction must be 'holm' or 'bonferroni'")
+    if len(groups) < 2 or any(np.asarray(g).ndim != 1 or len(g) == 0
+                              or not np.isfinite(g).all() for g in groups):
+        raise ValueError("Dunn requires at least two non-empty finite 1D groups")
     k = len(groups)
     pooled = np.concatenate(groups)
     n_total = pooled.size
@@ -246,6 +252,8 @@ def _dunn(groups, alpha, level):
     _, counts = np.unique(pooled, return_counts=True)
     ties = float(((counts ** 3) - counts).sum())
     sigma2 = n_total * (n_total + 1) / 12 - ties / (12 * (n_total - 1))
+    if not np.isfinite(sigma2) or sigma2 <= 0:
+        raise ValueError("Dunn is undefined for zero or non-finite pooled rank variance")
     bounds = np.cumsum([0] + [len(g) for g in groups])
     mean_ranks = [ranks[bounds[g]:bounds[g + 1]].mean() for g in range(k)]
     out, raw = [], []
@@ -256,7 +264,13 @@ def _dunn(groups, alpha, level):
         raw.append(p)
         out.append({"i": i, "j": j, "statistic": float(z), "stat_symbol": "z", "df": None,
                     "p_unadjusted": p, "mean_rank_diff": float(mean_ranks[i] - mean_ranks[j])})
-    for row, adj in zip(out, _holm(raw)):
+    if correction == "holm":
+        adjusted = _holm(raw)
+    else:
+        from scitex_stats import correct_pvalues
+
+        adjusted = correct_pvalues(raw, method="bonferroni", alpha=alpha)["corrected_pvalues"]
+    for row, adj in zip(out, adjusted):
         row["p_adjusted"] = adj
     return out
 
