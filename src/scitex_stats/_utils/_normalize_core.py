@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # File: scitex_stats/_utils/_normalize_core.py
 # ----------------------------------------
-from __future__ import annotations
-
 """Normalisation primitives (schemas + dict/DataFrame coercion).
 
 Split out from `_normalizers.py` so the file-size budget stays
@@ -11,6 +9,8 @@ backward compatibility — existing
 `from scitex_stats._utils._normalizers import …` callsites keep
 working without changes.
 """
+
+from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Union
 
@@ -94,11 +94,18 @@ COLUMN_TYPES = {
 def normalize_result(
     result: Dict[str, Any], fill_missing: bool = True
 ) -> Dict[str, Any]:
-    """Normalize a test result dict to the standard schema."""
+    """Normalize a result without overwriting caller decisions or stars.
+
+    Adjusted probabilities use family ``alpha`` (default 0.05); raw
+    probabilities use ``alpha_adjusted`` when supplied, otherwise family alpha.
+    Inferred rejection retains the strict ``<`` comparison.
+    """
     normalized = result.copy()
 
     pvalue_for_decision = normalized.get("pvalue_adjusted", normalized.get("pvalue"))
-    alpha_for_decision = normalized.get("alpha_adjusted", normalized.get("alpha", 0.05))
+    alpha_for_decision = normalized.get("alpha", 0.05)
+    if "pvalue_adjusted" not in normalized:
+        alpha_for_decision = normalized.get("alpha_adjusted", alpha_for_decision)
 
     if "pstars" not in normalized and pvalue_for_decision is not None:
         from ._formatters import p2stars
