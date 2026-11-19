@@ -1,13 +1,75 @@
-"""Linter plugin for scitex-stats: statistics-specific rules (ST001-ST006).
+"""Linter plugin for scitex-stats: statistics-specific rules.
 
-Registered via entry point 'scitex_linter.plugins' so scitex-linter
-discovers these rules automatically when scitex-stats is installed.
+- ``STX-ST001``-``ST006`` — a raw ``scipy.stats`` test call has a
+  ``stx.stats`` equivalent with effect sizes / CI.
+- ``STX-I002`` — ``from scipy import stats`` / ``from scipy.stats import ...``
+  (use ``stx.stats``). Moved here from the scitex-dev engine, which lists
+  scitex-stats as its owner in its handover table: same id, severity,
+  message and gates, so findings are unchanged. With this plugin installed
+  the engine stops emitting it; with an older scitex-stats the engine's
+  compatibility copy still does.
+
+Registered via the ``scitex_dev.linter.plugins`` entry point.
 """
+
+import ast
+
+# STX-I002 — engine metadata, verbatim.
+_I002 = dict(
+    id="STX-I002",
+    severity="warning",
+    category="import",
+    message="Use `stx.stats` instead of importing scipy.stats directly",
+    suggestion="Replace with `stx.stats` which adds effect sizes, CI, and power analysis.",
+    requires="scitex",
+)
+
+
+def _bind_import_checker(rule, spi):
+    """Checker emitting STX-I002 exactly where the engine did."""
+
+    class ScipyStatsImportChecker(ast.NodeVisitor):
+        category = "import"
+        # Package-availability map for the ``requires`` gate; None = detect.
+        available = None
+
+        def __init__(self, source_lines, config):
+            self.source_lines = source_lines
+            self.config = config
+            self.issues = []
+
+        def visit_ImportFrom(self, node):
+            module = node.module or ""
+            hit = module == "scipy.stats" or (
+                module == "scipy" and any(a.name == "stats" for a in node.names)
+            )
+            if hit:
+                lineno = node.lineno
+                source = (
+                    self.source_lines[lineno - 1].rstrip()
+                    if 1 <= lineno <= len(self.source_lines)
+                    else ""
+                )
+                spi.add_issue(
+                    self.issues,
+                    rule,
+                    lineno,
+                    node.col_offset,
+                    source,
+                    self.config,
+                    available=self.available,
+                )
+            self.generic_visit(node)
+
+    return ScipyStatsImportChecker
 
 
 def get_plugin():
-    """Return scitex-stats linter rules and call mappings."""
-    from scitex_dev.linter._rules._base import Rule
+    """Return scitex-stats linter rules, call mappings and checkers."""
+    from scitex_dev.linter import spi
+    from scitex_dev.linter.spi import Rule
+
+    I002 = Rule(**_I002)
 
     ST001 = Rule(
         id="STX-ST001",
@@ -64,7 +126,7 @@ def get_plugin():
     )
 
     return {
-        "rules": [ST001, ST002, ST003, ST004, ST005, ST006],
+        "rules": [ST001, ST002, ST003, ST004, ST005, ST006, I002],
         "call_rules": {
             ("stats", "ttest_ind"): ST001,
             ("scipy.stats", "ttest_ind"): ST001,
@@ -80,5 +142,5 @@ def get_plugin():
             ("scipy.stats", "kruskal"): ST006,
         },
         "axes_hints": {},
-        "checkers": [],
+        "checkers": [_bind_import_checker(I002, spi)],
     }
