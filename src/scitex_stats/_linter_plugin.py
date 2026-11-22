@@ -5,7 +5,9 @@
 - ``STX-I002`` — ``from scipy import stats`` / ``from scipy.stats import ...``
   (use ``stx.stats``). Moved here from the scitex-dev engine, which lists
   scitex-stats as its owner in its handover table: same id, severity,
-  message and gates, so findings are unchanged. With this plugin installed
+  message and gates. Relative imports refer to package-local modules and are
+  excluded here; engine-equivalence claims apply to absolute imports.
+  With this plugin installed
   the engine stops emitting it; with an older scitex-stats the engine's
   compatibility copy still does.
 
@@ -26,7 +28,7 @@ _I002 = dict(
 
 
 def _bind_import_checker(rule, spi):
-    """Checker emitting STX-I002 exactly where the engine did."""
+    """Check absolute SciPy imports, preserving the engine metadata and gates."""
 
     class ScipyStatsImportChecker(ast.NodeVisitor):
         category = "import"
@@ -40,8 +42,9 @@ def _bind_import_checker(rule, spi):
 
         def visit_ImportFrom(self, node):
             module = node.module or ""
-            hit = module == "scipy.stats" or (
-                module == "scipy" and any(a.name == "stats" for a in node.names)
+            hit = node.level == 0 and (
+                module == "scipy.stats"
+                or (module == "scipy" and any(a.name == "stats" for a in node.names))
             )
             if hit:
                 lineno = node.lineno
