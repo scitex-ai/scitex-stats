@@ -44,6 +44,7 @@ def as_result(raw: Dict[str, Any], spec, role: str, alpha: float) -> Dict[str, A
         "effect_size_metric": raw.get("effect_size_metric"),
         "apa_plain": apa.get("plain"),
         "apa_segments": apa.get("segments"),
+        "apa_table": apa.get("table"),
         "error": raw.get("error"),
         "provenance": raw.get("provenance"),
     }
