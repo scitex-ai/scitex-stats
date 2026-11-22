@@ -119,7 +119,8 @@ def run_test(
         Name of the test (e.g. ``"ttest_ind"``, ``"anova"``).
         See :func:`available_tests` for the full list including aliases.
     data : array-like, optional
-        Primary data array.
+        Primary data array, or the complete two-dimensional contingency table
+        for chi-square and Fisher tests.
     data2 : array-like, optional
         Second data array (for two-sample / paired tests).
     groups : list of array-like, optional
@@ -283,6 +284,8 @@ def _call_test(
     if test_name in _CONTINGENCY:
         if groups is not None:
             table = np.array(groups, dtype=float)
+        elif data2 is None:
+            table = data
         else:
             table = np.vstack([data, data2])
         return func(table, **common)
