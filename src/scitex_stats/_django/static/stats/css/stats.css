@@ -773,3 +773,5 @@
 .stats-import-dialog__body { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
 .stats-import-dialog .stats-project__list { max-block-size: 180px; overflow: auto; }
 .stats-import-dialog .stats-preview__table { max-block-size: 220px; overflow: auto; }
+
+.stats-correction-results:has(tbody:empty) { display: none; }

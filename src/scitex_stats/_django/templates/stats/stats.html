@@ -96,6 +96,26 @@ base page (site header + dock), standalone uses the SDK UI shell.
           <input type="number" id="statsPopmean" value="0" step="any">
         </label>
       </div>
+        <div class="stats-row stats-row--actions">
+          <button type="button" class="stats-btn" id="statsRunAll" hidden aria-controls="statsRunAllOut">{% translate "Run all applicable (sensitivity)" %}</button>
+        </div>
+      <details class="stx-acc stats-acc">
+        <summary>{% translate "Multiple-comparison correction" %}</summary>
+        <div class="stx-acc__body">
+          <label class="stats-field"><span>{% translate "Method" %}</span>
+            <select class="stx-select" id="statsCorrMethod">
+              <option value="fdr_bh" selected>FDR (Benjamini–Hochberg)</option>
+              <option value="bonferroni">Bonferroni</option>
+              <option value="holm">Holm</option>
+              <option value="sidak">Šidák</option>
+            </select>
+          </label>
+          <label class="stats-field"><span>{% translate "P-values" %}</span>
+            <textarea id="statsCorrP" rows="2" placeholder="0.01 0.02 0.03 0.5"></textarea>
+          </label>
+          <button type="button" class="stats-btn" id="statsCorrect">{% translate "Correct" %}</button>
+        </div>
+      </details>
     </div>
   {% endscitex_pane %}
 
@@ -111,9 +131,6 @@ base page (site header + dock), standalone uses the SDK UI shell.
         <div id="statsRecCard" class="stats-rec"><ul id="statsRecNotes" class="stats-notes" hidden></ul></div>
         <div id="statsAssumptions" class="stats-assumptions"></div>
         <figure id="statsPlotSlot" class="stats-plot-slot" data-stats-plot-slot hidden></figure>
-        <div class="stats-row stats-row--actions">
-          <button type="button" class="stats-btn" id="statsRunAll">{% translate "Run all applicable (sensitivity)" %}</button>
-        </div>
         <div id="statsRunAllOut" class="stats-runall" hidden></div>
       </section>
       <div id="statsEmpty" class="stats-empty">
@@ -160,24 +177,10 @@ base page (site header + dock), standalone uses the SDK UI shell.
         <p id="statsReportStatus" class="stats-hint stats-report__status" role="status" aria-live="polite"></p>
       </section>
 
-      <details class="stx-acc stats-acc">
-        <summary>{% translate "Multiple-comparison correction" %}</summary>
-        <div class="stx-acc__body">
-          <label class="stats-field"><span>{% translate "Method" %}</span>
-            <select class="stx-select" id="statsCorrMethod">
-              <option value="fdr_bh" selected>FDR (Benjamini–Hochberg)</option>
-              <option value="bonferroni">Bonferroni</option>
-              <option value="holm">Holm</option>
-              <option value="sidak">Šidák</option>
-            </select>
-          </label>
-          <label class="stats-field"><span>{% translate "P-values" %}</span>
-            <textarea id="statsCorrP" rows="2" placeholder="0.01 0.02 0.03 0.5"></textarea>
-          </label>
-          <button type="button" class="stats-btn" id="statsCorrect">{% translate "Correct" %}</button>
+      <section class="stats-correction-results" aria-label="{% translate 'Multiple-comparison correction' %}">
+        <h3>{% translate "Multiple-comparison correction" %}</h3>
           <table class="stats-table"><tbody id="statsCorrOut"></tbody></table>
-        </div>
-      </details>
+      </section>
 
       <details class="stx-acc stats-acc">
         <summary>{% translate "Post-hoc comparisons" %}</summary>

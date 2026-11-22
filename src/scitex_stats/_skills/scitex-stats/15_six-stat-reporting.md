@@ -69,3 +69,17 @@ interval, is treated as missing (and raises under `strict=True`).
 - `strict=False` — log a warning and return the partial report with a
   `missing_fields` list. Use when assembling a report that is intentionally
   incomplete and you want to see which fields are still absent.
+
+## Publishing a comparison
+
+Use `run_all_applicable` for the same primary and sensitivity analyses as the
+Stats GUI. Choose multiplicity correction in the analysis plan when the
+question requires it. Parallel sensitivity analyses and multiplicity correction
+serve different purposes.
+
+Use `scitex_stats.result_preview.comparison_artifact` to validate a comparison
+before publishing it. Each successful result needs a finite, named effect size.
+Use `preview_result` to read a saved report without recomputing the analysis.
+Render APA segments with their supplied italic, superscript, and subscript
+formatting. Retain the provider's precision and leave absent power estimates
+unspecified.
