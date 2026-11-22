@@ -9,6 +9,8 @@ the metadata is identical to the engine's compatibility copy.
 
 import ast
 
+import pytest
+
 from scitex_dev.linter import spi
 from scitex_dev.linter.config import LinterConfig
 
@@ -70,3 +72,42 @@ def test_per_rule_severity_pin_applies_to_i002():
     found = _findings("from scipy import stats\n", config)
     # Assert
     assert found == [("STX-I002", 1, "error")]
+
+
+# AST/SPI selection controls: availability is an explicit unit input, not
+# installed discovery, actual umbrella availability or engine-fallback proof.
+@pytest.mark.parametrize("source", [
+    "from .scipy import stats\n",
+    "from ..scipy import stats\n",
+    "from .scipy import stats as local_stats\n",
+    "from .scipy.stats import ttest_ind\n",
+    "from ..scipy.stats import pearsonr, ttest_ind\n",
+    "from .scipy.stats import *\n",
+    "if True:\n    from .scipy import stats\n",
+    "def calculate():\n    from ..scipy.stats import ttest_ind\n",
+])
+def test_relative_scipy_named_modules_are_not_external_imports(source):
+    # Arrange
+    checker = _Checker(source.splitlines(), LinterConfig())
+    # Act
+    checker.visit(ast.parse(source))
+    # Assert
+    assert checker.issues == []
+
+
+@pytest.mark.parametrize("source, lines", [
+    ("from scipy import stats\n", [1]),
+    ("from scipy import linalg, stats as scientific_stats\n", [1]),
+    ("from scipy.stats import ttest_ind, pearsonr\n", [1]),
+    ("import scipy.stats\n", []),
+    ("from scipy import linalg\n", []),
+])
+def test_absolute_import_selection_retains_owning_contract(source, lines):
+    # Arrange
+    checker = _Checker(source.splitlines(), LinterConfig())
+    # Act
+    checker.visit(ast.parse(source))
+    # Assert
+    assert [(issue.rule.id, issue.line, issue.rule.severity) for issue in checker.issues] == [
+        ("STX-I002", line, "warning") for line in lines
+    ]

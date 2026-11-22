@@ -7,6 +7,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- **Linter:** ignore package-relative imports named `scipy` in the leaf-owned
+  `STX-I002` checker. Absolute imports and the existing availability, suppression
+  and severity gates retain their behavior.
+
 - **Linter: `STX-I002` (`scipy.stats` imports) now owned and emitted by scitex-stats** (moved from the
   scitex-dev engine, which yields it to this plugin). Same ids, severities,
   messages and gates, so findings are unchanged; proven identical with
