@@ -105,6 +105,21 @@ def test_run_test_chi2_with_groups_2d_table_value_pvalue():
     assert "p_value" in out or "pvalue" in out
 
 
+def test_run_test_chi2_accepts_and_verifies_a_single_contingency_table():
+    from scitex_stats import verify
+
+    # Arrange
+    table = np.array([[10, 2], [3, 9], [7, 5]])
+
+    # Act
+    direct = run_test("chi2", data=table)
+    grouped = run_test("chi2", groups=table.tolist())
+    checked = verify(direct, data=table)
+
+    # Assert
+    assert (direct["statistic"], checked["verified"]) == (grouped["statistic"], True)
+
+
 def test_run_test_chi2_via_data_plus_data2_rows():
     """When `groups` is None, `_call_test` builds the table via
     `np.vstack([data, data2])`."""
