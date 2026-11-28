@@ -7,6 +7,13 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-11-28
+
+Public seeded `bootstrap_ci`, and the package passes the scitex-dev MCP
+audit again (§2/§6): `describe` tool renamed `describe_data`, public sync
+APIs behind six MCP tools, and the remaining Python-API ↔ MCP gap held by a
+shrink-only parity baseline.
+
 - Add public `bootstrap_ci(data, statistic="median", *, data2=None,
   paired=False, confidence=0.95, n_resamples=10_000, method="percentile",
   seed=42, nan_policy="raise")`, also under `scitex_stats.descriptive`. It
