@@ -16,7 +16,7 @@ All tools are prefixed `stats_` under the scitex MCP server
 |------|---------|
 | `stats_run_test` | Run any statistical test by name |
 | `stats_recommend_tests` | Auto-recommend appropriate tests for given data |
-| `stats_describe` | Compute descriptive statistics (mean, std, CI, etc.) |
+| `stats_describe_data` | Compute descriptive statistics (mean, std, CI, etc.); was `stats_describe` before 1.1.0 |
 | `stats_effect_size` | Calculate effect size between groups |
 | `stats_correct_pvalues` | Apply multiple comparison correction |
 | `stats_posthoc_test` | Run post-hoc pairwise comparisons |
@@ -34,6 +34,27 @@ All tools are prefixed `stats_` under the scitex MCP server
 
 Descriptive statistics require at least one non-NaN observation. Empty or
 all-NaN input returns `success: false` and `error: "No valid data points"`.
+
+## Python API behind each tool
+
+Every tool wraps one public synchronous function that returns the same
+payload without the MCP envelope (`success`, `timestamp`) and raises
+instead of returning `success: false`:
+
+| Tool | Python API |
+|------|------------|
+| `stats_correct_pvalues` | `scitex_stats.correct_pvalues(pvalues, method, alpha)` |
+| `stats_effect_size` | `scitex_stats.effect_size(group1, group2, measure)` |
+| `stats_normality_test` | `scitex_stats.normality_test(data, method)` |
+| `stats_posthoc_test` | `scitex_stats.posthoc_test(groups, group_names, method, control_group)` |
+| `stats_power_analysis` | `scitex_stats.power_analysis(test_type, effect_size, alpha, power, n, n_groups, ratio)` |
+| `stats_format_results` | `scitex_stats.format_results(test_name, statistic, p_value, ...)` |
+| `stats_describe_data` | `scitex_stats.describe(data)` |
+| `stats_verify_result` | `scitex_stats.verify(result, data, data2, groups)` |
+
+Python APIs with no tool yet are recorded in
+`.scitex/dev/mcp-parity-baseline.yaml`; the audit fails if a new API
+lands without a tool, and the list may only shrink.
 
 ## Handler Organization
 

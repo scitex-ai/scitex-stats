@@ -9,8 +9,10 @@ the probability of detecting true effects.
 """
 
 from ._power import power_ttest, sample_size_ttest
+from ._power_analysis import power_analysis
 
 __all__ = [
+    "power_analysis",
     "power_ttest",
     "sample_size_ttest",
 ]

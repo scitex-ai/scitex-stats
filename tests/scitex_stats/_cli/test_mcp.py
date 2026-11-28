@@ -37,7 +37,7 @@ cli_mcp = importlib.import_module("scitex_stats._cli.mcp")
         ("power_analysis", "power"),
         ("effect_size", "effect_sizes"),
         ("normality_test", "normality"),
-        ("describe", "descriptive"),
+        ("describe_data", "descriptive"),
         ("format_results", "formatting"),
         ("p_to_stars", "formatting"),
         ("run_test", "general"),
