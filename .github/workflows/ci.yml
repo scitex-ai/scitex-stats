@@ -77,7 +77,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.native_test_profile
     permissions:
       contents: read
-    uses: scitex-ai/.github/.github/workflows/leaf-release-sif.yml@3abab4fa9929a128c6a509f016b9580bec96fcbb
+    uses: scitex-ai/.github/.github/workflows/leaf-release-sif.yml@49c5ad4d8905e8cbd0fabfbb6219ec810616c95b
     with:
       operation: test
       source_commit: ${{ github.sha }}
@@ -105,7 +105,7 @@ jobs:
     needs: native-qualified-version
     permissions:
       contents: read
-    uses: scitex-ai/.github/.github/workflows/leaf-release-sif.yml@3abab4fa9929a128c6a509f016b9580bec96fcbb
+    uses: scitex-ai/.github/.github/workflows/leaf-release-sif.yml@49c5ad4d8905e8cbd0fabfbb6219ec810616c95b
     with:
       operation: build
       source_commit: ${{ github.sha }}
