@@ -178,6 +178,9 @@ jobs:
       - name: Verify release assets and extract notes
         run: |
           set -euo pipefail
+          git fetch --no-tags origin "+refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+          [ "$(git rev-parse --verify "refs/tags/$RELEASE_TAG^{commit}")" = "$RELEASE_COMMIT" ] || {
+            echo "::error::$RELEASE_TAG moved after publication"; exit 1; }
           python -I .github/ci/release-identity.py verify-proof \
             --commit "$RELEASE_COMMIT" --version "$RELEASE_VERSION" --dist dist
           awk -v v="$RELEASE_VERSION" '
