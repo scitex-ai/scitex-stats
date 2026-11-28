@@ -7,6 +7,24 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- **MCP tool renamed: `describe` → `describe_data`** (`stats_describe` →
+  `stats_describe_data` under the umbrella). §2 rejects a bare `describe`
+  tool name, so no alias under the old name can be kept; callers must use the
+  new name. The Python API `scitex_stats.describe` is unchanged.
+- Add public synchronous Python APIs behind six MCP tools that previously had
+  logic only inside their async handlers: `correct_pvalues`, `effect_size`,
+  `normality_test`, `posthoc_test`, `power_analysis` and `format_results`.
+  Each returns the tool's payload without the MCP envelope and raises instead
+  of returning `success: false`; the tools now wrap them, so the two surfaces
+  cannot drift.
+- `normality_test` with too few values (`dagostino` < 8) now reports
+  `success: false` with the same error message, instead of `success: true`
+  plus an `error` key.
+- Record the remaining Python-API ↔ MCP gap (106 of 122 operations) in
+  `.scitex/dev/mcp-parity-baseline.yaml`, the scitex-dev §6 ratchet: a new
+  API without a tool fails the audit and the list may only shrink. Requires
+  scitex-dev 0.68.0.
+
 - Use package-owned subprocess coverage support instead of writing startup
   hooks into shared Python environments during test collection.
 

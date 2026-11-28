@@ -11,12 +11,14 @@ error rate control.
 from ._auto import run_posthoc, select_posthoc
 from ._dunnett import posthoc_dunnett
 from ._games_howell import posthoc_games_howell
+from ._posthoc_test import posthoc_test
 from ._tukey_hsd import posthoc_tukey
 
 __all__ = [
     "posthoc_tukey",
     "posthoc_games_howell",
     "posthoc_dunnett",
+    "posthoc_test",
     "run_posthoc",
     "select_posthoc",
 ]

@@ -54,7 +54,7 @@ Available Tools
      - Calculate statistical power or required sample size
    * - ``correct_pvalues``
      - Apply multiple comparison correction (FDR, Bonferroni, etc.)
-   * - ``describe``
+   * - ``describe_data``
      - Calculate descriptive statistics
    * - ``effect_size``
      - Calculate effect size between groups

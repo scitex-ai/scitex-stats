@@ -106,7 +106,7 @@ class TestServerCreation:
 
 EXPECTED_TOOLS = [
     "correct_pvalues",
-    "describe",
+    "describe_data",
     "effect_size",
     "format_results",
     "normality_test",
@@ -371,14 +371,14 @@ def test_correct_pvalues_direct():
 def test_describe_direct_success():
     # Arrange
     # Act
-    out = _decode(_run_async(_tool_fn("describe")(data=[1.0, 2.0, 3.0, 4.0, 5.0])))
+    out = _decode(_run_async(_tool_fn("describe_data")(data=[1.0, 2.0, 3.0, 4.0, 5.0])))
     # Assert
     assert out["success"] is True
 
 def test_describe_direct_mean():
     # Arrange
     # Act
-    out = _decode(_run_async(_tool_fn("describe")(data=[1.0, 2.0, 3.0, 4.0, 5.0])))
+    out = _decode(_run_async(_tool_fn("describe_data")(data=[1.0, 2.0, 3.0, 4.0, 5.0])))
     # Assert
     assert "mean" in out
 

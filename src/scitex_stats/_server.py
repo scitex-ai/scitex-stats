@@ -263,11 +263,11 @@ async def correct_pvalues(
 
 
 @mcp.tool()
-async def describe(
+async def describe_data(
     data: List[float],
     percentiles: Optional[List[float]] = None,
 ) -> str:
-    """Calculate descriptive statistics for data.
+    """Calculate descriptive statistics for data (renamed from ``describe`` in 1.1.0).
 
     Empty or all-NaN input returns a failed result with an error message.
     """
