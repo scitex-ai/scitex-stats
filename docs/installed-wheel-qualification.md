@@ -106,7 +106,8 @@ extra archives, symlinked inputs and changed verifier bytes fail.
 The shared core checks archive membership and source bytes against Git,
 including the required skills, built documentation and application files.
 The proof is verification evidence; it grants no runtime, tag or publishing
-admission. The existing release workflow does not invoke this adapter yet.
+admission. The central build and the hosted publisher both run it (see
+[Central release route](#central-release-route)).
 Archive identity and the fresh installed-wheel behavioral probe are separate
 requirements, and neither replaces the full retained-image suite.
 
@@ -127,9 +128,29 @@ retain spaces.
 Use expected digests from a reviewed runtime/image registration. Computing a
 checksum of an unknown live file does not qualify it. These byte checks grant
 no runtime or publishing admission and do not replace private state/scratch,
-capacity and source/archive verification. The legacy release caller reads the
-digests from Actions variables; missing configuration remains a release hold.
-No release dispatch or variable change is performed by this source change.
+capacity and source/archive verification. The release workflow takes the
+digests from the central registration, not from Actions variables.
+
+## Central release route
+
+The release workflow uses the registered executor in `scitex-ai/.github`
+(`leaf-release-sif.yml`, pinned to one commit). It fixes the image, runtime,
+compute-03 runner, the ten helpers above by SHA-256 and the shared lifecycle
+resource. Its `build` operation runs `build-in-sif.sh 3.12`, then
+`release-identity.py write-proof`, `probe-wheel-in-sif.sh 3.12` and
+`verify-proof` over the same `dist/`. It uploads `stats-dist-<commit>` only if
+all of them pass. The release tag supplies the expected version.
+
+Publication stays in this repository's hosted `publish` job, in the workflow
+file and `pypi` environment that PyPI's trusted publisher names. The job runs
+`verify-proof` again on the downloaded bytes, refuses a tag that moved or left
+main, and uploads only the wheel and sdist. A hosted preflight refuses a tag
+that is not on protected main, a `pyproject.toml` version that differs from
+the tag, and a version already on PyPI.
+
+To qualify the current tree without publishing, dispatch `ci.yml` with
+`native_build_profile` (and `native_test_profile` for the full matrix). The
+build artifact stays an Actions artifact.
 
 ## Private state policy building block
 
@@ -179,10 +200,9 @@ for the installer and its CLI/MCP children. Each phase receives private state an
 settings when constructing its child environment.
 Build installation uses uv and stops on failure, with no pip fallback.
 
-The supported routes are non-publishing applications. The legacy manual OIDC
-publisher is refused. Automatic shared-caller staging, full current native-suite
-and cancellation/cleanup qualification, source/runtime registration, and the
-qualified shared publisher remain prerequisites for release admission.
+The supported in-image routes are non-publishing applications; `exec-in-sif.sh`
+refuses the legacy in-image OIDC publisher. Publication happens only in the
+hosted job described in [Central release route](#central-release-route).
 
 The probe environment controls in `tests/integration/test_installed_wheel_probe.py`
 exercise both HOME modes with real store resolution and a missing owned Unix

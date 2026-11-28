@@ -127,7 +127,7 @@ async def verify_mcp(root):
                 catalog = await session.list_tools()
                 names = {tool.name for tool in catalog.tools}
                 require(
-                    {"describe", "correct_pvalues", "skills_list", "skills_get"} <= names,
+                    {"describe_data", "correct_pvalues", "skills_list", "skills_get"} <= names,
                     "required public MCP tools are missing",
                 )
 
@@ -135,10 +135,10 @@ async def verify_mcp(root):
                     result = await session.call_tool(name, arguments)
                     return json.loads(result.content[0].text)
 
-                empty = await call("describe", {"data": []})
+                empty = await call("describe_data", {"data": []})
                 require(empty == {"success": False, "error": "No valid data points"},
                         "MCP empty input was not reported as a failure")
-                valid = await call("describe", {"data": [1, 2, 3]})
+                valid = await call("describe_data", {"data": [1, 2, 3]})
                 require((valid["success"], valid["n"], valid["mean"]) == (True, 3, 2.0),
                         "MCP descriptive result is incorrect")
                 corrected = await call(

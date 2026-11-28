@@ -36,6 +36,11 @@ on:
         type: boolean
         required: false
         default: false
+      native_build_profile:
+        description: Run the qualified native build, archive proof and fresh-wheel probe (Actions artifact only, no publication)
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -72,9 +77,37 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.native_test_profile
     permissions:
       contents: read
-    uses: scitex-ai/.github/.github/workflows/leaf-release-sif.yml@4b2175758b236d57a90918a196f723b7400f0bbd
+    uses: scitex-ai/.github/.github/workflows/leaf-release-sif.yml@49c5ad4d8905e8cbd0fabfbb6219ec810616c95b
     with:
       operation: test
       source_commit: ${{ github.sha }}
       # Required test-plan label only: this job never creates a tag or artifact.
       release_tag: v1.0.0
+
+  native-qualified-version:
+    if: github.event_name == 'workflow_dispatch' && inputs.native_build_profile
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - id: version
+        name: Read the declared project version (the proof checks it against Git)
+        run: |
+          python3 -c 'import tomllib; print("tag=v" + tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])' >> "$GITHUB_OUTPUT"
+
+  native-qualified-build:
+    needs: native-qualified-version
+    permissions:
+      contents: read
+    uses: scitex-ai/.github/.github/workflows/leaf-release-sif.yml@49c5ad4d8905e8cbd0fabfbb6219ec810616c95b
+    with:
+      operation: build
+      source_commit: ${{ github.sha }}
+      # Version label for the archive proof only: no tag, upload to PyPI or release.
+      release_tag: ${{ needs.native-qualified-version.outputs.tag }}
