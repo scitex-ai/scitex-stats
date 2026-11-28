@@ -40,7 +40,7 @@ env:
 
 jobs:
   admission:
-    uses: scitex-ai/.github/.github/workflows/runner-admission.yml@208491cef2d9f5c77505f045e1e1633e368769ce
+    uses: scitex-ai/.github/.github/workflows/runner-admission.yml@3abab4fa9929a128c6a509f016b9580bec96fcbb
     with:
       runs_on: '["self-hosted","Linux","X64","scitex-org-cpu"]'
 
@@ -89,7 +89,7 @@ jobs:
   test:
     needs: [admission, preflight]
     if: needs.admission.outputs.native_authorized == 'true'
-    uses: scitex-ai/.github/.github/workflows/leaf-release-sif.yml@208491cef2d9f5c77505f045e1e1633e368769ce
+    uses: scitex-ai/.github/.github/workflows/leaf-release-sif.yml@3abab4fa9929a128c6a509f016b9580bec96fcbb
     with:
       operation: test
       source_commit: ${{ needs.preflight.outputs.commit }}
@@ -99,7 +99,7 @@ jobs:
     # Uploads stats-dist-<source_commit> only after the proof and the probe.
     needs: [admission, preflight, test]
     if: needs.admission.outputs.native_authorized == 'true'
-    uses: scitex-ai/.github/.github/workflows/leaf-release-sif.yml@208491cef2d9f5c77505f045e1e1633e368769ce
+    uses: scitex-ai/.github/.github/workflows/leaf-release-sif.yml@3abab4fa9929a128c6a509f016b9580bec96fcbb
     with:
       operation: build
       source_commit: ${{ needs.preflight.outputs.commit }}
