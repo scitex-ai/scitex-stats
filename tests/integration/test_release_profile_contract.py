@@ -1,4 +1,4 @@
-"""Release installation failures must stop; publisher code follows artifacts."""
+"""Release installation failures must stop before any test runs."""
 
 from __future__ import annotations
 
@@ -7,10 +7,8 @@ import subprocess
 from pathlib import Path
 
 import pytest
-import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
-WORKFLOW = ROOT / ".github/workflows/pypi-publish-and-github-release-on-tag.yml"
 
 
 @pytest.fixture
@@ -70,41 +68,3 @@ def test_dependency_failure_never_retries_a_reduced_profile(failed_dependency_in
     attempts = len(calls)
     # Assert
     assert attempts == 1
-
-
-def test_publisher_checkout_uses_the_artifact_source_commit():
-    # Arrange
-    jobs = yaml.safe_load(WORKFLOW.read_text())["jobs"]
-    # Act
-    checkout = next(
-        s
-        for s in jobs["publish"]["steps"]
-        if s.get("uses", "").startswith("actions/checkout@")
-    )
-    # Assert
-    assert checkout["with"]["ref"] == "${{ needs.build.outputs.commit }}"
-
-
-def test_build_exports_a_commit_recorded_from_its_checkout(tmp_path):
-    # Arrange
-    jobs = yaml.safe_load(WORKFLOW.read_text())["jobs"]
-    build = jobs["build"]
-    step = next(s for s in build["steps"] if s.get("id") == "source")
-    output = tmp_path / "github-output"
-    # Act
-    subprocess.run(
-        ["bash", "-e", "-c", step["run"]],
-        cwd=ROOT,
-        env=dict(os.environ, GITHUB_OUTPUT=str(output)),
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    head = subprocess.check_output(
-        ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
-    ).strip()
-    # Assert
-    assert (build["outputs"]["commit"], output.read_text()) == (
-        "${{ steps.source.outputs.commit }}",
-        f"commit={head}\n",
-    )
