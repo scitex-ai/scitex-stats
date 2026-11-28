@@ -26,9 +26,7 @@ except ImportError as exc:
         "Install the optional stack: pip install 'scitex-stats[server]'"
     ) from exc
 
-from . import _plot_views, _projects, views
-
-from . import _report_views, views
+from . import _plot_views, _projects, _report_views, public_api, views
 
 app_name = "stats"
 
@@ -50,6 +48,15 @@ urlpatterns = [
     path("api/project-save", views.project_save, name="project_save"),
     path("api/tests", views.tests, name="tests"),
     path("api/recommend", views.recommend, name="recommend"),
+    # Leaf-owned compatibility for the stateless public Hub recommendation
+    # interface (public Hub 0fe90e4): anonymous, JSON-only, POST-only. It
+    # lives under api/public/ so it cannot collide with the calculator GUI's
+    # api/recommend protocol above.
+    path(
+        "api/public/recommend",
+        public_api.stats_recommend,
+        name="public_recommend",
+    ),
     path("api/recommend-test", views.recommend_test, name="recommend_test"),
     path("api/run-all", views.run_all, name="run_all"),
     path("api/run", views.run, name="run"),

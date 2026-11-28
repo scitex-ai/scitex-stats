@@ -69,6 +69,7 @@ def test_wilcoxon(  # noqa: C901
         Label for second sample
     alternative : {'two-sided', 'greater', 'less'}, default 'two-sided'
         Alternative hypothesis:
+
         - 'two-sided': distributions differ
         - 'greater': x tends to be greater than y
         - 'less': x tends to be less than y
@@ -91,6 +92,7 @@ def test_wilcoxon(  # noqa: C901
     -------
     results : dict or DataFrame
         Test results including:
+
         - test_method: 'Wilcoxon signed-rank test'
         - statistic: W-statistic (sum of signed ranks)
         - pvalue: p-value
@@ -103,6 +105,8 @@ def test_wilcoxon(  # noqa: C901
 
     Notes
     -----
+    See [#wilcoxon-ref1]_, [#wilcoxon-ref2]_.
+
     The Wilcoxon signed-rank test is the non-parametric alternative to
     the paired t-test. It tests whether the median of differences is zero.
 
@@ -131,21 +135,23 @@ def test_wilcoxon(  # noqa: C901
         r = \frac{W_+ - W_-}{n(n+1)/2}
 
     Ranges from -1 to 1:
+
     - r close to 1: x > y (large positive effect)
     - r close to 0: no difference
     - r close to -1: x < y (large negative effect)
 
     Interpretation:
-    - |r| < 0.1: negligible
-    - |r| < 0.3: small
-    - |r| < 0.5: medium
-    - |r| ≥ 0.5: large
+
+    - :math:`|r|` < 0.1: negligible
+    - :math:`|r|` < 0.3: small
+    - :math:`|r|` < 0.5: medium
+    - :math:`|r|` ≥ 0.5: large
 
     References
     ----------
-    .. [1] Wilcoxon, F. (1945). "Individual comparisons by ranking methods".
+    .. [#wilcoxon-ref1] Wilcoxon, F. (1945). "Individual comparisons by ranking methods".
            Biometrics Bulletin, 1(6), 80-83.
-    .. [2] Kerby, D. S. (2014). "The simple difference formula: An approach to
+    .. [#wilcoxon-ref2] Kerby, D. S. (2014). "The simple difference formula: An approach to
            teaching nonparametric correlation". Comprehensive Psychology, 3, 11.
 
     Examples

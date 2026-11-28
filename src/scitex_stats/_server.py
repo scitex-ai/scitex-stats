@@ -21,7 +21,7 @@ mcp = FastMCP(
     name="scitex-stats",
     instructions=(
         "Statistical testing framework for publication-ready analysis. "
-        "Provides 23 tests (parametric, nonparametric, correlation, categorical, normality), "
+        "Provides 25 tests (parametric, nonparametric, correlation, categorical, normality, agreement), "
         "effect sizes, power analysis, multiple comparison corrections, and APA formatting."
     ),
 )
@@ -263,11 +263,14 @@ async def correct_pvalues(
 
 
 @mcp.tool()
-async def describe(
+async def describe_data(
     data: List[float],
     percentiles: Optional[List[float]] = None,
 ) -> str:
-    """Calculate descriptive statistics for data."""
+    """Calculate descriptive statistics for data (renamed from ``describe`` in 1.1.0).
+
+    Empty or all-NaN input returns a failed result with an error message.
+    """
     from scitex_stats._mcp.handlers import describe_handler
 
     result = await describe_handler(
@@ -275,6 +278,40 @@ async def describe(
         percentiles=percentiles,
     )
     return _json(result)
+
+
+@mcp.tool()
+async def bootstrap_ci(
+    data: List[float],
+    statistic: str = "median",
+    confidence: float = 0.95,
+    n_resamples: int = 10_000,
+    method: str = "percentile",
+    seed: int = 42,
+    nan_policy: str = "raise",
+) -> str:
+    """Seeded bootstrap confidence interval of a sample's median or mean."""
+    import asyncio
+
+    from scitex_stats.descriptive import bootstrap_ci as _bootstrap_ci
+
+    try:
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None,
+            lambda: _bootstrap_ci(
+                data,
+                statistic,
+                confidence=confidence,
+                n_resamples=n_resamples,
+                method=method,
+                seed=seed,
+                nan_policy=nan_policy,
+            ),
+        )
+        return _json({"success": True, **result})
+    except (TypeError, ValueError) as exc:
+        return _json({"success": False, "error": str(exc)})
 
 
 @mcp.tool()

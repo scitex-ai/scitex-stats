@@ -86,6 +86,7 @@ def test_pearson(  # noqa: C901
     -------
     results : dict or DataFrame
         Test results including:
+
         - test_method: 'Pearson correlation'
         - statistic: Pearson correlation coefficient
         - pvalue: p-value
@@ -102,6 +103,8 @@ def test_pearson(  # noqa: C901
 
     Notes
     -----
+    See [#pearson-ref1]_, [#pearson-ref2]_.
+
     Pearson correlation coefficient measures the linear relationship between
     two continuous variables.
 
@@ -125,24 +128,28 @@ def test_pearson(  # noqa: C901
     R² represents the proportion of variance in y explained by x.
 
     **Interpretation (Cohen, 1988)**:
-    - |r| < 0.1:  negligible
-    - |r| < 0.3:  small
-    - |r| < 0.5:  medium
-    - |r| ≥ 0.5:  large
+
+    - :math:`|r|` < 0.1:  negligible
+    - :math:`|r|` < 0.3:  small
+    - :math:`|r|` < 0.5:  medium
+    - :math:`|r|` ≥ 0.5:  large
 
     **Assumptions**:
+
     1. **Linearity**: Relationship between variables is linear
     2. **Normality**: Both variables are normally distributed (for hypothesis testing)
     3. **Homoscedasticity**: Variance is constant across the range
     4. **Independence**: Observations are independent
 
     **When to use**:
+
     - Assessing linear relationship between two continuous variables
     - Both variables approximately normally distributed
     - No major outliers present
     - Relationship appears linear on scatter plot
 
     **When NOT to use**:
+
     - Non-linear relationships (consider transformation or Spearman)
     - Ordinal data (use Spearman)
     - Severe outliers present (use Spearman)
@@ -156,10 +163,10 @@ def test_pearson(  # noqa: C901
 
     References
     ----------
-    .. [1] Pearson, K. (1896). "Mathematical contributions to the theory of
+    .. [#pearson-ref1] Pearson, K. (1896). "Mathematical contributions to the theory of
            evolution. III. Regression, heredity, and panmixia". Philosophical
            Transactions of the Royal Society of London. Series A, 187, 253-318.
-    .. [2] Cohen, J. (1988). Statistical Power Analysis for the Behavioral
+    .. [#pearson-ref2] Cohen, J. (1988). Statistical Power Analysis for the Behavioral
            Sciences (2nd ed.). Routledge.
 
     Examples

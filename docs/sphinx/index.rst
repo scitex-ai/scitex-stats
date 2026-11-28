@@ -8,7 +8,7 @@ SciTeX Stats
 
 .. raw:: html
 
-   <p align="center"><b>Publication-ready statistical testing with 23 tests, effect sizes, power analysis, and APA formatting</b></p>
+   <p align="center"><b>Publication-ready statistical testing with 25 tests, effect sizes, power analysis, and APA formatting</b></p>
    <br>
 
 **SciTeX Stats** provides a unified interface for the full statistical workflow:

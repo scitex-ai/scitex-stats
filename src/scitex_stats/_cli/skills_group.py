@@ -1,7 +1,7 @@
 """`scitex-stats skills` — list / get / install agent-facing skills bundled with this package.
 
-Self-contained. No scitex-dev runtime dep — walks the package's own
-`_skills/scitex-stats/` directory directly.
+List/get read the package-owned skill tree. Installation delegates to the
+shared scitex-dev managed projection so caller-owned files are preserved.
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ def skills_group() -> None:
       $ scitex-stats skills list
       $ scitex-stats skills get 01_installation
       $ scitex-stats skills install                      # → ~/.scitex/dev/skills/scitex-stats/
-      $ scitex-stats skills install --claude-symlink     # also expose to ~/.claude/skills/scitex/
+      $ scitex-stats skills install --directory /path/to/agent/skills
     """
 
 
@@ -124,7 +124,9 @@ def _default_skills_base() -> Path:
 
 @skills_group.command(name="install")
 @click.option(
+    "--directory",
     "--dest",
+    "dest",
     type=click.Path(),
     default=None,
     help="Destination dir (default: $SCITEX_STATS_SKILLS_DIR or the shared skills tree).",
@@ -162,8 +164,8 @@ def skills_install(
     \b
     Example:
       $ scitex-stats skills install
-      $ scitex-stats skills install --claude-symlink
-      $ scitex-stats skills install --no-link --dest /tmp/scitex-stats-skills
+      $ scitex-stats skills install --directory /path/to/agent/skills
+      $ scitex-stats skills install --no-link --directory /tmp/scitex-stats-skills
     """
     del yes  # accepted for §2 compliance; install is non-interactive
     src = _skills_root().resolve()
@@ -182,22 +184,21 @@ def skills_install(
             click.echo(f"would symlink {link} → {base}")
         return
 
-    base.mkdir(parents=True, exist_ok=True)
-    if target.is_symlink() or target.is_file():
-        target.unlink()
-    elif target.is_dir():
-        import shutil as _shutil
+    from scitex_dev.ecosystem import export_skills
+    from scitex_dev.skill_registry import SkillRegistryError
 
-        _shutil.rmtree(target)
-
-    if no_link:
-        import shutil as _shutil
-
-        _shutil.copytree(src, target)
-        click.echo(f"copied {src} → {target}")
-    else:
-        _os.symlink(src, target, target_is_directory=True)
-        click.echo(f"linked {target} → {src}")
+    try:
+        export_skills(
+            base,
+            package=PKG,
+            source="installed",
+            link=not no_link,
+            force_copy=no_link,
+        )
+    except (SkillRegistryError, OSError, ValueError) as error:
+        raise click.ClickException(str(error)) from error
+    action = "copied" if no_link else "linked"
+    click.echo(f"{action} managed skills into {base}")
 
     if claude_symlink:
         link = Path.home() / ".claude" / "skills" / "scitex"

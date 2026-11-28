@@ -16,6 +16,8 @@
 #
 # Fail-loud: a missing interpreter or a failed install is a hard error.
 set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/release-context.sh"
+stats_release_require_owned_root
 
 V="${1:?python version arg required (3.11/3.12/3.13)}"
 VENV="/opt/venv-$V"
@@ -34,10 +36,7 @@ export TMPDIR="/tmp/ci-scitex_stats-${GITHUB_RUN_ID:-0}-${GITHUB_RUN_ATTEMPT:-0}
 rm -rf "$TMPDIR"
 mkdir -p "$TMPDIR/site" "$TMPDIR/uv-cache"
 
-# The HPC compute-node $HOME is READ-ONLY inside the container, so uv/pip cannot
-# create their default caches under ~/.cache — point them at the writable
-# scratch instead (else `uv pip install` dies: "failed to create directory
-# ~/.cache/uv: File exists / read-only").
+# Keep installer caches below the dispatcher-owned temporary root.
 export UV_CACHE_DIR="$TMPDIR/uv-cache"
 export XDG_CACHE_HOME="$TMPDIR"
 export PIP_CACHE_DIR="$TMPDIR/pip-cache"
@@ -69,13 +68,9 @@ export PATH="$VENV/bin:$PATH"
 echo "py=$("$VENV/bin/python" -V) target=$TMPDIR/site"
 
 # Install scitex-stats + its [all,dev] extras WITH deps into the writable target.
-# Fallback chain mirrors scitex-stats's historical bare-uv/pip workflow so a
-# packaging hiccup in an optional extra doesn't strand CI: [all,dev] → [dev] →
-# bare. uv first (fast resolver), pip as a final safety net.
-uv pip install --python "$VENV/bin/python" --target="$TMPDIR/site" -e ".[all,dev]" ||
-    uv pip install --python "$VENV/bin/python" --target="$TMPDIR/site" -e ".[dev]" ||
-    uv pip install --python "$VENV/bin/python" --target="$TMPDIR/site" -e "." ||
-    pip install --target="$TMPDIR/site" -e ".[dev]"
+# A failed dependency resolution must stop the release test job. Reducing the
+# extras would test a different installation profile and can hide regressions.
+uv pip install --python "$VENV/bin/python" --target="$TMPDIR/site" -e ".[all,dev]"
 
 export PYTHONPATH="$TMPDIR/site:$PWD/src${PYTHONPATH:+:$PYTHONPATH}"
 

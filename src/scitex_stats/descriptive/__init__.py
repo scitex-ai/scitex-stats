@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Scitex descriptive statistics module."""
 
+from ._bootstrap_ci import bootstrap_ci
 from ._ci import ci
 from ._circular import (
     circular_concentration,
@@ -35,6 +36,7 @@ from ._real import kurtosis, mean, q25, q50, q75, quantile, skewness, std, var, 
 
 __all__ = [
     # Confidence interval
+    "bootstrap_ci",
     "ci",
     # For Ordinal Distribution
     "describe",

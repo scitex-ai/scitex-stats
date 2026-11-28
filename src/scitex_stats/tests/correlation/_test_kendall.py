@@ -94,11 +94,13 @@ def test_kendall(  # noqa: C901
         Name for y variable
     alternative : {'two-sided', 'less', 'greater'}, default 'two-sided'
         Alternative hypothesis:
+
         - 'two-sided': tau ≠ 0
         - 'less': tau < 0 (negative association)
         - 'greater': tau > 0 (positive association)
     variant : {'b', 'c'}, default 'b'
         Tau variant:
+
         - 'b': tau-b (Kendall's tau-b, accounts for ties)
         - 'c': tau-c (Stuart's tau-c, for contingency tables)
     alpha : float, default 0.05
@@ -121,6 +123,7 @@ def test_kendall(  # noqa: C901
     -------
     result : dict or DataFrame
         Test results including:
+
         - test_method: Name of test
         - statistic: Kendall's tau coefficient
         - pvalue: p-value
@@ -136,6 +139,8 @@ def test_kendall(  # noqa: C901
 
     Notes
     -----
+    See [#kendall-ref1]_, [#kendall-ref2]_.
+
     Kendall's tau is a non-parametric measure of monotonic association between
     two variables. It is based on concordant and discordant pairs.
 
@@ -145,6 +150,7 @@ def test_kendall(  # noqa: C901
 
     **Concordant vs Discordant Pairs**:
     For pairs (x_i, y_i) and (x_j, y_j):
+
     - Concordant: (x_i < x_j and y_i < y_j) or (x_i > x_j and y_i > y_j)
     - Discordant: (x_i < x_j and y_i > y_j) or (x_i > x_j and y_i < y_j)
 
@@ -154,6 +160,7 @@ def test_kendall(  # noqa: C901
         \tau_b = \frac{n_c - n_d}{\\sqrt{(n_0 - n_1)(n_0 - n_2)}}
 
     Where:
+
     - n_c: Number of concordant pairs
     - n_d: Number of discordant pairs
     - n_0: n(n-1)/2 (total possible pairs)
@@ -161,28 +168,33 @@ def test_kendall(  # noqa: C901
     - n_2: Sum of u_j(u_j-1)/2 for ties in y
 
     **Interpretation**:
+
     - tau = 1: Perfect positive association
     - tau = 0: No association
     - tau = -1: Perfect negative association
 
     Effect size interpretation (same as correlation):
-    - |tau| < 0.1: negligible
-    - |tau| < 0.3: small
-    - |tau| < 0.5: medium
-    - |tau| ≥ 0.5: large
+
+    - :math:`|\tau|` < 0.1: negligible
+    - :math:`|\tau|` < 0.3: small
+    - :math:`|\tau|` < 0.5: medium
+    - :math:`|\tau|` ≥ 0.5: large
 
     **Advantages over Spearman**:
+
     - More robust to outliers
     - Better for small samples
     - Better interpretation (probability of concordance)
     - More accurate p-values with ties
 
     **Disadvantages**:
+
     - Computationally more expensive (O(n²))
     - Generally smaller magnitude than Spearman's rho
     - Less intuitive interpretation than Pearson
 
     **When to use Kendall's tau**:
+
     - Small sample sizes (n < 30)
     - Data with many ties
     - Ordinal data
@@ -204,9 +216,9 @@ def test_kendall(  # noqa: C901
 
     References
     ----------
-    .. [1] Kendall, M. G. (1938). "A New Measure of Rank Correlation".
+    .. [#kendall-ref1] Kendall, M. G. (1938). "A New Measure of Rank Correlation".
            Biometrika, 30(1/2), 81-93.
-    .. [2] Kendall, M. G. (1945). "The treatment of ties in ranking problems".
+    .. [#kendall-ref2] Kendall, M. G. (1945). "The treatment of ties in ranking problems".
            Biometrika, 33(3), 239-251.
 
     See Also

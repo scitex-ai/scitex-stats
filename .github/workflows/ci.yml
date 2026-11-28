@@ -9,13 +9,10 @@ name: ci
 # the retired consolidated pr-ci.yml/release-ci.yml pair). This file carries
 # only triggers, concurrency, and thin `uses:` calls.
 #
-# Runner policy: SELF-HOSTED ONLY — GitHub-hosted runners are forbidden
-# (PS-169). Runner selection is the Actions Variable CI_RUNS_ON (repo ->
-# org precedence),
-# resolved from THIS repo's context by the called workflows via
-#   runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '["self-hosted","Linux","X64","scitex-ci"]') }}
-# (`vars` in a reusable workflow resolve against the CALLER repo/org, so a
-# per-repo CI_RUNS_ON override still works through the shared bodies).
+# Shared workflows admit native runners from trusted original actor identity
+# and matching triggering actor identity. Hosted fallback is allowed by current
+# policy. The optional qualified native test job additionally binds compute-03,
+# image/runtime/helper bytes and the shared lifecycle resource.
 #
 # Required-status-check contexts (branch protection must reference these;
 # under workflow_call GitHub renders "<caller-job-id> / <reusable job name>"):
@@ -33,6 +30,17 @@ on:
   schedule:
     - cron: "0 17 * * *" # nightly 17:00 UTC (~02:00 JST), off-peak
   workflow_dispatch:
+    inputs:
+      native_test_profile:
+        description: Run the qualified native test matrix (no artifacts or publication)
+        type: boolean
+        required: false
+        default: false
+      native_build_profile:
+        description: Run the qualified native build, archive proof and fresh-wheel probe (Actions artifact only, no publication)
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -44,6 +52,12 @@ jobs:
   pytest-matrix:
     uses: scitex-ai/.github/.github/workflows/pytest-matrix.yml@main
     secrets: inherit
+    with:
+      # Durable fix for 2026-10-20 uv-cache corruption wave (archive-v0
+      # ENOENT -> broken torch, org-02/04/05/06/07): copy instead of
+      # hardlinking out of the shared uv cache, per infra recommendation.
+      # Runs after checkout, exported via GITHUB_ENV before uv pip install.
+      pre_test_command: echo "UV_LINK_MODE=copy" >> "$GITHUB_ENV"
 
   import-smoke:
     uses: scitex-ai/.github/.github/workflows/import-smoke.yml@main
@@ -56,3 +70,44 @@ jobs:
   rtd-sphinx-build:
     uses: scitex-ai/.github/.github/workflows/rtd-sphinx-build.yml@main
     secrets: inherit
+    with:
+      fail_on_warning: true
+
+  native-qualified-test:
+    if: github.event_name == 'workflow_dispatch' && inputs.native_test_profile
+    permissions:
+      contents: read
+    uses: scitex-ai/.github/.github/workflows/leaf-release-sif.yml@49c5ad4d8905e8cbd0fabfbb6219ec810616c95b
+    with:
+      operation: test
+      source_commit: ${{ github.sha }}
+      # Required test-plan label only: this job never creates a tag or artifact.
+      release_tag: v1.0.0
+
+  native-qualified-version:
+    if: github.event_name == 'workflow_dispatch' && inputs.native_build_profile
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - id: version
+        name: Read the declared project version (the proof checks it against Git)
+        run: |
+          python3 -c 'import tomllib; print("tag=v" + tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])' >> "$GITHUB_OUTPUT"
+
+  native-qualified-build:
+    needs: native-qualified-version
+    permissions:
+      contents: read
+    uses: scitex-ai/.github/.github/workflows/leaf-release-sif.yml@49c5ad4d8905e8cbd0fabfbb6219ec810616c95b
+    with:
+      operation: build
+      source_commit: ${{ github.sha }}
+      # Version label for the archive proof only: no tag, upload to PyPI or release.
+      release_tag: ${{ needs.native-qualified-version.outputs.tag }}

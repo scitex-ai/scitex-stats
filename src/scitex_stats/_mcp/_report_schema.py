@@ -20,7 +20,7 @@ def report_tool_schema() -> types.Tool:
             "agreement, automatic post-hoc (Tukey/Games–Howell, Dunn–Holm, Nemenyi), "
             "figure with brackets, a methods paragraph and references."
         ),
-        inputSchema={
+        input_schema={
             "type": "object",
             "properties": {
                 "data": {"type": "object", "description": "Group name -> list of numbers (or pass data_file)"},

@@ -109,6 +109,7 @@ def test_brunner_munzel(
     -----
     The Brunner-Munzel test is a non-parametric test for comparing two independent
     samples. It is more robust than the t-test when:
+
     - Distributions are non-normal
     - Variances are unequal
     - Sample sizes differ
@@ -128,6 +129,7 @@ def test_brunner_munzel(
 
     1. **P(X > Y)**: Probability that a random value from X exceeds a random
        value from Y. Interpretation:
+
        - 0.50: No effect (chance)
        - 0.56: Small effect
        - 0.64: Medium effect
@@ -135,17 +137,20 @@ def test_brunner_munzel(
 
     2. **Cliff's delta (δ)**: Ranges from -1 to 1, related to P(X>Y) by:
        δ = 2×P(X>Y) - 1. Interpretation:
-       - |δ| < 0.147: Negligible
-       - |δ| < 0.33: Small
-       - |δ| < 0.474: Medium
-       - |δ| ≥ 0.474: Large
+
+       - :math:`|\delta|` < 0.147: Negligible
+       - :math:`|\delta|` < 0.33: Small
+       - :math:`|\delta|` < 0.474: Medium
+       - :math:`|\delta|` ≥ 0.474: Large
+
+    See [#brunner-munzel2000]_, [#brunner-neubert2007]_.
 
     References
     ----------
-    .. [1] Brunner, E., & Munzel, U. (2000). "The nonparametric Behrens-Fisher
+    .. [#brunner-munzel2000] Brunner, E., & Munzel, U. (2000). "The nonparametric Behrens-Fisher
            problem: Asymptotic theory and a small-sample approximation".
            Biometrical Journal, 42(1), 17-25.
-    .. [2] Neubert, K., & Brunner, E. (2007). "A studentized permutation test
+    .. [#brunner-neubert2007] Neubert, K., & Brunner, E. (2007). "A studentized permutation test
            for the non-parametric Behrens-Fisher problem". Computational
            Statistics & Data Analysis, 51(10), 5192-5204.
 

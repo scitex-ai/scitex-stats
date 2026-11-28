@@ -97,11 +97,109 @@
     [6.3, 6.8, 6.1, 7.0, 6.6, 6.9, 6.4, 7.2],
   ];
 
+  // Categorical twin of SAMPLE: one row of counts per box. Categorical tests
+  // require non-negative integer counts, so the decimal SAMPLE above yields
+  // zero applicable tests under the categorical scale (operator 2026-10-23:
+  // the sample must fit the current scale to show results).
+  var SAMPLE_COUNTS = [
+    [12, 7, 14, 9],
+    [8, 13, 6, 12],
+  ];
+
   var $ = function (id) { return document.getElementById(id); };
 
+  // Separator estimation (operator 2026-10-23): the boxes and file drops
+  // accept comma, space, tab, newline, semicolon, pipe — the in-line
+  // delimiter is estimated from the input itself. No third-party sniffer
+  // is vendored and Python's csv.Sniffer cannot apply: all paste/drop
+  // parsing happens client-side before any server round-trip.
+  // SPEC: candidates are tab, comma, semicolon, pipe (whitespace, including
+  // newlines, always splits). The winner is the candidate with the highest
+  // count outside quoted cells; ties resolve tab > comma > semicolon > pipe
+  // (tab-first: columnar pastes are the most structured); with no candidate
+  // present the text is whitespace-separated. A single dominant separator
+  // wins, so pathological mixed-separator input keeps only its winner's
+  // tokens. Returns the one-character delimiter, or "" for whitespace-only.
+  function estimateSep(sampled) {
+    var text = String(sampled || "");
+    var counts = { "\t": 0, ",": 0, ";": 0, "|": 0 };
+    var i;
+    var quoted = false;
+    for (i = 0; i < text.length; i++) {
+      if (text[i] === '"') quoted = !quoted;
+      else if (!quoted && Object.prototype.hasOwnProperty.call(counts, text[i])) counts[text[i]]++;
+    }
+    var order = ["\t", ",", ";", "|"];
+    var best = "";
+    var bestCount = 0;
+    for (i = 0; i < order.length; i++) {
+      if (counts[order[i]] > bestCount) { best = order[i]; bestCount = counts[order[i]]; }
+    }
+    return best;
+  }
+
+  // Compare quote-aware record widths before choosing a file separator.
+  // Structured tabs retain their documented priority; ambiguous punctuation
+  // waits for an explicit choice. The manual number-box parser is unchanged.
+  function csvLines(text) {
+    return String(text || "").replace(/^\uFEFF/, "").split(/\r?\n/).filter(function (line) { return line.trim(); });
+  }
+
+  function inspectFileSep(lines) {
+    var candidates = ["\t", ",", ";", "|"].map(function (sep) {
+      var counts = Object.create(null);
+      lines.forEach(function (line) {
+        var width = splitLine(line, sep).length;
+        if (width > 1) counts[width] = (counts[width] || 0) + 1;
+      });
+      return { sep: sep, score: Math.max.apply(null, [0].concat(Object.keys(counts).map(function (width) { return counts[width]; }))) };
+    }).filter(function (candidate) { return candidate.score > 0; });
+    var best = candidates.reduce(function (score, candidate) { return Math.max(score, candidate.score); }, 0);
+    var winners = candidates.filter(function (candidate) { return candidate.score === best; });
+    if (winners.length) return { sep: winners[0].sep, ambiguous: winners.length > 1 && winners[0].sep !== "\t", alternatives: winners.length > 1, candidates: winners.map(function (candidate) { return candidate.sep; }), fewRows: lines.length < 2, inconsistent: best < lines.length };
+    var widths = lines.map(function (line) { return splitLine(line, " ").length; });
+    if (widths.length && widths[0] > 1 && widths.every(function (width) { return width === widths[0]; })) return { sep: " ", fewRows: lines.length < 2 };
+    return { sep: ",", singleColumn: true, fewRows: lines.length < 2 };
+  }
+
+  function splitLine(line, sep) {
+    var cells = [];
+    var cell = "";
+    var quoted = false;
+    var closed = false;
+    var text = sep === " " ? String(line).trim() : String(line);
+    for (var i = 0; i < text.length; i++) {
+      var char = text[i];
+      if (char === '"') {
+        if (quoted && text[i + 1] === '"') { cell += '"'; i++; }
+        else if (quoted) { quoted = false; closed = true; }
+        else if (!closed && cell === "") quoted = true;
+        else cell += char; // A quote inside an unquoted cell is literal.
+      } else if ((sep === " " ? /\s/.test(char) : char === sep) && !quoted) {
+        cells.push(cell); cell = ""; closed = false;
+        if (sep === " ") while (i + 1 < text.length && /\s/.test(text[i + 1])) i++;
+      } else {
+        // Junk after a closing quote must not turn e.g. "1"2 into 12.
+        if (closed && !/\s/.test(char)) { cell += '"'; closed = false; }
+        cell += char;
+      }
+    }
+    if (quoted) cell = '"' + cell; // Preserve invalid unterminated input.
+    cells.push(cell);
+    return cells;
+  }
+
+  var _SEP_ESCAPED = { "\t": "\\t", ",": ",", ";": ";", "|": "\\|" };
+
+  function splitPattern(sep) {
+    // Whitespace always splits; the estimated in-line delimiter joins it.
+    return sep ? new RegExp("[\\s" + _SEP_ESCAPED[sep] + "]+") : /[\s]+/;
+  }
+
   function parseNumbers(text) {
-    return String(text || "")
-      .split(/[\s,;]+/)
+    var raw = String(text || "");
+    return raw
+      .split(splitPattern(estimateSep(raw)))
       .filter(Boolean)
       .map(Number)
       .filter(function (n) { return Number.isFinite(n); });
@@ -148,6 +246,9 @@
       rowIntegrity = { status: "uncertain", reason: "edited-or-restored-data", source: "csv" };
       importedSnapshot = null;
     }
+    // Operator 2026-10-24: the preview is the file's record — edited boxes
+    // no longer match it, so it hides instead of describing stale data.
+    hidePreview();
     document.dispatchEvent(new CustomEvent("stats:data-change"));
   }
 
@@ -165,16 +266,20 @@
     return "";
   }
 
-  function csvRowIntegrity(text, sep, cols) {
-    var lines = String(text).split(/\r?\n/);
-    if (lines[lines.length - 1] === "") lines.pop(); // ordinary terminal newline
-    var rows = lines.map(function (line) { return line.split(sep); });
-    // Recognize only an unambiguous label row; numeric-looking/missing markers
-    // never grant alignment. Unsupported header syntax remains uncertain.
-    var header = rows.length > 1 && rows[0].length === cols && rows[0].every(function (cell) {
+  // Recognize only an unambiguous label row; numeric-looking/missing markers
+  // never grant alignment. Unsupported header syntax remains uncertain.
+  function isHeaderRow(cells) {
+    return cells.every(function (cell) {
       cell = String(cell).trim();
-      return /^[A-Za-z_][A-Za-z0-9_ .-]*$/.test(cell) && !/^(nan|inf|infinity|null|none|na)$/i.test(cell);
+      return /^[A-Za-z_][A-Za-z0-9_ .,-]*$/.test(cell) && !/^(nan|inf|infinity|null|none|na)$/i.test(cell);
     });
+  }
+
+  function csvRowIntegrity(text, sep, cols) {
+    var lines = String(text).replace(/^\uFEFF/, "").split(/\r?\n/);
+    if (lines[lines.length - 1] === "") lines.pop(); // ordinary terminal newline
+    var rows = lines.map(function (line) { return splitLine(line, sep); });
+    var header = rows.length > 1 && rows[0].length === cols && isHeaderRow(rows[0]);
     if (header) rows.shift();
     var aligned = rows.length > 0 && rows.every(function (row) {
       return row.length === cols && row.every(function (cell) {
@@ -260,12 +365,87 @@
     );
   }
 
+  function manualSep() {
+    // Operator 2026-10-26: hard separator specification. "Auto" (default)
+    // keeps the estimated delimiter; an explicit choice overrides it for
+    // file imports only — paste boxes always use estimation.
+    var sel = $("statsSep");
+    var v = sel ? sel.value : "auto";
+    return v === "auto" ? "" : v;
+  }
+
+  // Operator 2026-10-24: the selector always shows which separator is
+  // being respected — the estimate or the hard choice.
+  function updateSepState(sep, forced) {
+    var line = $("statsSepState");
+    if (!line) return;
+    line.textContent = forced
+      ? fmt(_("Using: %s (your choice)"), [SEP_NAMES[sep] || sep])
+      : fmt(_("Using: %s (estimated)"), [SEP_NAMES[sep] || sep]);
+  }
+
+  var importReturnFocus = null;
+  function openImportDialog() {
+    var dialog = $("statsImportDialog");
+    if (!dialog || dialog.open) return;
+    importReturnFocus = document.activeElement;
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+    var first = dialog.querySelector("select");
+    if (first) first.focus();
+  }
+  function closeImportDialog() {
+    var dialog = $("statsImportDialog");
+    if (!dialog) return;
+    if (typeof dialog.close === "function") dialog.close();
+    else { dialog.removeAttribute("open"); if (importReturnFocus) importReturnFocus.focus(); }
+  }
+  function csvError(message) {
+    var line = $("statsImportError");
+    line.textContent = message || ""; line.hidden = !message;
+    if (message) showError(message);
+  }
+
+  var _lastImport = null;
+
   function loadCsvText(text, name) {
-    var lines = String(text).split(/\r?\n/).filter(function (l) { return l.trim(); });
-    var sep = (name || "").toLowerCase().endsWith(".tsv") || (lines[0] || "").indexOf("\t") >= 0 ? "\t" : ",";
-    var rows = lines.map(function (l) { return l.split(sep); });
+    var lines = csvLines(text);
+    showError("");
+    csvError("");
+    openImportDialog();
+    // Estimate from quote-aware record widths. An explicit separator wins;
+    // the documented .tsv tab default is labeled separately from inference.
+    var forced = manualSep();
+    var detection = inspectFileSep(lines);
+    var filenameTab = (name || "").toLowerCase().endsWith(".tsv");
+    var sep = forced || (filenameTab ? "\t" : detection.sep);
+    updateSepState(sep, Boolean(forced));
+    if (!forced && filenameTab) {
+      $("statsSepState").textContent = fmt(_("Using: %s (.tsv default)"), [SEP_NAMES[sep]]);
+    } else if (!forced && detection.ambiguous) {
+      $("statsSepState").textContent = fmt(_("Ambiguous separator: %s. Choose a separator to continue."), [detection.candidates.map(function (candidate) { return SEP_NAMES[candidate]; }).join(" / ")]);
+    } else if (!forced && detection.alternatives && !filenameTab) {
+      $("statsSepState").textContent += " " + _("Other separators also fit; Tab is the structured default.");
+    } else if (!forced && detection.singleColumn && !filenameTab) {
+      $("statsSepState").textContent = _("Single column — no separator detected.");
+    } else if (!forced && detection.fewRows) {
+      $("statsSepState").textContent += " " + _("Only one record; verify this choice.");
+    } else if (!forced && detection.inconsistent) {
+      $("statsSepState").textContent += " " + _("Column counts differ; review the preview.");
+    }
+    _lastImport = { text: String(text), name: name || "" };
+    var rows = lines.map(function (l) { return splitLine(l, sep); });
     var cols = rows.reduce(function (m, r) { return Math.max(m, r.length); }, 0);
-    var groups = [];
+    // Operator 2026-10-24: the chooser lists real header names (sin_x),
+    // not Column N, so the file-to-box mapping is explicit.
+    var header = rows.length > 1 && rows[0].length === cols && isHeaderRow(rows[0]);
+    renderPreview(name || "", sep, rows, cols);
+    if (!forced && !filenameTab && detection.ambiguous) {
+      hideColPick();
+      csvError(_("The separator is ambiguous. Choose one explicitly before importing."));
+      return;
+    }
+    var numeric = [];
     for (var c = 0; c < cols; c++) {
       var col = rows
         .map(function (r) {
@@ -275,10 +455,122 @@
           return cell === "" ? NaN : Number(cell);
         })
         .filter(function (n) { return Number.isFinite(n); });
-      if (col.length) groups.push(col);
+      if (col.length) numeric.push({ label: fmt(header ? _("%s (%s values)") : _("Column %s (%s values)"), [header ? String(rows[0][c]).trim() : c + 1, col.length]), values: col });
     }
-    if (groups.length) setGroups(groups, csvRowIntegrity(text, sep, cols));
-    else showError(_("No numeric columns found in this file."));
+    if (!numeric.length) { hideColPick(); return csvError(_("No numeric columns found in this file.")); }
+    // Every numeric-column selection waits for explicit confirmation,
+    // including single-column files. Previewing never replaces group boxes.
+    // Operator 2026-10-24: "Import selected" with every box checked is the
+    // old import-everything, so the whole-file integrity snapshot travels
+    // with it; a subset is manual input (decided in importColPick).
+    renderColPick(numeric, csvRowIntegrity(text, sep, cols));
+  }
+
+  var SEP_NAMES = { "\t": "Tab", ",": "Comma", ";": "Semicolon", "|": "Pipe", " ": "Space" };
+  var PREVIEW_ROWS = 5;
+  var PREVIEW_COLS = 6;
+
+  function hidePreview() {
+    var panel = $("statsPreview");
+    if (panel) panel.hidden = true;
+  }
+
+  // Operator 2026-10-24: CSV import preview — filename, detected
+  // separator and first rows, so a wrong parse is visible before any
+  // test runs. Built with textContent: file content is untrusted.
+  function renderPreview(name, sep, rows, cols) {
+    var panel = $("statsPreview");
+    if (!panel) return;
+    var header = rows.length > 1 && rows[0].length === cols && isHeaderRow(rows[0]);
+    var bodyRows = header ? rows.slice(1) : rows;
+    $("statsPreviewTitle").textContent = _("Preview") + (name ? ": " + name : "");
+    $("statsPreviewMeta").textContent = fmt(_("Separator: %s · %s rows × %s columns"), [SEP_NAMES[sep] || sep, bodyRows.length, cols]);
+    var table = $("statsPreviewTable");
+    table.textContent = "";
+    var el = document.createElement("table");
+    if (header) {
+      var head = document.createElement("thead");
+      var hr = document.createElement("tr");
+      rows[0].slice(0, PREVIEW_COLS).forEach(function (cell) {
+        var th = document.createElement("th");
+        th.textContent = String(cell).trim();
+        hr.appendChild(th);
+      });
+      if (rows[0].length > PREVIEW_COLS) {
+        var moreHead = document.createElement("th");
+        moreHead.textContent = "…";
+        hr.appendChild(moreHead);
+      }
+      head.appendChild(hr);
+      el.appendChild(head);
+    }
+    var tb = document.createElement("tbody");
+    bodyRows.slice(0, PREVIEW_ROWS).forEach(function (row) {
+      var tr = document.createElement("tr");
+      row.slice(0, PREVIEW_COLS).forEach(function (cell) {
+        var td = document.createElement("td");
+        td.textContent = String(cell).trim();
+        tr.appendChild(td);
+      });
+      if (row.length > PREVIEW_COLS) {
+        var moreCell = document.createElement("td");
+        moreCell.textContent = "…";
+        tr.appendChild(moreCell);
+      }
+      tb.appendChild(tr);
+    });
+    el.appendChild(tb);
+    table.appendChild(el);
+    panel.hidden = false;
+  }
+
+  var _colPickCols = [];
+  var _colPickIntegrity = null;
+
+  function hideColPick() {
+    _colPickCols = [];
+    _colPickIntegrity = null;
+    var panel = $("statsColPick");
+    if (panel) panel.hidden = true;
+  }
+
+  function renderColPick(numeric, integrity) {
+    _colPickCols = numeric;
+    _colPickIntegrity = integrity || null;
+    var list = $("statsColPickList");
+    list.textContent = "";
+    numeric.forEach(function (entry, i) {
+      var label = document.createElement("label");
+      label.className = "stats-colpick__item";
+      var box = document.createElement("input");
+      box.type = "checkbox";
+      box.checked = true;
+      box.value = String(i);
+      label.appendChild(box);
+      label.appendChild(document.createTextNode(" " + entry.label));
+      list.appendChild(label);
+    });
+    $("statsColPick").hidden = false;
+  }
+
+  function importColPick() {
+    var picked = [];
+    $("statsColPickList").querySelectorAll("input[type=checkbox]").forEach(function (box) {
+      if (box.checked && _colPickCols[Number(box.value)]) picked.push(_colPickCols[Number(box.value)].values);
+    });
+    if (!picked.length) return csvError(_("Select at least one column to import."));
+    // All columns checked = the old import-everything: the whole-file
+    // row-integrity snapshot still describes the boxes. A hand-picked
+    // subset is manual input instead. Snapshot before hideColPick clears.
+    // A subset also hides the preview: the whole-file record no longer
+    // describes a partial import.
+    var full = picked.length === _colPickCols.length;
+    var integrity = full ? _colPickIntegrity : undefined;
+    if (!full) hidePreview();
+    hideColPick();
+    setGroups(picked, integrity);
+    $("statsImportSummary").textContent = fmt(_("%s · %s columns imported · %s"), [_lastImport ? _lastImport.name : _("CSV"), picked.length, $("statsSepState").textContent]);
+    closeImportDialog();
   }
 
   function loadCsv(file) {
@@ -294,6 +586,25 @@
   // stateless mode, where every write is refused server-side as well as hidden
   // here. Nothing about the mode depends on client-only state the server cannot
   // see.
+  // The canonical SDK AppHeader renders its own row (title span, version
+  // badge, project slot, actions) from the [data-stx-app-header] mount root.
+  // The server-rendered project picker starts life INSIDE that root; mount the
+  // header explicitly (the prebuilt bundle is an ES module, so it executes
+  // before DOMContentLoaded while this file's init runs on it — calling
+  // mount() here is deterministic and idempotent: already-mounted roots are
+  // skipped) and move the picker into the canonical slot so the row matches
+  // every other project-scoped app. When the module failed to load, the
+  // picker stays where the server put it rather than vanishing.
+  function adoptCanonicalHeaderSlot() {
+    var picker = document.querySelector("[data-stx-project-picker]");
+    if (!picker) return;
+    var api = window.stxAppHeader;
+    if (!api) return;
+    if (typeof api.mount === "function") api.mount();
+    var header = typeof api.get === "function" ? api.get() : null;
+    if (header && header.projectSlot) header.projectSlot.appendChild(picker);
+  }
+
   function projectId() {
     var root = document.querySelector("[data-stats-project]");
     var id = root ? root.getAttribute("data-stats-project") : "";
@@ -307,6 +618,7 @@
   function applyMode() {
     var mode = currentMode();
     var hasProject = !!projectId();
+    $("statsOpenImport").textContent = hasProject ? _("Project data…") : _("Import CSV…");
     var app = document.querySelector("[data-stats-app]");
     if (app) app.setAttribute("data-stats-mode", mode);
     var panel = $("statsProjectFiles");
@@ -317,8 +629,6 @@
     if (saves) saves.hidden = !hasProject;
     var plotSave = $("statsSavePlot");
     if (plotSave) plotSave.hidden = !hasProject;
-    var toggle = $("statsModeToggle");
-    if (toggle) toggle.hidden = !hasProject;
   }
 
   function setSaveStatus(message) {
@@ -328,9 +638,9 @@
 
   async function importProjectFile(name) {
     var res = await api("/api/project-import?project=" + encodeURIComponent(projectId()) + "&name=" + encodeURIComponent(name));
-    if (!res.ok) { showError(_("That project file is not available.")); return; }
+    if (!res.ok) { csvError(_("That project file is not available.")); return; }
     loadCsvText(res.body.text, res.body.name);
-    setSaveStatus(fmt(_("Imported %s"), [res.body.name]));
+    setSaveStatus(fmt(_("Previewing %s — choose columns to import."), [res.body.name]));
   }
 
   function currentConfig() {
@@ -570,7 +880,7 @@
     if (window.stxStatsPlot && window.stxStatsPlot.invalidate) window.stxStatsPlot.invalidate();
     showError("");
     var btn = $("statsCalculate");
-    btn.disabled = true;
+    if (btn) btn.disabled = true;
     try {
       var r = await api("/api/run", payload);
       if (!requestCurrent(request)) return;
@@ -581,7 +891,7 @@
     } catch (e) {
       if (requestCurrent(request)) showError(_("Could not reach the Statistics service."));
     } finally {
-      if (requestLatest(request)) btn.disabled = false;
+      if (btn && requestLatest(request)) btn.disabled = false;
     }
   }
 
@@ -789,26 +1099,67 @@
 
   // Shared with recommend.js (loaded next).
   window.stxStatsApp = { _: _, fmt: fmt, api: api, readGroups: readGroups, groupName: groupName, setSegments: setSegments,
-    rowIntegrityError: rowIntegrityError, beginRequest: beginRequest, requestCurrent: requestCurrent, requestLatest: requestLatest };
+    rowIntegrityError: rowIntegrityError, beginRequest: beginRequest, requestCurrent: requestCurrent, requestLatest: requestLatest,
+    manualTestPick: false };
+
+  // Auto-calculate lane: recommend.js dispatches this once it has checked the
+  // test to run (primary, or the user's still-applicable manual pick).
+  document.addEventListener("stats:auto-calculate", function () {
+    syncOptions();
+    calculate();
+  });
 
   async function init() {
+    adoptCanonicalHeaderSlot();
+    $("statsOpenImport").addEventListener("click", function () {
+      openImportDialog();
+      if (_lastImport && $("statsColPick").hidden) loadCsvText(_lastImport.text, _lastImport.name);
+    });
+    $("statsImportClose").addEventListener("click", closeImportDialog);
+    $("statsImportDialog").addEventListener("close", function () { if (importReturnFocus && importReturnFocus.isConnected) importReturnFocus.focus(); });
+
     setGroups([[], []]);
     renderTests(null);
     document.addEventListener("stats:data-change", invalidateAnalysis);
+    // A manual pick runs immediately; option changes re-derive the
+    // recommendation (debounced) which auto-calculates on arrival.
     document.addEventListener("change", function (event) {
-      if (event.target.name === "statsTest" || ["statsDesign", "statsScale", "statsAlt", "statsPopmean", "statsCorrP", "statsCorrMethod", "statsPhMethod"].indexOf(event.target.id) !== -1) invalidateAnalysis();
+      if (event.target.name === "statsTest") {
+        syncOptions();
+        invalidateAnalysis();
+        window.stxStatsApp.manualTestPick = true;
+        calculate();
+        return;
+      }
+      if (["statsDesign", "statsScale", "statsAlt", "statsPopmean", "statsCorrP", "statsCorrMethod", "statsPhMethod"].indexOf(event.target.id) !== -1) document.dispatchEvent(new CustomEvent("stats:data-change"));
     });
     document.addEventListener("input", function (event) {
-      if (["statsPopmean", "statsCorrP"].indexOf(event.target.id) !== -1) invalidateAnalysis();
+      if (event.target.id === "statsPopmean") document.dispatchEvent(new CustomEvent("stats:data-change"));
+      else if (event.target.id === "statsCorrP") invalidateAnalysis();
     });
     $("statsAddGroup").addEventListener("click", function () {
       invalidateImportedRows();
       addGroup();
     });
-    $("statsClear").addEventListener("click", function () { setGroups([[], []]); });
+    $("statsClear").addEventListener("click", function () { hideColPick(); hidePreview(); setGroups([[], []]); });
     $("statsSample").addEventListener("click", function () {
-      if (hasUserData() && !window.confirm(_("Replace the data in the boxes with the sample dataset?"))) return;
-      setGroups(SAMPLE);
+      if (hasUserData() && !window.confirm(_("Replace the data in the boxes with the sample data?"))) return;
+      hideColPick();
+      hidePreview();
+      // Operator 2026-10-23: the sample must fit the current measurement
+      // scale so results show — categorical needs integer counts, the other
+      // scales run on the default decimal sample. The design selector is
+      // left untouched: two equal groups run under both designs.
+      setGroups($("statsScale").value === "categorical" ? SAMPLE_COUNTS : SAMPLE);
+    });
+    $("statsColPickImport").addEventListener("click", importColPick);
+    $("statsColPickCancel").addEventListener("click", closeImportDialog);
+    // Operator 2026-10-24: a hard separator choice re-parses the last
+    // import in place, so a wrong guess is one click to fix.
+    var sepSel = $("statsSep");
+    if (sepSel) sepSel.addEventListener("change", function () {
+      if (_lastImport) loadCsvText(_lastImport.text, _lastImport.name);
+      else if (manualSep()) updateSepState(manualSep(), true);
     });
     $("statsChooseFile").addEventListener("click", function () {
       // Project mode imports from the PROJECT; the manual picker is Quick
@@ -820,14 +1171,7 @@
       if (this.files && this.files[0]) loadCsv(this.files[0]);
       this.value = "";
     });
-    var dropZone = $("statsDataDrop");
-    // The whole zone stays a click target; interactive children keep their own
-    // behaviour (the choose button, the group boxes), so forward only the rest.
-    dropZone.addEventListener("click", function (event) {
-      if (projectId()) return;  // project mode has no manual picker
-      if (event.target.closest("button, input, textarea, select, label, a")) return;
-      $("statsCsv").click();
-    });
+    var dropZone = $("statsImportDrop");
     ["dragenter", "dragover"].forEach(function (eventName) {
       dropZone.addEventListener(eventName, function (event) {
         event.preventDefault();
@@ -839,7 +1183,7 @@
         dropZone.classList.remove("stats-dropzone--active");
       }
     });
-    dropZone.addEventListener("drop", function (event) {
+    function receiveDroppedFile(event) {
       event.preventDefault();
       dropZone.classList.remove("stats-dropzone--active");
       if (projectId()) { showError(_("In project mode data comes from the project. Use Quick analysis to drop a file.")); return; }
@@ -850,26 +1194,17 @@
         return;
       }
       loadCsv(file);
-    });
-    $("statsCalculate").addEventListener("click", calculate);
+    }
+    dropZone.addEventListener("drop", receiveDroppedFile);
+    $("statsDataDrop").addEventListener("dragover", function (event) { event.preventDefault(); });
+    $("statsDataDrop").addEventListener("drop", receiveDroppedFile);
     $("statsCorrect").addEventListener("click", correct);
     $("statsPosthoc").addEventListener("click", posthoc);
-    $("statsCopy").addEventListener("click", copyResult);
+    // Copy sits inside the Raw-result summary row (operator 2026-10-19: next
+    // to what it copies); preventDefault stops the click from toggling the
+    // enclosing details.
+    $("statsCopy").addEventListener("click", function (event) { if (event) event.preventDefault(); copyResult(); });
     applyMode();
-    var modeToggle = $("statsModeToggle");
-    if (modeToggle) {
-      modeToggle.addEventListener("click", function () {
-        // Leaving project mode is a NAVIGATION, not a UI flag: the page reloads
-        // without `?project=`, which is the stateless state the server refuses
-        // to persist into.
-        var url = new URL(window.location.href);
-        url.searchParams.delete("project");
-        // Explicit stateless mode: without this the SDK would resume the LAST
-        // VISITED project and the page would keep accepting writes.
-        url.searchParams.set("quick", "1");
-        window.location.href = url.toString();
-      });
-    }
     var filePanel = $("statsProjectFiles");
     if (filePanel) {
       filePanel.addEventListener("click", function (event) {

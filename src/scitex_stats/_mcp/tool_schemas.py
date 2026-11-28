@@ -30,7 +30,7 @@ def get_tool_schemas() -> list[types.Tool]:
                 "design (between/within/mixed), and paired flag; returns a ranked "
                 "list with rationale for each recommendation."
             ),
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "n_groups": {
@@ -91,7 +91,7 @@ def get_tool_schemas() -> list[types.Tool]:
                 "Returns test statistic, p-value, effect size, and confidence "
                 "intervals in one call."
             ),
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "test_name": {
@@ -165,7 +165,7 @@ def get_tool_schemas() -> list[types.Tool]:
                 "Handles italicization of statistic symbols, correct significant "
                 "figures, and per-journal conventions."
             ),
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "test_name": {
@@ -223,7 +223,7 @@ def get_tool_schemas() -> list[types.Tool]:
                 "analysis', or is planning an experiment. Pass effect_size + alpha "
                 "+ power to get n; pass effect_size + alpha + n to get power."
             ),
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "test_type": {
@@ -276,7 +276,7 @@ def get_tool_schemas() -> list[types.Tool]:
                 "tests and needs adjusted p-values. Returns adjusted p-values and "
                 "a reject/accept mask at the specified alpha."
             ),
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "pvalues": {
@@ -311,7 +311,7 @@ def get_tool_schemas() -> list[types.Tool]:
                 "distribution', 'get mean and std', 'compute quartiles', 'check "
                 "skewness/kurtosis', or wants a one-glance numeric summary."
             ),
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "data": {
@@ -342,7 +342,7 @@ def get_tool_schemas() -> list[types.Tool]:
                 "or needs to report effect size alongside a p-value. A p-value "
                 "alone is incomplete — reviewers ask for effect sizes."
             ),
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "group1": {
@@ -384,7 +384,7 @@ def get_tool_schemas() -> list[types.Tool]:
                 "that assumes normality. Returns test statistic and p-value; p<0.05 "
                 "rejects normality."
             ),
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "data": {
@@ -416,7 +416,7 @@ def get_tool_schemas() -> list[types.Tool]:
                 "'follow-up after ANOVA', 'pairwise comparisons', or has a "
                 "significant omnibus test and needs to localize the differences."
             ),
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "groups": {
@@ -455,7 +455,7 @@ def get_tool_schemas() -> list[types.Tool]:
                 "the conventional journal notation (p<0.05 → *, p<0.01 → **, "
                 "p<0.001 → ***). Customizable thresholds."
             ),
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "p_value": {
@@ -482,7 +482,7 @@ def get_tool_schemas() -> list[types.Tool]:
                 "recompute is bit-identical. Use before reporting any number from "
                 "run_test, or to audit a saved result JSON."
             ),
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "result": {

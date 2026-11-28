@@ -17,13 +17,15 @@ def attach_scitex_dev_integrations(main) -> None:
     Called once, at import time, from ``_cli/__init__.py`` after ``main``
     and all of its own subcommands/groups are fully defined.
     """
-    # §1a: install-shell-completion + print-shell-completion (canonical leaves)
-    try:
-        from scitex_dev._cli._completion import attach_shell_completion
+    # Fleet standard completion drop-in v1: `completion install` writes the
+    # click-generated script to $SCITEX_DIR/stats/runtime/completion/
+    # scitex-stats atomically (never touches ~/.bashrc / ~/.zshrc).
+    # Owns the `completion` name, so scitex-dev's rc-appending variant must
+    # NOT be attached (it would collide on that name and reintroduce the
+    # rc-edit path this contract deletes).
+    from ._completion import register_completion_commands
 
-        attach_shell_completion(main, prog_name="scitex-stats")
-    except ImportError:
-        pass
+    register_completion_commands(main)
 
     # Optional docs/skills subcommands from scitex-dev. scitex-dev exposes
     # argparse-compatible registration functions; only wire in the Click

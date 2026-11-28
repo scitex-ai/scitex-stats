@@ -6,8 +6,9 @@
 
 Analytic t-test CIs, Fisher-z correlation CIs, and seeded percentile
 bootstrap CIs (rank-biserial r for Mann-Whitney; Fisher-z fallback for tiny
-correlations). Bootstraps draw from ``numpy.random.default_rng(seed)``
-created per interval, never from global state.
+correlations). Bootstraps go through the public
+:func:`scitex_stats.descriptive.bootstrap_ci`, which draws from a fresh
+``numpy.random.default_rng(seed)`` per interval, never from global state.
 """
 
 from __future__ import annotations
@@ -17,19 +18,9 @@ from typing import Any, Dict, Optional, Tuple
 import numpy as np
 
 from scitex_stats._logging import getLogger
+from scitex_stats.descriptive._bootstrap_ci import bootstrap_ci
 
 logger = getLogger(__name__)
-
-
-def _seeded_rng(seed: int) -> Dict[str, Any]:
-    """A fresh Generator per resampling call, under scipy's current keyword."""
-    import inspect
-
-    from scipy import stats as scipy_stats
-
-    params = inspect.signature(scipy_stats.bootstrap).parameters
-    key = "rng" if "rng" in params else "random_state"
-    return {key: np.random.default_rng(seed)}
 
 
 def _is_finite_num(x: Any) -> bool:
@@ -190,18 +181,13 @@ def _correlation_ci(
         return float(np.arctanh(c))
 
     try:
-        res = scipy_stats.bootstrap(
-            (data, data2),
-            _stat,
-            confidence_level=confidence,
-            n_resamples=n_bootstrap,
-            method="percentile",
-            paired=True,
-            **_seeded_rng(seed),
+        res = bootstrap_ci(
+            data, _stat, data2=data2, paired=True, confidence=confidence,
+            n_resamples=n_bootstrap, method="percentile", seed=seed,
         )
-        low = float(np.tanh(res.confidence_interval.low))
-        high = float(np.tanh(res.confidence_interval.high))
-    except Exception as exc:  # pragma: no cover - defensive
+        low = float(np.tanh(res["ci_lower"]))
+        high = float(np.tanh(res["ci_upper"]))
+    except ValueError as exc:
         logger.debug(f"Correlation bootstrap CI unavailable ({exc}).")
         return None
     return (low, high) if _valid_ci(low, high) else None
@@ -238,16 +224,12 @@ def _mann_whitney_ci(
         return (2.0 * u) / (len(a) * len(b)) - 1.0
 
     try:
-        res = scipy_stats.bootstrap(
-            (data, data2),
-            _stat,
-            confidence_level=confidence,
-            n_resamples=n_bootstrap,
-            method="percentile",
-            **_seeded_rng(seed),
+        res = bootstrap_ci(
+            data, _stat, data2=data2, confidence=confidence,
+            n_resamples=n_bootstrap, method="percentile", seed=seed,
         )
-        low, high = float(res.confidence_interval.low), float(res.confidence_interval.high)
-    except Exception as exc:  # pragma: no cover - defensive
+        low, high = res["ci_lower"], res["ci_upper"]
+    except ValueError as exc:
         logger.debug(f"Mann-Whitney bootstrap CI unavailable ({exc}).")
         return None
     return (low, high) if _valid_ci(low, high) else None

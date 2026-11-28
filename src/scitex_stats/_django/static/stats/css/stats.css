@@ -11,14 +11,20 @@
 
 .stats-app .stx-panes:not(.stx-panes--single) {
   height: 100%;
+  align-items: stretch;
   gap: 1px;
   background: var(--border-muted);
 }
 
 /* Wizard tabs (Data / Test / Results) follow the Writer underline-tab
-   style: a flat bar with no pill/box container; the active tab carries
-   only a bottom border plus brighter text. This neutralises the boxed
-   scitex-ui pill tabs, scoped to the stats app. */
+   style — the current underline-only idiom (Board|DM switcher + D/W/M
+   timeline tabs, operator 2026-10-20; the old boxed shared-Tabs selected
+   state is superseded): a flat bar with no pill/box container; the active
+   tab carries only a bottom border plus brighter text; hover brightens
+   the text with no box. This neutralises the boxed scitex-ui pill tabs,
+   scoped to the stats app. (SDK 0.3.9 ships the same idiom natively via
+   an inset box-shadow underline; the leaf keeps the border-bottom form
+   so the underline wears the stats accent token.) */
 .stats-app .stx-panes--single > .stx-panes__tabs {
   gap: 0;
   padding: 0 8px;
@@ -45,10 +51,16 @@
   font-weight: 600;
 }
 
+.stats-app .stx-panes__tab:hover {
+  background: transparent;
+  color: var(--text-primary);
+}
+
 .stats-pane {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  height: 100%;
   overflow: auto;
   background: var(--bg-surface);
 }
@@ -62,8 +74,23 @@
   min-height: 48px;
   flex: 0 0 48px;
   padding: 6px 12px;
-  border-bottom: 1px solid var(--border-muted);
-  background: var(--bg-surface);
+  /* Operator 2026-10-23: a bit stronger header contrast for the columns —
+     muted header background plus a default (not muted) bottom edge. */
+  border-bottom: 1px solid var(--border-default);
+  background: var(--bg-muted);
+}
+
+/* Operator 2026-10-19 results-column cleanup: Copy sits in the Raw-result
+   summary row, next to the JSON it copies — not detached in the pane header. */
+.stats-raw__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stats-raw__summary .stats-copy {
+  flex: none;
 }
 
 .stats-pane__title {
@@ -72,7 +99,8 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--text-secondary);
+  /* Operator 2026-10-23: primary text for stronger column-header contrast. */
+  color: var(--text-primary);
 }
 
 .stats-pane__actions,
@@ -81,6 +109,32 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+}
+
+/* Operator 2026-10-23: the sample action is right-aligned, separated from
+   the ordinal Add-group/Clear workflow on the left. */
+.stats-row__right {
+  margin-left: auto;
+}
+
+/* Operator 2026-10-23: CSV column chooser — one checkbox row per numeric
+   column, all checked = the old import-everything in one click. */
+.stats-colpick {
+  margin: 8px 0;
+}
+
+.stats-colpick__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0;
+}
+
+.stats-colpick__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
 }
 
 .stats-pane__header .stats-pane__actions {
@@ -95,43 +149,21 @@
 .stats-pane__body {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
   gap: 12px;
   padding: 12px;
-  /* keep the last controls scrollable above the hub's floating dock */
-  padding-bottom: calc(var(--site-dock-height, 0px) + 24px);
+  /* launcher overlay reserves no viewport: keep 24px + iOS home-bar inset */
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
-/* Canonical app header: leaf identity + the shared project-picker slot.
-   The slot keeps its own scitex-ui positioning rules (order 1, left). */
-.stats-app-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--border-muted);
-  background: var(--bg-surface);
-}
-
-.stats-app-header__title {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.stats-app-header__version {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.stats-app-header__actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-left: auto;
-}
+/* Canonical SDK AppHeader: the row is rendered client-side by the prebuilt
+   scitex_sdk app-header.js module from the [data-stx-app-header] mount root
+   (stats.html) — title span, version badge, project slot, actions. The
+   single source of truth shared by every project-scoped app is that
+   component plus app-header.css: 40px row, title 0.85rem, version 0.78rem,
+   actions order 2, 600px phone wrap. This leaf owns only identity values
+   (product name, package version, its picker element), never the row — no
+   leaf fork lives here. */
 
 .stats-dropzone {
   transition: background-color 120ms ease, box-shadow 120ms ease;
@@ -155,6 +187,14 @@
   min-height: 44px;
   border-style: dashed;
   color: var(--text-secondary);
+}
+
+/* Operator 2026-10-26: hard separator specification sits directly under
+   the drop zone; Auto (default) keeps estimation so the UI stays quiet
+   until the user needs the override. */
+.stats-sep {
+  margin-top: 8px;
+  max-width: 220px;
 }
 
 .stats-app .stats-btn:focus-visible,
@@ -229,6 +269,53 @@
   color: var(--text-secondary);
 }
 
+/* Operator 2026-10-24: destructive actions wear the alert red — the same
+   --status-error token .stats-error uses (scitex-sdk defines it per theme),
+   never a leaf-local hex. */
+.stats-btn--danger {
+  border-color: var(--status-error-border, currentColor);
+  background: transparent;
+  color: var(--status-error);
+}
+
+.stats-btn--danger:hover:not(:disabled) {
+  background: var(--status-error-bg);
+}
+
+/* Operator 2026-10-24: CSV import preview — filename, detected separator
+   and first rows, so a wrong parse is visible before any test runs. */
+.stats-preview {
+  margin: 8px 0;
+  overflow-x: auto;
+}
+
+.stats-preview__meta {
+  margin: 2px 0 6px;
+}
+
+.stats-preview table {
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.stats-preview th,
+.stats-preview td {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 2px 8px 2px 0;
+  text-align: left;
+  font-weight: 400;
+}
+
+.stats-preview thead th {
+  color: var(--text-primary);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-default);
+}
+
 .stats-btn--primary {
   border-color: var(--stats-accent);
   background: var(--stats-accent);
@@ -244,9 +331,24 @@
 .stats-badge {
   padding: 1px 6px;
   border: 1px solid var(--border-default);
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 0.7rem;
   color: var(--text-muted);
+}
+
+/* Recommendation verdict: the kicker is an eyebrow above the test name,
+   never a run-on glued to it (operator CCT4715 picker concatenation). */
+.stats-rec__title {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.stats-rec__kicker {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 
 .stats-groups {
@@ -289,7 +391,7 @@
   width: 100%;
   padding: 8px;
   border: 1px solid var(--border-default);
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--bg-page);
   color: var(--text-primary);
   font: inherit;
@@ -366,6 +468,17 @@
   accent-color: var(--stats-accent);
 }
 
+/* Inapplicable tests dim in place with the failing reason on hover (title);
+   the radio is disabled so the choice cannot be made by mistake. */
+.stats-test.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.stats-test.is-disabled:hover {
+  background: none;
+}
+
 .stats-options {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -410,7 +523,7 @@
   margin: 6px 0 10px;
   padding: 8px 10px;
   border-left: 3px solid var(--stats-accent);
-  border-radius: 4px;
+  border-radius: 0;
   background: var(--bg-muted);
   /* proportional face: italic symbols read as math, not code */
   font-size: 0.9rem;
@@ -509,7 +622,7 @@
 /* The figure is a white print artefact in both themes. */
 .stats-plot__frame {
   border: 1px solid var(--border-muted);
-  border-radius: 6px;
+  border-radius: 0;
   background: #fff;
   padding: 6px;
 }
@@ -537,7 +650,7 @@
   max-height: 280px;
   margin: 0;
   padding: 8px;
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--bg-muted);
   font-size: 0.75rem;
   white-space: pre-wrap;
@@ -571,25 +684,24 @@
   display: none !important;
 }
 
-/* Phones (390px reference width): one column, and every actionable control
-   keeps a >=44px touch target. The pane header wraps instead of clipping. */
-@media (max-width: 480px) {
+/* Phones (600px SDK contract boundary, plus coarse pointers): one column,
+   and every actionable control keeps a >=44px touch target. The pane
+   headers stand down (the SDK panes tab bar carries the labels). The
+   app-header row wrap itself is owned by the SDK canonical app-header.css
+   (same 600px boundary). */
+@media (max-width: 600px), (pointer: coarse) {
   .stats-options {
     grid-template-columns: 1fr;
   }
 
-  .stats-app-header {
-    flex-wrap: wrap;
+  /* Phones: the SDK panes tab bar carries the pane labels, so the desktop
+     titles and their now-empty header rows stand down. */
+  .stats-pane__title {
+    display: none;
   }
 
   .stats-pane__header {
-    height: auto;
-    min-height: 48px;
-    flex-wrap: wrap;
-  }
-
-  .stats-pane__header .stats-pane__actions {
-    flex-wrap: wrap;
+    display: none;
   }
 
   .stats-app .stats-btn,
@@ -649,3 +761,15 @@
 .stats-project__empty {
   margin: 0;
 }
+
+
+/* The import form is app content in a native dialog; the SDK owns chrome. */
+.stats-import-entry { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.stats-import-entry .stats-hint { margin: 0; }
+.stats-import-dialog { margin: auto; padding: 0; inline-size: min(780px, calc(100vw - 24px)); max-inline-size: calc(100vw - 24px); max-block-size: calc(100dvh - 24px); color: var(--text-primary); background: var(--workspace-bg-primary); border: 1px solid var(--workspace-border-default); border-radius: 0; overflow: auto; }
+.stats-import-dialog::backdrop { background: color-mix(in srgb, var(--bg-page, var(--workspace-bg-primary)) 65%, transparent); }
+.stats-import-dialog__header { position: sticky; inset-block-start: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; background: var(--workspace-bg-secondary); border-block-end: 1px solid var(--workspace-border-default); }
+.stats-import-dialog__header h2 { margin: 0; font-size: 16px; }
+.stats-import-dialog__body { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+.stats-import-dialog .stats-project__list { max-block-size: 180px; overflow: auto; }
+.stats-import-dialog .stats-preview__table { max-block-size: 220px; overflow: auto; }

@@ -79,12 +79,13 @@
     if (value) button.setAttribute("aria-busy", "true");
   }
 
-  function post(path, body) {
+  function post(path, body, signal) {
     return fetch(STX_MOUNT + path, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken() },
       credentials: "same-origin",
       body: JSON.stringify(body),
+      signal: signal,
     });
   }
 
@@ -111,6 +112,11 @@
     return body;
   }
 
+  // A report build can take a while (WeasyPrint + figure on a cold server);
+  // without a deadline a stalled build sits on "Building report…" forever,
+  // which reads as a hang. Bound it and say so.
+  var REPORT_TIMEOUT_MS = 120000;
+
   async function downloadPdf() {
     var body = ready();
     if (!body) return;
@@ -118,8 +124,11 @@
     if (!request) return;
     busy($("statsReportPdf"), true);
     status(_("Building report…"));
+    var controller = window.AbortController ? new AbortController() : null;
+    var timer = null;
+    if (controller) timer = setTimeout(function () { controller.abort(); }, REPORT_TIMEOUT_MS);
     try {
-      var res = await post("/api/report/pdf", body);
+      var res = await post("/api/report/pdf", body, controller ? controller.signal : undefined);
       if (!current(request)) return;
       if (!res.ok) {
         var error = await errorText(res);
@@ -137,8 +146,11 @@
       setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
       status(_("Report downloaded."));
     } catch (e) {
-      if (current(request)) status(_("Could not reach the Statistics service."), true);
+      if (e && e.name === "AbortError") {
+        if (current(request)) status(_("The report is taking too long. Try again."), true);
+      } else if (current(request)) status(_("Could not reach the Statistics service."), true);
     } finally {
+      if (timer) clearTimeout(timer);
       if (window.stxStatsApp.requestLatest(request)) busy($("statsReportPdf"), false);
     }
   }

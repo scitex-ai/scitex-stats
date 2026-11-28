@@ -59,6 +59,14 @@ def tools_by_name(mcp_server):
     return {t.name: t for t in tools}
 
 
+def _props_of(tool):
+    """Schema properties across MCP SDK majors (2.x: input_schema)."""
+    schema = getattr(tool, "input_schema", None)
+    if schema is None:
+        schema = getattr(tool, "inputSchema", None)
+    return (schema or {}).get("properties", {})
+
+
 # ===================================================================
 # 1. Server creation
 # ===================================================================
@@ -97,8 +105,9 @@ class TestServerCreation:
 # ===================================================================
 
 EXPECTED_TOOLS = [
+    "bootstrap_ci",
     "correct_pvalues",
-    "describe",
+    "describe_data",
     "effect_size",
     "format_results",
     "normality_test",
@@ -150,7 +159,7 @@ class TestToolSchemas:
         # Arrange
         tool = tools_by_name["run_test"]
         # Act
-        props = tool.inputSchema.get("properties", {})
+        props = _props_of(tool)
         # Assert
         assert "test_name" in props
 
@@ -158,7 +167,7 @@ class TestToolSchemas:
         # Arrange
         tool = tools_by_name["recommend_tests"]
         # Act
-        props = tool.inputSchema.get("properties", {})
+        props = _props_of(tool)
         # Assert
         assert "n_groups" in props
 
@@ -166,7 +175,7 @@ class TestToolSchemas:
         # Arrange
         tool = tools_by_name["correct_pvalues"]
         # Act
-        props = tool.inputSchema.get("properties", {})
+        props = _props_of(tool)
         # Assert
         assert "pvalues" in props
 
@@ -174,7 +183,7 @@ class TestToolSchemas:
         # Arrange
         tool = tools_by_name["effect_size"]
         # Act
-        props = tool.inputSchema.get("properties", {})
+        props = _props_of(tool)
         # Assert
         assert "group1" in props
 
@@ -182,7 +191,7 @@ class TestToolSchemas:
         # Arrange
         tool = tools_by_name["effect_size"]
         # Act
-        props = tool.inputSchema.get("properties", {})
+        props = _props_of(tool)
         # Assert
         assert "group2" in props
 
@@ -190,7 +199,7 @@ class TestToolSchemas:
         # Arrange
         tool = tools_by_name["p_to_stars"]
         # Act
-        props = tool.inputSchema.get("properties", {})
+        props = _props_of(tool)
         # Assert
         assert "p_value" in props
 
@@ -363,16 +372,37 @@ def test_correct_pvalues_direct():
 def test_describe_direct_success():
     # Arrange
     # Act
-    out = _decode(_run_async(_tool_fn("describe")(data=[1.0, 2.0, 3.0, 4.0, 5.0])))
+    out = _decode(_run_async(_tool_fn("describe_data")(data=[1.0, 2.0, 3.0, 4.0, 5.0])))
     # Assert
     assert out["success"] is True
 
 def test_describe_direct_mean():
     # Arrange
     # Act
-    out = _decode(_run_async(_tool_fn("describe")(data=[1.0, 2.0, 3.0, 4.0, 5.0])))
+    out = _decode(_run_async(_tool_fn("describe_data")(data=[1.0, 2.0, 3.0, 4.0, 5.0])))
     # Assert
     assert "mean" in out
+
+
+def test_bootstrap_ci_tool_matches_python_api():
+    # Arrange
+    import scitex_stats as ss
+
+    data = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]
+    expected = json.loads(json.dumps(ss.bootstrap_ci(data, "median", n_resamples=500)))
+    # Act
+    out = _decode(_run_async(_tool_fn("bootstrap_ci")(data=data, n_resamples=500)))
+    # Assert
+    assert {k: v for k, v in out.items() if k != "success"} == expected
+
+
+def test_bootstrap_ci_tool_reports_invalid_input():
+    # Arrange
+    data = [1.0]
+    # Act
+    out = _decode(_run_async(_tool_fn("bootstrap_ci")(data=data)))
+    # Assert
+    assert out["success"] is False
 
 
 def test_effect_size_direct_success():

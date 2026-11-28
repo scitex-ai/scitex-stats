@@ -5,8 +5,8 @@
 
 Functionalities
 ---------------
-- `run_test(name, ...)` — single dispatcher across 23 tests (parametric,
-  nonparametric, correlation, categorical, normality) returning a unified
+- `run_test(name, ...)` — single dispatcher across 25 tests (parametric,
+  nonparametric, correlation, categorical, normality, agreement) returning a unified
   result dict (statistic, pvalue, effect_size, power, formatted, ...).
 - `recommend_tests(StatContext(...))` — design-driven test selection from
   number of groups, sample sizes, outcome type, paired vs between.
@@ -14,10 +14,17 @@ Functionalities
   `run_all_applicable(data, design)` — data-driven ✓/✗ with reasons per
   test, one pre-specified primary test with its decision path, and
   sensitivity runs that never select by p-value.
+- `bootstrap_ci(data, statistic="median", ...)` — seeded bootstrap CI of a
+  median / mean / callable statistic, returned as a JSON-native dict
+  (`estimate`, `ci_lower`, `ci_upper`, `ci_level`, `n`, `n_resamples`, `seed`).
 - `effect_sizes`, `power`, `correct`, `posthoc`, `descriptive`,
   `auto` — submodules exposing the primitives behind `run_test`
   (Cohen's d / Cliff's delta / eta-sq / sample-size-ttest /
   Bonferroni / FDR / Tukey HSD / Dunn / ...).
+- `correct_pvalues`, `effect_size`, `normality_test`, `posthoc_test`,
+  `power_analysis`, `format_results` — method-dispatched one-call
+  operations returning JSON-native dicts; each MCP tool of the same name
+  wraps exactly one of them.
 - APA / Nature / LaTeX formatting via `result["formatted"]`.
 - `full_report(result, ...)` — six-stat reporting doctrine bundler:
   packages n, 95% CI, method, p-value, effect size, and test statistic
@@ -29,8 +36,9 @@ Functionalities
 IO
 --
 - Reads: numeric arrays (`numpy.ndarray`, `pandas.DataFrame`,
-  `pandas.Series`, sequences); optional `.env` walk-up via
-  scitex-config; runtime cache under `$SCITEX_DIR/stats/runtime/`.
+  `pandas.Series`, sequences); runtime cache under
+  `$SCITEX_DIR/stats/runtime/`. Import reads no `.env` and leaves
+  `os.environ` unchanged.
 - Writes: nothing by default — pure functions returning result dicts.
   Caller persists via `scitex_io.save(...)` if desired.
 
@@ -47,7 +55,7 @@ Standalone import::
     result = ss.run_test("ttest_ind", data=g1, data2=g2)
     print(result["formatted"])  # APA-style summary
 
-CLI: ``scitex-stats <command>``. MCP: 10 tools for AI agents.
+CLI: ``scitex-stats <command>``. MCP: 19 tools for AI agents.
 """
 
 from __future__ import annotations
@@ -55,20 +63,6 @@ from __future__ import annotations
 from importlib.metadata import PackageNotFoundError as _PackageNotFoundError
 from importlib.metadata import version as _version
 from pathlib import Path as _Path
-
-# ---------------------------------------------------------------------------
-# .env-respect: walk parent dirs from cwd up to $HOME, load any .env files.
-# Closer-to-cwd .env wins; process env always wins. Helper landed on
-# scitex-config develop at eb9507e1 (load_dotenv walk_up + stop_at).
-# Wrapped in try/except so the import never breaks if scitex-config is
-# missing or older than 0.3.0.
-# ---------------------------------------------------------------------------
-try:
-    from scitex_config import PriorityConfig as _PC
-
-    _PC.load_dotenv(walk_up=True, stop_at=str(_Path.home()))
-except Exception:
-    pass
 
 # ---------------------------------------------------------------------------
 # Runtime path resolver: anything writable (cache, db, generated outputs)
@@ -137,6 +131,13 @@ _LAZY_ATTRS: dict[str, str] = {
     "validate_apa": "_utils._apa",
     # Provenance receipt verification
     "verify": "_verify",
+    # Sync operations behind the matching MCP tools (same name, same args)
+    "correct_pvalues": "correct",
+    "effect_size": "effect_sizes",
+    "format_results": "auto._format_results",
+    "normality_test": "tests.normality",
+    "posthoc_test": "posthoc",
+    "power_analysis": "power",
     # Stats ↔ SciTeX bundle I/O (optional scitex-io; extra [bundle])
     "Stats": "_integration",
     "BUNDLE_AVAILABLE": "_integration",
@@ -165,6 +166,7 @@ _LAZY_ATTRS: dict[str, str] = {
     "run_all_applicable": "_recommend",
     # Descriptive
     "describe": "descriptive",
+    "bootstrap_ci": "descriptive",
     # Parametric (6)
     "test_ttest_ind": "tests",
     "test_ttest_rel": "tests",
@@ -255,12 +257,20 @@ __all__ = [
     "select_posthoc",
     # Descriptive
     "describe",
+    "bootstrap_ci",
     # JSON serialization
     "to_json_safe",
     "apa_render",
     "validate_apa",
     # Provenance receipt verification
     "verify",
+    # Sync operations behind the matching MCP tools
+    "correct_pvalues",
+    "effect_size",
+    "format_results",
+    "normality_test",
+    "posthoc_test",
+    "power_analysis",
     # Stats ↔ SciTeX bundle I/O (optional scitex-io; extra [bundle])
     "Stats",
     "BUNDLE_AVAILABLE",

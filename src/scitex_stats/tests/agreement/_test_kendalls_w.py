@@ -117,7 +117,7 @@ def test_kendalls_w(
     use_abs : bool, default False
         If True, rank ``|score|`` instead of ``score``. Useful when the
         sign of the score is irrelevant to the agreement question
-        (e.g. ranking channels by |effect size|).
+        (e.g. ranking channels by absolute effect size).
     alpha : float, default 0.05
         Significance level (used only for the formatted summary).
     return_as : {"dict", "dataframe"}, default "dict"

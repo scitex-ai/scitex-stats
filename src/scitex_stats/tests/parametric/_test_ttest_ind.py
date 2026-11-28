@@ -129,8 +129,10 @@ def test_ttest_ind(
 
     References
     ----------
-    .. [1] Student (1908). "The Probable Error of a Mean". Biometrika, 6(1), 1-25.
-    .. [2] Welch, B. L. (1947). "The generalization of 'Student's' problem when
+    Further reading: [#statstestttestindref1]_, [#statstestttestindref2]_.
+
+    .. [#statstestttestindref1] Student (1908). "The Probable Error of a Mean". Biometrika, 6(1), 1-25.
+    .. [#statstestttestindref2] Welch, B. L. (1947). "The generalization of 'Student's' problem when
            several different population variances are involved". Biometrika, 34(1-2), 28-35.
 
     Examples

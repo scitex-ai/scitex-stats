@@ -89,6 +89,7 @@ def test_anova_rm(  # noqa: C901
         Significance level
     correction : {'auto', 'none', 'gg'}, default 'auto'
         Correction method:
+
         - 'auto': Apply GG correction if sphericity violated
         - 'none': No correction
         - 'gg': Always apply Greenhouse-Geisser correction
@@ -110,6 +111,7 @@ def test_anova_rm(  # noqa: C901
     -------
     result : dict or DataFrame
         Test results including:
+
         - statistic: F-statistic
         - pvalue: p-value (possibly corrected)
         - df_effect: Degrees of freedom for effect
@@ -126,12 +128,15 @@ def test_anova_rm(  # noqa: C901
 
     Notes
     -----
+    See [#anova-rm-ref1]_, [#anova-rm-ref2]_.
+
     Repeated measures ANOVA tests whether the means differ across multiple
     conditions measured on the same subjects (within-subjects factor).
 
     **Null Hypothesis (H0)**: All condition means are equal
 
     **Assumptions**:
+
     1. **Independence of subjects**: Different subjects are independent
     2. **Normality**: Differences between conditions are normally distributed
     3. **Sphericity**: Variances of differences between all pairs of conditions
@@ -139,12 +144,14 @@ def test_anova_rm(  # noqa: C901
 
     **Sphericity**:
     The sphericity assumption is unique to repeated measures ANOVA. If violated:
+
     - Greenhouse-Geisser correction: More conservative, use when ε < 0.75
     - Huynh-Feldt correction: Less conservative (not implemented)
     - Multivariate approach: MANOVA (not implemented)
 
     **Greenhouse-Geisser Correction**:
     Adjusts degrees of freedom by multiplying by epsilon (ε):
+
     - df_effect_adj = ε × df_effect
     - df_error_adj = ε × df_error
 
@@ -154,6 +161,7 @@ def test_anova_rm(  # noqa: C901
         \\eta_p^2 = \\frac{SS_{effect}}{SS_{effect} + SS_{error}}
 
     Interpretation same as regular eta-squared:
+
     - < 0.01: negligible
     - < 0.06: small
     - < 0.14: medium
@@ -161,6 +169,7 @@ def test_anova_rm(  # noqa: C901
 
     **Post-hoc tests**:
     If significant, use pairwise t-tests with correction:
+
     - test_ttest_rel() for all pairs
     - correct_bonferroni() or correct_holm() for multiple comparisons
 
@@ -189,9 +198,9 @@ def test_anova_rm(  # noqa: C901
 
     References
     ----------
-    .. [1] Greenhouse, S. W., & Geisser, S. (1959). "On methods in the analysis
+    .. [#anova-rm-ref1] Greenhouse, S. W., & Geisser, S. (1959). "On methods in the analysis
            of profile data". Psychometrika, 24(2), 95-112.
-    .. [2] Mauchly, J. W. (1940). "Significance test for sphericity of a normal
+    .. [#anova-rm-ref2] Mauchly, J. W. (1940). "Significance test for sphericity of a normal
            n-variate distribution". The Annals of Mathematical Statistics,
            11(2), 204-209.
 

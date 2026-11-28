@@ -11,11 +11,13 @@ when performing multiple statistical tests.
 from ._correct_bonferroni import correct_bonferroni
 from ._correct_fdr import correct_fdr
 from ._correct_holm import correct_holm
+from ._correct_pvalues import correct_pvalues
 from ._correct_sidak import correct_sidak
 
 __all__ = [
     "correct_bonferroni",
     "correct_fdr",
     "correct_holm",
+    "correct_pvalues",
     "correct_sidak",
 ]

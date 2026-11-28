@@ -1,12 +1,12 @@
 ---
 description: |
   [TOPIC] Test Catalog
-  [DETAILS] parametric, nonparametric, correlation, categorical, normality.
+  [DETAILS] parametric, nonparametric, correlation, categorical, normality, agreement.
 tags: [scitex-stats-test-catalog, scitex-stats]
 ---
 
 
-# Test Catalog (23 Tests)
+# Test Catalog (25 Tests)
 
 ## Parametric (6)
 
@@ -55,6 +55,25 @@ tags: [scitex-stats-test-catalog, scitex-stats]
 | `test_normality` | Combined normality assessment |
 | `test_ks_1samp` | Kolmogorov-Smirnov (one-sample) |
 | `test_ks_2samp` | Kolmogorov-Smirnov (two-sample) |
+
+## Agreement (2)
+
+| Function | Use Case |
+|----------|----------|
+| `test_kendalls_w` | Inter-rater agreement (Kendall's W) |
+| `test_icc` | Intraclass correlation (rater reliability) |
+
+## Dispatcher Coverage
+
+`run_test()` routes 22 aliases; the MCP `run_test` tool routes 23 names.
+Both cover the Parametric/Nonparametric/Correlation/Categorical/Normality
+families fully. Two edge gaps (measured on develop, documented — not
+silent): the Python dispatcher does not route `test_anova_rm`,
+`test_anova_2way`, `test_theilsen`, `test_mcnemar`, `test_cochran_q`,
+`test_kendalls_w`, `test_icc`, or `test_normality` by name (call these
+directly, e.g. `sst.test_mcnemar(...)`), and the MCP tool does not route
+`test_kendalls_w` or `test_icc`. Agreement-family and repeated-measures
+ANOVA go direct; everything else dispatches.
 
 ## Dispatcher Aliases
 

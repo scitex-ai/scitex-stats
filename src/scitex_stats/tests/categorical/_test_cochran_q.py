@@ -272,9 +272,11 @@ def test_cochran_q(  # noqa: C901
 
     References
     ----------
-    .. [1] Cochran, W. G. (1950). "The comparison of percentages in matched
+    Further reading: [#statstestcochranqref1]_, [#statstestcochranqref2]_.
+
+    .. [#statstestcochranqref1] Cochran, W. G. (1950). "The comparison of percentages in matched
            samples". Biometrika, 37(3/4), 256-266.
-    .. [2] McNemar, Q. (1947). "Note on the sampling error of the difference
+    .. [#statstestcochranqref2] McNemar, Q. (1947). "Note on the sampling error of the difference
            between correlated proportions or percentages". Psychometrika,
            12(2), 153-157.
 

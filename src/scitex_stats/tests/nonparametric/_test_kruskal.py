@@ -159,34 +159,44 @@ def test_kruskal(  # noqa: C901
 
     References
     ----------
-    .. [1] Kruskal, W. H., & Wallis, W. A. (1952). "Use of ranks in
+    Further reading: [#kruskal1952]_, [#kruskalpower]_, and [#kruskaleffect]_.
+
+    .. [#kruskal1952] Kruskal, W. H., & Wallis, W. A. (1952). "Use of ranks in
            one-criterion variance analysis". Journal of the American
            Statistical Association, 47(260), 583-621.
-    .. [2] Hecke, T. V. (2012). "Power study of ANOVA versus Kruskal-Wallis
+    .. [#kruskalpower] Hecke, T. V. (2012). "Power study of ANOVA versus Kruskal-Wallis
            test". Journal of Statistics and Management Systems, 15(2-3), 241-247.
-    .. [3] Tomczak, M., & Tomczak, E. (2014). "The need to report effect size
+    .. [#kruskaleffect] Tomczak, M., & Tomczak, E. (2014). "The need to report effect size
            estimates revisited". Trends in Sport Sciences, 21(1), 19-25.
 
     Examples
     --------
+    >>> import numpy as np
+    >>> from scitex_stats import test_kruskal
     >>> # Three groups with different medians
     >>> group1 = np.array([1, 2, 3, 4, 5])
     >>> group2 = np.array([3, 4, 5, 6, 7])
     >>> group3 = np.array([5, 6, 7, 8, 9])
     >>> result = test_kruskal([group1, group2, group3])
-    >>> result['rejected']
+    >>> bool(result['significant'])
     True
 
-    >>> # With custom names and plot
-    >>> result, fig = test_kruskal(
+    >>> # Plot on explicitly owned axes; the function returns the result dict
+    >>> import matplotlib.pyplot as plt
+    >>> fig, ax = plt.subplots()
+    >>> result = test_kruskal(
     ...     [group1, group2, group3],
     ...     var_names=['Control', 'Treatment 1', 'Treatment 2'],
-    ...     plot=True
+    ...     ax=ax
     ... )
+    >>> plt.close(fig)
 
-    >>> # Export results
-    >>> from scitex_stats.utils._normalizers import convert_results
-    >>> convert_results(result, return_as='excel', path='kruskal_results.xlsx')
+    >>> # Tabular results for downstream export
+    >>> table = test_kruskal([group1, group2, group3], return_as='dataframe')
+    >>> 'pvalue' in table.columns
+    True
+    >>> bool(table['significant'].iloc[0])
+    True
     """
     from scitex_stats._utils._effect_size import (
         epsilon_squared,

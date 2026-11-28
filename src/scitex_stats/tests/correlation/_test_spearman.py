@@ -63,6 +63,7 @@ def test_spearman(  # noqa: C901
         Name of second variable
     alternative : {'two-sided', 'less', 'greater'}, default 'two-sided'
         Alternative hypothesis:
+
         - 'two-sided': ρ ≠ 0
         - 'less': ρ < 0
         - 'greater': ρ > 0
@@ -82,6 +83,7 @@ def test_spearman(  # noqa: C901
     -------
     result : dict or DataFrame or (dict, Figure)
         Test results with:
+
         - test_method: Name of test
         - statistic: Spearman's rho (ρ)
         - pvalue: p-value
@@ -102,14 +104,16 @@ def test_spearman(  # noqa: C901
     Spearman's ρ is the Pearson correlation of rank-transformed variables.
 
     Assumptions:
+
     - Observations are independent
     - Variables are at least ordinal
 
     Interpretation (same as Pearson):
-    - |ρ| < 0.1: negligible
-    - |ρ| < 0.3: small
-    - |ρ| < 0.5: medium
-    - |ρ| ≥ 0.5: large
+
+    - :math:`|\rho|` < 0.1: negligible
+    - :math:`|\rho|` < 0.3: small
+    - :math:`|\rho|` < 0.5: medium
+    - :math:`|\rho|` ≥ 0.5: large
 
     References
     ----------

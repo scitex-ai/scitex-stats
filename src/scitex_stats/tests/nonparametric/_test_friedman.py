@@ -235,10 +235,12 @@ def test_friedman(  # noqa: C901
 
     References
     ----------
-    .. [1] Friedman, M. (1937). "The use of ranks to avoid the assumption of
+    Further reading: [#statstestfriedmanref1]_, [#statstestfriedmanref2]_.
+
+    .. [#statstestfriedmanref1] Friedman, M. (1937). "The use of ranks to avoid the assumption of
            normality implicit in the analysis of variance". Journal of the
            American Statistical Association, 32(200), 675-701.
-    .. [2] Kendall, M. G., & Babington Smith, B. (1939). "The problem of m
+    .. [#statstestfriedmanref2] Kendall, M. G., & Babington Smith, B. (1939). "The problem of m
            rankings". The Annals of Mathematical Statistics, 10(3), 275-287.
 
     See Also
