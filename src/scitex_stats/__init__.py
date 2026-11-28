@@ -14,6 +14,9 @@ Functionalities
   `run_all_applicable(data, design)` — data-driven ✓/✗ with reasons per
   test, one pre-specified primary test with its decision path, and
   sensitivity runs that never select by p-value.
+- `bootstrap_ci(data, statistic="median", ...)` — seeded bootstrap CI of a
+  median / mean / callable statistic, returned as a JSON-native dict
+  (`estimate`, `ci_lower`, `ci_upper`, `ci_level`, `n`, `n_resamples`, `seed`).
 - `effect_sizes`, `power`, `correct`, `posthoc`, `descriptive`,
   `auto` — submodules exposing the primitives behind `run_test`
   (Cohen's d / Cliff's delta / eta-sq / sample-size-ttest /
@@ -51,7 +54,7 @@ Standalone import::
     result = ss.run_test("ttest_ind", data=g1, data2=g2)
     print(result["formatted"])  # APA-style summary
 
-CLI: ``scitex-stats <command>``. MCP: 18 tools for AI agents.
+CLI: ``scitex-stats <command>``. MCP: 19 tools for AI agents.
 """
 
 from __future__ import annotations
@@ -176,6 +179,7 @@ _LAZY_ATTRS: dict[str, str] = {
     "run_all_applicable": "_recommend",
     # Descriptive
     "describe": "descriptive",
+    "bootstrap_ci": "descriptive",
     # Parametric (6)
     "test_ttest_ind": "tests",
     "test_ttest_rel": "tests",
@@ -266,6 +270,7 @@ __all__ = [
     "select_posthoc",
     # Descriptive
     "describe",
+    "bootstrap_ci",
     # JSON serialization
     "to_json_safe",
     "apa_render",

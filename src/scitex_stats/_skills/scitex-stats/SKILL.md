@@ -2,7 +2,7 @@
 name: scitex-stats
 description: |
   [WHAT] Publication-ready statistical testing for 25 tests.
-  [WHEN] Use when the user asks to "run a t-test / ANOVA / correlation / normality test", "compare two groups", "test if distributions differ", "compute p-value", "compute effect size", "correct for multiple comparisons", "compute required sample size", "pick the right statistical test".
+  [WHEN] Use when the user asks to "run a t-test / ANOVA / correlation / normality test", "compare two groups", "test if distributions differ", "compute p-value", "compute effect size", "bootstrap a confidence interval for a median / mean", "correct for multiple comparisons", "compute required sample size", "pick the right statistical test".
   [HOW] `import scitex_stats` for the Python API; see leaf skills for entry points.
 tags: [scitex-stats]
 allowed-tools: mcp__scitex__stats_*
@@ -48,7 +48,7 @@ rule and empirical verification table.
 ### Mandatory (per ecosystem spec)
 - [01_installation.md](01_installation.md) — pip install, extras, verification
 - [02_quick-start.md](02_quick-start.md) — Smallest end-to-end t-test example
-- [03_python-api.md](03_python-api.md) — Public callables (dispatcher + 25 tests)
+- [03_python-api.md](03_python-api.md) — Public callables (dispatcher + 25 tests + `bootstrap_ci`)
 - [04_cli-reference.md](04_cli-reference.md) — Full CLI command surface
 
 ### Workflows

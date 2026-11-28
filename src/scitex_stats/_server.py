@@ -281,6 +281,40 @@ async def describe_data(
 
 
 @mcp.tool()
+async def bootstrap_ci(
+    data: List[float],
+    statistic: str = "median",
+    confidence: float = 0.95,
+    n_resamples: int = 10_000,
+    method: str = "percentile",
+    seed: int = 42,
+    nan_policy: str = "raise",
+) -> str:
+    """Seeded bootstrap confidence interval of a sample's median or mean."""
+    import asyncio
+
+    from scitex_stats.descriptive import bootstrap_ci as _bootstrap_ci
+
+    try:
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None,
+            lambda: _bootstrap_ci(
+                data,
+                statistic,
+                confidence=confidence,
+                n_resamples=n_resamples,
+                method=method,
+                seed=seed,
+                nan_policy=nan_policy,
+            ),
+        )
+        return _json({"success": True, **result})
+    except (TypeError, ValueError) as exc:
+        return _json({"success": False, "error": str(exc)})
+
+
+@mcp.tool()
 async def effect_size(
     group1: List[float],
     group2: List[float],
