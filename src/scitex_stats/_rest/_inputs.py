@@ -16,7 +16,13 @@ from __future__ import annotations
 import math
 from typing import Any, Iterable, List, Optional
 
-from scitex_sdk.app.api_exec import ApiProblem
+try:  # PS-233: scitex-sdk is the [server] extra
+    from scitex_sdk.app.api_exec import ApiProblem
+except ImportError as exc:
+    raise ImportError(
+        "scitex_stats._rest needs scitex-sdk, which is not installed. "
+        "Install the optional stack: pip install 'scitex-stats[server]'"
+    ) from exc
 
 #: The hard cap on numeric values per call, for every caller.
 MAX_VALUES = 1_000_000

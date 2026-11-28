@@ -131,6 +131,8 @@ dev = [
     # tests, at the same released floor as [server] (PS-210).
     "django>=4.2",
     "scitex-sdk[gui]>=0.5.0",
+    # assert_contract validates the generated OpenAPI document (API-O002).
+    "openapi-spec-validator>=0.7",
     # Note: fastmcp / mcp / scitex-dev / scitex-logging / pingouin come in via [project.dependencies].
     "weasyprint>=60",
 ]

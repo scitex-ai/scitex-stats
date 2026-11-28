@@ -15,7 +15,13 @@ from __future__ import annotations
 import math
 from typing import Any, Dict, Iterable
 
-from scitex_sdk.app.api_exec import ApiPage, ApiProblem
+try:  # PS-233: scitex-sdk is the [server] extra
+    from scitex_sdk.app.api_exec import ApiPage, ApiProblem
+except ImportError as exc:
+    raise ImportError(
+        "scitex_stats._rest needs scitex-sdk, which is not installed. "
+        "Install the optional stack: pip install 'scitex-stats[server]'"
+    ) from exc
 
 from . import _catalog
 from ._inputs import (

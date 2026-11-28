@@ -55,8 +55,6 @@ from ._compute import (
 from ._handlers import TEST_NOT_FOUND
 from ._inputs import INVALID, TOO_MANY
 
-P = "stats"
-H = "scitex_stats._rest."
 NOT_FOUND = ApiError(TEST_NOT_FOUND, 404, "No test with this name")
 BAD_INPUT = ApiError(INVALID, 400, "The inputs do not fit the calculation")
 TOO_MANY_VALUES = ApiError(TOO_MANY, 413, "More numeric values than this call may send")
@@ -64,7 +62,6 @@ TOO_MUCH_RESAMPLING = ApiError(
     RESAMPLING_TOO_LARGE, 413, "More bootstrap work than this call may ask for"
 )
 DATA_ERRORS = (BAD_INPUT, TOO_MANY_VALUES)
-CALC = dict(item=False, read_only=True, exposure="public_eligible")
 
 DATA = ApiField("data", "array", False, "Numbers: the (first) sample")
 DATA2 = ApiField("data2", "array", False, "Numbers: the second sample")
@@ -76,10 +73,10 @@ ALPHA = ApiField("alpha", "number", False, "Significance level in (0, 1); defaul
 
 OPERATIONS = (
     ApiOperation(
-        P,
+        "stats",
         "tests",
         "list",
-        H + "_handlers:list_tests",
+        "scitex_stats._rest._handlers:list_tests",
         summary=(
             "Statistical tests this host runs: id, aliases, description, and the "
             "fields each one reads"
@@ -93,10 +90,10 @@ OPERATIONS = (
     # declaration order, so the literal tests/recommend must precede the
     # tests/{test_id} pattern or POST tests/recommend answers 405.
     ApiOperation(
-        P,
+        "stats",
         "tests",
         "recommend",
-        H + "_handlers:recommend",
+        "scitex_stats._rest._handlers:recommend",
         summary=(
             "Recommend a test: from data (groups) with the decision path, or from "
             "a design description (n_groups, sample_sizes, outcome_type)"
@@ -144,22 +141,24 @@ OPERATIONS = (
             ApiField("top_k", "integer", False, "Design form: how many tests (1-50)"),
         ),
         errors=DATA_ERRORS,
-        **CALC,
+        item=False,
+        read_only=True,
+        exposure="public_eligible",
     ),
     ApiOperation(
-        P,
+        "stats",
         "tests",
         "get",
-        H + "_handlers:get_test",
+        "scitex_stats._rest._handlers:get_test",
         summary="One statistical test (id or alias): description and the fields it reads",
         errors=(NOT_FOUND,),
         public=True,
     ),
     ApiOperation(
-        P,
+        "stats",
         "tests",
         "run",
-        H + "_handlers:run_test",
+        "scitex_stats._rest._handlers:run_test",
         summary=(
             "Run one test on inline data; returns statistic, p-value, effect size, "
             "descriptives and a provenance receipt (input hashes)"
@@ -178,17 +177,17 @@ OPERATIONS = (
             ApiField("popmean", "number", False, "Hypothesised mean (ttest_1samp)"),
             GROUP_NAMES,
         ),
-        errors=(NOT_FOUND, *DATA_ERRORS),
+        errors=(NOT_FOUND, BAD_INPUT, TOO_MANY_VALUES),
         item=True,
         read_only=True,
         exposure="public_eligible",
         compute_cost="standard",
     ),
     ApiOperation(
-        P,
+        "stats",
         "descriptives",
         "run",
-        H + "_compute:run_descriptives",
+        "scitex_stats._rest._compute:run_descriptives",
         summary="Descriptive statistics of one sample (mean, SD, quartiles, ...)",
         params=(
             ApiField("data", "array", True, "Numbers: the sample"),
@@ -202,13 +201,15 @@ OPERATIONS = (
         ),
         errors=DATA_ERRORS,
         compute_cost="standard",
-        **CALC,
+        item=False,
+        read_only=True,
+        exposure="public_eligible",
     ),
     ApiOperation(
-        P,
+        "stats",
         "effect-sizes",
         "run",
-        H + "_compute:run_effect_size",
+        "scitex_stats._rest._compute:run_effect_size",
         summary="Effect size of data versus data2, with interpretation (and 95% CI)",
         params=(
             ApiField("data", "array", True, "Numbers: the first group"),
@@ -223,13 +224,15 @@ OPERATIONS = (
         ),
         errors=DATA_ERRORS,
         compute_cost="standard",
-        **CALC,
+        item=False,
+        read_only=True,
+        exposure="public_eligible",
     ),
     ApiOperation(
-        P,
+        "stats",
         "power-analyses",
         "run",
-        H + "_compute:run_power_analysis",
+        "scitex_stats._rest._compute:run_power_analysis",
         summary="Statistical power (given n) or the required sample size (given power)",
         params=(
             ApiField("test_type", "string", False, "Design", enum=POWER_TEST_TYPES),
@@ -248,13 +251,15 @@ OPERATIONS = (
             ApiField("ratio", "number", False, "n2 / n1 (ttest); default 1"),
         ),
         errors=(BAD_INPUT,),
-        **CALC,
+        item=False,
+        read_only=True,
+        exposure="public_eligible",
     ),
     ApiOperation(
-        P,
+        "stats",
         "corrections",
         "run",
-        H + "_compute:run_correction",
+        "scitex_stats._rest._compute:run_correction",
         summary="Correct p-values for multiple comparisons",
         params=(
             ApiField("pvalues", "array", True, "Raw p-values in [0, 1]"),
@@ -262,13 +267,15 @@ OPERATIONS = (
             ALPHA,
         ),
         errors=DATA_ERRORS,
-        **CALC,
+        item=False,
+        read_only=True,
+        exposure="public_eligible",
     ),
     ApiOperation(
-        P,
+        "stats",
         "bootstrap-cis",
         "run",
-        H + "_compute:run_bootstrap_ci",
+        "scitex_stats._rest._compute:run_bootstrap_ci",
         summary="Seeded bootstrap confidence interval of the median or mean",
         params=(
             ApiField("data", "array", True, "Numbers: the sample (at least 2)"),
@@ -285,18 +292,26 @@ OPERATIONS = (
             ApiField("method", "string", False, "Interval", enum=BOOTSTRAP_METHODS),
             ApiField("seed", "integer", False, "Seed in [0, 2^32 - 1]; default 42"),
         ),
-        errors=(*DATA_ERRORS, TOO_MUCH_RESAMPLING),
+        errors=(BAD_INPUT, TOO_MANY_VALUES, TOO_MUCH_RESAMPLING),
         compute_cost="standard",
-        **CALC,
+        item=False,
+        read_only=True,
+        exposure="public_eligible",
     ),
 )
 
-PLUGIN = build_plugin(P, "SciTeX Stats API", "1", OPERATIONS)
+PLUGIN = build_plugin("stats", "SciTeX Stats API", "1", OPERATIONS)
 
 
 def register_mcp(mcp) -> list:
     """Register every operation as an MCP tool (``stats_<resource>_<verb>``)."""
-    from scitex_sdk.app.api_mcp import register_fastmcp
+    try:  # PS-233: scitex-sdk is the [server] extra
+        from scitex_sdk.app.api_mcp import register_fastmcp
+    except ImportError as exc:
+        raise ImportError(
+            "scitex_stats._rest.register_mcp needs scitex-sdk, which is not "
+            "installed. Install the optional stack: pip install 'scitex-stats[server]'"
+        ) from exc
 
     return register_fastmcp(mcp, PLUGIN)
 
