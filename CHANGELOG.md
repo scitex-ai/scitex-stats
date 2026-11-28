@@ -16,6 +16,8 @@ probe (`.github/ci/probe-statistics.py`) still required the MCP tool
 check therefore failed, and the tag cannot move.
 
 - Fix the installed-wheel probe to check the `describe_data` MCP tool.
+- Publish with `pypa/gh-action-pypi-publish` v1.14.3. Its bundled twine 7.0 accepts
+  the wheel's `Metadata-Version: 2.5`; v1.13.0 (twine 6.1) refused it before upload.
 - Release route: the release workflow now follows scitex-io's admitted central
   route. A hosted preflight resolves the existing tag to a commit on protected
   main with a matching, unused version. The registered compute-03 executor in
