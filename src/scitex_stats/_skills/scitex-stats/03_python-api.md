@@ -1,7 +1,7 @@
 ---
 description: |
   [TOPIC] Python API
-  [DETAILS] dispatcher, 25 test_* functions, descriptives, effect sizes, helpers.
+  [DETAILS] dispatcher, 25 test_* functions, descriptives, bootstrap CIs, effect sizes, helpers.
 tags: [scitex-stats-python-api, scitex-stats]
 ---
 
@@ -77,6 +77,34 @@ sst.test_icc(ratings)               # intraclass correlation
 ```
 
 See [20_test-catalog.md](20_test-catalog.md) for the categorized catalog.
+
+## Bootstrap confidence interval of a statistic
+
+Report a median (or mean) with an uncertainty interval without reaching into
+private modules or calling `scipy.stats.bootstrap` directly:
+
+```python
+res = sst.bootstrap_ci(ratios, statistic="median", confidence=0.95,
+                       n_resamples=10_000, method="percentile", seed=42,
+                       nan_policy="raise")
+res["estimate"], res["ci_lower"], res["ci_upper"]   # point estimate + bounds
+res["ci_apa"]                                       # "95% CI [0.80, 1.76]"
+```
+
+- `statistic`: `"median"`, `"mean"`, or a callable `f(x)` / `f(x, y)` (with
+  `data2=`; `paired=True` resamples pairs together, e.g. a correlation).
+- `method`: `"percentile"` (default), `"basic"`, `"bca"`.
+- Deterministic: a fresh `numpy.random.default_rng(seed)` per call; global
+  NumPy state is untouched. Same seed, same interval.
+- Explicit errors, never a silent fallback: fewer than 2 observations,
+  constant input, infinite values, and NaNs unless `nan_policy="omit"` (the
+  count dropped is returned as `n_nan_omitted`).
+- Returns a JSON-native dict (`statistic`, `estimate`, `ci_lower`,
+  `ci_upper`, `ci_level`, `method`, `ci_method`, `n`, `n_resamples`, `seed`,
+  `nan_policy`, `n_nan_omitted`, `ci_apa`; plus `n2`, `paired` for two
+  samples) that saves as-is with `stx.io.save(res, "median_ci.json")`.
+
+`full_report(...)` uses the same function for its bootstrap intervals.
 
 ## Effect sizes
 

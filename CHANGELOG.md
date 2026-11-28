@@ -7,6 +7,18 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- Add public `bootstrap_ci(data, statistic="median", *, data2=None,
+  paired=False, confidence=0.95, n_resamples=10_000, method="percentile",
+  seed=42, nan_policy="raise")`, also under `scitex_stats.descriptive`. It
+  returns a JSON-native dict (estimate, `ci_lower`, `ci_upper`, `ci_level`,
+  method, n, resamples, seed, APA string), is deterministic per seed, and
+  raises on n < 2, NaNs (unless `nan_policy="omit"`), infinite and constant
+  input. Supports median, mean and callable one- or two-sample statistics.
+  The internal Mann-Whitney and correlation bootstrap CIs of `full_report`
+  now call it; intervals are unchanged for valid input, while constant
+  input (every sample constant) now yields a missing CI (strict reports raise) instead of a
+  degenerate interval.
+
 - Use package-owned subprocess coverage support instead of writing startup
   hooks into shared Python environments during test collection.
 
