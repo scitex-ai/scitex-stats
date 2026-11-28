@@ -20,11 +20,14 @@ guidelines (Cohen, 1988; McGraw & Wong, 1992).
 
 from ._cliffs_delta import cliffs_delta, interpret_cliffs_delta
 from ._cohens_d import cohens_d, interpret_cohens_d
+from ._effect_size import effect_size
 from ._epsilon_squared import epsilon_squared, interpret_epsilon_squared
 from ._eta_squared import eta_squared, interpret_eta_squared
 from ._prob_superiority import interpret_prob_superiority, prob_superiority
 
 __all__ = [
+    # Measure-dispatched (MCP `effect_size`)
+    "effect_size",
     # Parametric
     "cohens_d",
     "interpret_cohens_d",

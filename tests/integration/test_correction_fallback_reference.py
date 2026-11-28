@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from statsmodels.stats.multitest import multipletests
 
-from scitex_stats._mcp._handlers._corrections import _correct_without_statsmodels
+from scitex_stats.correct._correct_pvalues import _correct_without_statsmodels
 
 METHODS = ["bonferroni", "holm", "fdr_bh", "fdr_by", "sidak", "unknown"]
 INPUTS = [
@@ -42,10 +42,9 @@ def test_fallback_decisions_match_reference(method, pvalues):
     # Assert
     observed = {
         key: result[key]
-        for key in ["success", "method", "n_tests", "reject_null", "n_significant"]
+        for key in ["method", "n_tests", "reject_null", "n_significant"]
     }
     assert observed == {
-        "success": True,
         "method": method,
         "n_tests": len(pvalues),
         "reject_null": reject.tolist(),

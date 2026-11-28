@@ -18,6 +18,10 @@ Functionalities
   `auto` — submodules exposing the primitives behind `run_test`
   (Cohen's d / Cliff's delta / eta-sq / sample-size-ttest /
   Bonferroni / FDR / Tukey HSD / Dunn / ...).
+- `correct_pvalues`, `effect_size`, `normality_test`, `posthoc_test`,
+  `power_analysis`, `format_results` — method-dispatched one-call
+  operations returning JSON-native dicts; each MCP tool of the same name
+  wraps exactly one of them.
 - APA / Nature / LaTeX formatting via `result["formatted"]`.
 - `full_report(result, ...)` — six-stat reporting doctrine bundler:
   packages n, 95% CI, method, p-value, effect size, and test statistic
@@ -137,6 +141,13 @@ _LAZY_ATTRS: dict[str, str] = {
     "validate_apa": "_utils._apa",
     # Provenance receipt verification
     "verify": "_verify",
+    # Sync operations behind the matching MCP tools (same name, same args)
+    "correct_pvalues": "correct",
+    "effect_size": "effect_sizes",
+    "format_results": "auto._format_results",
+    "normality_test": "tests.normality",
+    "posthoc_test": "posthoc",
+    "power_analysis": "power",
     # Stats ↔ SciTeX bundle I/O (optional scitex-io; extra [bundle])
     "Stats": "_integration",
     "BUNDLE_AVAILABLE": "_integration",
@@ -261,6 +272,13 @@ __all__ = [
     "validate_apa",
     # Provenance receipt verification
     "verify",
+    # Sync operations behind the matching MCP tools
+    "correct_pvalues",
+    "effect_size",
+    "format_results",
+    "normality_test",
+    "posthoc_test",
+    "power_analysis",
     # Stats ↔ SciTeX bundle I/O (optional scitex-io; extra [bundle])
     "Stats",
     "BUNDLE_AVAILABLE",

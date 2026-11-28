@@ -37,8 +37,8 @@ def test_stdio_describe_rejects_empty_data_and_accepts_numbers(tmp_path):
                 ClientSession(read, write) as session,
             ):
                 await session.initialize()
-                empty = await session.call_tool("describe", {"data": []})
-                valid = await session.call_tool("describe", {"data": [1, 2, 3]})
+                empty = await session.call_tool("describe_data", {"data": []})
+                valid = await session.call_tool("describe_data", {"data": [1, 2, 3]})
                 return (
                     json.loads(empty.content[0].text),
                     json.loads(valid.content[0].text),

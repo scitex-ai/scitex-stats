@@ -76,7 +76,7 @@ scitex-stats <command> [options]
 |------|-------------|
 | `stats_run_test` | Run a statistical test |
 | `stats_recommend_tests` | Auto-recommend tests for data |
-| `stats_describe` | Descriptive statistics |
+| `stats_describe_data` | Descriptive statistics |
 | `stats_effect_size` | Compute effect sizes |
 | `stats_correct_pvalues` | Multiple comparison correction |
 | `stats_posthoc_test` | Post-hoc pairwise tests |

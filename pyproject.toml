@@ -48,7 +48,7 @@ dependencies = [
     # CLI framework (scitex-stats <cmd>)
     "click>=8.0",
     # SciTeX ecosystem: linter plugin Rule class, skills installer, audit
-    "scitex-dev>=0.62.29",
+    "scitex-dev>=0.68.0",  # §6 parity ratchet (.scitex/dev/mcp-parity-baseline.yaml)
     "scitex-config>=0.3.0",
     # SciTeX logger — _logging.py prefers it over stdlib logging
     "scitex-logging>=0.1",
