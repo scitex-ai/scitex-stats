@@ -7,20 +7,6 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-- Release pipeline runs on the reviewed runtime/image registration scitex-dev
-  releases on (Apptainer 1.5.5 + content-addressed ci-cpu SIF on
-  scitex-compute-02), lifting the release hold left by the unset digest
-  variables since 2026-11-13.
-
-### Security
-
-- Remove the import-time `.env` walk from `scitex_stats/__init__.py`. It
-  called `PriorityConfig.load_dotenv`, which does not exist, so it was a
-  silent no-op. Had it worked, it would have copied every `.env` variable
-  into `os.environ` on import (scitex-config#47). A regression test now
-  checks that `import scitex_stats` with a populated `$HOME/.env` leaves
-  `os.environ` unchanged.
-
 ## [1.1.0] — 2026-11-28
 
 Public seeded `bootstrap_ci`, and the package passes the scitex-dev MCP
