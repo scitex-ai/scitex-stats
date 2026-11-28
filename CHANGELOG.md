@@ -7,11 +7,6 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-- Release pipeline runs on the reviewed runtime/image registration scitex-dev
-  releases on (Apptainer 1.5.5 + content-addressed ci-cpu SIF on
-  scitex-compute-02), lifting the release hold left by the unset digest
-  variables since 2026-11-13.
-
 ## [1.1.0] — 2026-11-28
 
 Public seeded `bootstrap_ci`, and the package passes the scitex-dev MCP

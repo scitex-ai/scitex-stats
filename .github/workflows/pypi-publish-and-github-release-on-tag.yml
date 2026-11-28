@@ -34,8 +34,8 @@ name: release
 # fail-loud: a missing SIF/shim/interpreter is a HARD error, never a
 # bare-runner fallback.
 #
-# Compute jobs run on the qualified host (scitex-compute-02) with the
-# registered runtime/image; see the `env:` block below.
+# Compute runs-on uses repo Actions Variable CI_RUNS_ON; SIF + apptainer paths
+# come from SCITEX_CI_SIF / SCITEX_CI_APPTAINER (same as pytest-matrix).
 #
 # Manual re-run: the workflow also accepts a `version` input via
 # workflow_dispatch so you can re-publish without re-tagging.
@@ -50,23 +50,15 @@ on:
         required: true
         type: string
 
-# Release runtime/image = the REVIEWED registration scitex-dev releases on:
-# scitex-ai/.github docs/qualifications/dev-apptainer-1.5.5-20261126.json
-# (host scitex-compute-02, Apptainer 1.5.5; same runtime as the writer
-# re-qualification, scitex-ai/.github#140). The paths are fixed here rather
-# than read from SCITEX_CI_APPTAINER / SCITEX_CI_SIF, which PR CI shares and
-# which point at unqualified per-host files. The digests come from repo
-# variables set to that record's `runtime.sha256` / `image.sha256`; the jobs
-# below are pinned to the record's host so those bytes are the ones present.
 env:
-  SCITEX_CI_APPTAINER: /usr/bin/apptainer
-  SCITEX_CI_SIF: /home/ywatanabe/.scitex/dev/runtime/containers/ci-cpu-sha256-aa5836a6c317640d7e20f01eb79aa7385b3dca2f369b595065c50ba3dd34a7d5.sif
+  SCITEX_CI_APPTAINER: ${{ vars.SCITEX_CI_APPTAINER }}
+  SCITEX_CI_SIF: ${{ vars.SCITEX_CI_SIF }}
   SCITEX_CI_SIF_SHA256: ${{ vars.SCITEX_CI_SIF_SHA256 }}
   SCITEX_CI_APPTAINER_SHA256: ${{ vars.SCITEX_CI_APPTAINER_SHA256 }}
 
 jobs:
   test:
-    runs-on: ["self-hosted", "Linux", "X64", "scitex-org-cpu", "scitex-compute-02"]
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '["self-hosted","Linux","X64","scitex-ci"]') }}
     strategy:
       fail-fast: false
       matrix:
@@ -96,7 +88,7 @@ jobs:
 
   build:
     needs: test
-    runs-on: ["self-hosted", "Linux", "X64", "scitex-org-cpu", "scitex-compute-02"]
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '["self-hosted","Linux","X64","scitex-ci"]') }}
     outputs:
       version: ${{ steps.ver.outputs.version }}
       commit: ${{ steps.source.outputs.commit }}
@@ -130,7 +122,7 @@ jobs:
 
   publish:
     needs: build
-    runs-on: ["self-hosted", "Linux", "X64", "scitex-org-cpu", "scitex-compute-02"]
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '["self-hosted","Linux","X64","scitex-ci"]') }}
     environment:
       name: pypi
       url: https://pypi.org/p/scitex-stats
