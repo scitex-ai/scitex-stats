@@ -131,6 +131,13 @@ capacity and source/archive verification. The legacy release caller reads the
 digests from Actions variables; missing configuration remains a release hold.
 No release dispatch or variable change is performed by this source change.
 
+The release caller adopts the reviewed registration scitex-dev releases on,
+`scitex-ai/.github` `docs/qualifications/dev-apptainer-1.5.5-20261126.json`
+(host `scitex-compute-02`, `/usr/bin/apptainer` 1.5.5 and the
+content-addressed `ci-cpu-sha256-aa5836a6….sif`). Its paths are fixed in the
+workflow, its jobs run only on that host, and the two digest variables hold
+the record's `runtime.sha256` and `image.sha256`.
+
 ## Private state policy building block
 
 `.github/ci/release-context.sh` provides `stats_release_context SCRATCH VENV`
