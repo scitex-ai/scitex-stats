@@ -11,7 +11,6 @@ import urllib.request
 from wsgiref.simple_server import WSGIRequestHandler, make_server
 
 import pytest
-
 from scitex_sdk.app.api_ops import operations
 from scitex_sdk.testing.api_contract import assert_contract
 
