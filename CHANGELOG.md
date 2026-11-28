@@ -8,7 +8,7 @@ versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 - Add the `/api/v1/stats/` REST/MCP API (`scitex_stats._rest:PLUGIN`, entry
-  point `scitex.apis`, served by any scitex-sdk >= 0.6.0 host): `tests`
+  point `scitex.apis`, served by any scitex-sdk >= 0.5.0 host): `tests`
   list/get (public catalogue with the fields each test reads),
   `tests/{test_id}/run`, `tests/recommend` (from data or from a design
   description), `descriptives/run`, `effect-sizes/run`,
@@ -19,7 +19,7 @@ versions follow [Semantic Versioning](https://semver.org/).
   100 000 numeric values per public call, 1 000 000 for anyone (413
   `stats.too_many_values`); bootstrap resamples are capped (public 10 000,
   members 100 000, and values x resamples <= 20 000 000; BCa <= 5 000
-  values). The `server` and `dev` extras now require `scitex-sdk[gui]>=0.6.0`.
+  values). The `server` and `dev` extras now require `scitex-sdk[gui]>=0.5.0`.
 - `run_test(..., embed_inputs=False)` records only input hashes in the
   provenance receipt (verify by passing the data to `verify`).
 - Cliff's delta and the probability of superiority count pairs by sort and
