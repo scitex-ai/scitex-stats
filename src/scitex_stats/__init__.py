@@ -36,8 +36,9 @@ Functionalities
 IO
 --
 - Reads: numeric arrays (`numpy.ndarray`, `pandas.DataFrame`,
-  `pandas.Series`, sequences); optional `.env` walk-up via
-  scitex-config; runtime cache under `$SCITEX_DIR/stats/runtime/`.
+  `pandas.Series`, sequences); runtime cache under
+  `$SCITEX_DIR/stats/runtime/`. Import reads no `.env` and leaves
+  `os.environ` unchanged.
 - Writes: nothing by default — pure functions returning result dicts.
   Caller persists via `scitex_io.save(...)` if desired.
 
