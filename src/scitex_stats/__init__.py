@@ -36,8 +36,9 @@ Functionalities
 IO
 --
 - Reads: numeric arrays (`numpy.ndarray`, `pandas.DataFrame`,
-  `pandas.Series`, sequences); optional `.env` walk-up via
-  scitex-config; runtime cache under `$SCITEX_DIR/stats/runtime/`.
+  `pandas.Series`, sequences); runtime cache under
+  `$SCITEX_DIR/stats/runtime/`. Import reads no `.env` and leaves
+  `os.environ` unchanged.
 - Writes: nothing by default — pure functions returning result dicts.
   Caller persists via `scitex_io.save(...)` if desired.
 
@@ -62,20 +63,6 @@ from __future__ import annotations
 from importlib.metadata import PackageNotFoundError as _PackageNotFoundError
 from importlib.metadata import version as _version
 from pathlib import Path as _Path
-
-# ---------------------------------------------------------------------------
-# .env-respect: walk parent dirs from cwd up to $HOME, load any .env files.
-# Closer-to-cwd .env wins; process env always wins. Helper landed on
-# scitex-config develop at eb9507e1 (load_dotenv walk_up + stop_at).
-# Wrapped in try/except so the import never breaks if scitex-config is
-# missing or older than 0.3.0.
-# ---------------------------------------------------------------------------
-try:
-    from scitex_config import PriorityConfig as _PC
-
-    _PC.load_dotenv(walk_up=True, stop_at=str(_Path.home()))
-except Exception:
-    pass
 
 # ---------------------------------------------------------------------------
 # Runtime path resolver: anything writable (cache, db, generated outputs)

@@ -44,7 +44,6 @@ import pytest
 CROSS_PACKAGE_IMPORTS = [
     'scitex',
     'scitex_clew._hash',
-    'scitex_config',
     'scitex_dev',
     'scitex_dev.cli',
     'scitex_dev.decorators',
