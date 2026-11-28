@@ -7,6 +7,15 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.1] — 2026-11-28
+
+1.1.1 is the first published release with the 1.1.0 changes below. The
+`v1.1.0` tag exists but was never published to PyPI. Its own release-gate
+probe (`.github/ci/probe-statistics.py`) still required the MCP tool
+`describe`, which 1.1.0 renamed to `describe_data`. The fresh installed-wheel
+check therefore failed, and the tag cannot move.
+
+- Fix the installed-wheel probe to check the `describe_data` MCP tool.
 - Release route: the release workflow now follows scitex-io's admitted central
   route. A hosted preflight resolves the existing tag to a commit on protected
   main with a matching, unused version. The registered compute-03 executor in
