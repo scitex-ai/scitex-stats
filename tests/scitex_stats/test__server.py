@@ -105,6 +105,7 @@ class TestServerCreation:
 # ===================================================================
 
 EXPECTED_TOOLS = [
+    "bootstrap_ci",
     "correct_pvalues",
     "describe_data",
     "effect_size",
@@ -381,6 +382,27 @@ def test_describe_direct_mean():
     out = _decode(_run_async(_tool_fn("describe_data")(data=[1.0, 2.0, 3.0, 4.0, 5.0])))
     # Assert
     assert "mean" in out
+
+
+def test_bootstrap_ci_tool_matches_python_api():
+    # Arrange
+    import scitex_stats as ss
+
+    data = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]
+    expected = json.loads(json.dumps(ss.bootstrap_ci(data, "median", n_resamples=500)))
+    # Act
+    out = _decode(_run_async(_tool_fn("bootstrap_ci")(data=data, n_resamples=500)))
+    # Assert
+    assert {k: v for k, v in out.items() if k != "success"} == expected
+
+
+def test_bootstrap_ci_tool_reports_invalid_input():
+    # Arrange
+    data = [1.0]
+    # Act
+    out = _decode(_run_async(_tool_fn("bootstrap_ci")(data=data)))
+    # Assert
+    assert out["success"] is False
 
 
 def test_effect_size_direct_success():

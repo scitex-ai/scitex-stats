@@ -54,7 +54,7 @@ Standalone import::
     result = ss.run_test("ttest_ind", data=g1, data2=g2)
     print(result["formatted"])  # APA-style summary
 
-CLI: ``scitex-stats <command>``. MCP: 18 tools for AI agents.
+CLI: ``scitex-stats <command>``. MCP: 19 tools for AI agents.
 """
 
 from __future__ import annotations

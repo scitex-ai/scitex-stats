@@ -1,7 +1,7 @@
 ---
 description: |
   [TOPIC] Mcp Tools
-  [DETAILS] 18 tools accessible via scitex MCP server: 12 statistical
+  [DETAILS] 19 tools accessible via scitex MCP server: 13 statistical
   tools plus report, verify, skills, and APA helpers.
 tags: [scitex-stats-mcp-tools, scitex-stats]
 ---
@@ -10,13 +10,14 @@ tags: [scitex-stats-mcp-tools, scitex-stats]
 # MCP Tools (for AI Agents)
 
 All tools are prefixed `stats_` under the scitex MCP server
-(`scitex-stats mcp list-tools`: 18 tools, 9 modules).
+(`scitex-stats mcp list-tools`: 19 tools).
 
 | Tool | Purpose |
 |------|---------|
 | `stats_run_test` | Run any statistical test by name |
 | `stats_recommend_tests` | Auto-recommend appropriate tests for given data |
 | `stats_describe_data` | Compute descriptive statistics (mean, std, CI, etc.); was `stats_describe` before 1.1.0 |
+| `stats_bootstrap_ci` | Seeded bootstrap CI of a median or mean |
 | `stats_effect_size` | Calculate effect size between groups |
 | `stats_correct_pvalues` | Apply multiple comparison correction |
 | `stats_posthoc_test` | Run post-hoc pairwise comparisons |
@@ -50,6 +51,7 @@ instead of returning `success: false`:
 | `stats_power_analysis` | `scitex_stats.power_analysis(test_type, effect_size, alpha, power, n, n_groups, ratio)` |
 | `stats_format_results` | `scitex_stats.format_results(test_name, statistic, p_value, ...)` |
 | `stats_describe_data` | `scitex_stats.describe(data)` |
+| `stats_bootstrap_ci` | `scitex_stats.bootstrap_ci(data, statistic, ...)` (named statistics only) |
 | `stats_verify_result` | `scitex_stats.verify(result, data, data2, groups)` |
 
 Python APIs with no tool yet are recorded in
