@@ -7,6 +7,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-11-29
+
+The stats operations of the SciTeX API (`/api/v1/stats/`), declared for any
+scitex-sdk host.
+
 - Add the `/api/v1/stats/` REST/MCP API (`scitex_stats._rest:PLUGIN`, entry
   point `scitex.apis`, served by any scitex-sdk >= 0.5.0 host): `tests`
   list/get (public catalogue with the fields each test reads),
