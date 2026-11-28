@@ -305,9 +305,16 @@ def build_provenance(
     seed: Optional[int] = None,
     stochastic: bool = False,
     extra: Optional[Dict[str, Any]] = None,
+    embed_inputs: bool = True,
 ) -> Dict[str, Any]:
-    """Assemble the receipt for ``result`` (not attached; see :func:`attach`)."""
-    inputs = describe_inputs(raw_inputs)
+    """Assemble the receipt for ``result`` (not attached; see :func:`attach`).
+
+    ``embed_inputs=False`` records only each input's hash, length and shape
+    (never the values), for callers that already hold the data — e.g. a web
+    API echoing a request back would double the response. :func:`verify`
+    then needs the data passed in.
+    """
+    inputs = describe_inputs(raw_inputs, embed=embed_inputs)
     prov: Dict[str, Any] = {
         "schema": SCHEMA,
         "api": api,

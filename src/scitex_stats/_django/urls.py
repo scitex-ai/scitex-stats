@@ -46,6 +46,11 @@ urlpatterns = [
     path("api/project-files", views.project_files, name="project_files"),
     path("api/project-import", views.project_import, name="project_import"),
     path("api/project-save", views.project_save, name="project_save"),
+    # The JSON calculation routes below (tests, recommend*, run, describe,
+    # effect-size, power, posthoc, correct) have contract successors under
+    # /api/v1/stats/ (scitex_stats._rest; API contract v1 migration rows
+    # #59-#65, #110-#116). They stay until the calculator page and the hub
+    # move to /api/v1; removing them is a separate change.
     path("api/tests", views.tests, name="tests"),
     path("api/recommend", views.recommend, name="recommend"),
     # Leaf-owned compatibility for the stateless public Hub recommendation

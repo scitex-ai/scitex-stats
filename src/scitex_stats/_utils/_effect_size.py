@@ -239,12 +239,10 @@ def cliffs_delta(
     nx = len(x)
     ny = len(y)
 
-    # Count comparisons
-    # Vectorized computation: create all pairwise comparisons
-    # x[:, None] creates column vector, y creates row vector
-    # Broadcasting creates matrix of all pairwise comparisons
-    more = np.sum(x[:, None] > y)
-    less = np.sum(x[:, None] < y)
+    # Count comparisons without materialising the nx x ny pair matrix
+    from scitex_stats._utils._pairwise_counts import pairwise_counts
+
+    more, less = pairwise_counts(x, y)
 
     # Compute Cliff's delta
     delta = (more - less) / (nx * ny)
@@ -345,8 +343,10 @@ def prob_superiority(
     nx = len(x)
     ny = len(y)
 
-    # Count how many times x > y
-    more = np.sum(x[:, None] > y)
+    # Count how many times x > y, without the nx x ny pair matrix
+    from scitex_stats._utils._pairwise_counts import pairwise_counts
+
+    more, _ = pairwise_counts(x, y)
 
     # Compute probability
     prob = more / (nx * ny)

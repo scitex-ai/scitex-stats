@@ -11,3 +11,5 @@ transitive_verbs: []
 verb_exceptions:
   - check  # why: `tests check-applicability` mirrors the public Python API `ss.check_applicability`; renaming the CLI verb alone would split the CLI/Python vocabulary for no operator gain.
   - verify  # why: `scitex-stats verify` checks a saved result against its provenance receipt (module `scitex_stats._verify`, Python API `verify`); `verify` is the domain-correct verb and renaming would split the CLI/Python vocabulary for no operator gain.
+  - run  # why: the /api/v1/stats operations `tests run`, `descriptives run`, `effect-sizes run`, `power-analyses run`, `corrections run`, `bootstrap-cis run` are fixed by API contract v1 §12.4 (the decided public set, operation ids `stats.<resource>.run`); a stateless calculation has no better canonical verb (`apply`/`test` would misname it), and it mirrors the Python API `run_test`.
+  - recommend  # why: `POST /api/v1/stats/tests/recommend` is fixed by API contract v1 §12.4 (operation id `stats.tests.recommend`) and mirrors the Python API `recommend_test` / `recommend_tests`; no canonical verb names "advise which test to use".
