@@ -35,6 +35,7 @@ def test_run_test_unwraps_tuple_result_when_test_returns_pair_dict():
     # Assert
     assert isinstance(out, dict)
 
+
 def test_run_test_unwraps_tuple_result_when_test_returns_pair_value_pvalue():
     """When `plot=True`, some test functions return `(result, fig)`.
     `run_test` should unwrap to the dict before normalising."""
@@ -59,6 +60,7 @@ def test_run_test_ttest_1samp_with_popmean_dict():
     out = run_test("ttest_1samp", data=rng.normal(3.0, 1, 50), popmean=3.0)
     # Assert
     assert isinstance(out, dict)
+
 
 def test_run_test_ttest_1samp_with_popmean_value_pvalue():
     # Arrange
@@ -97,6 +99,7 @@ def test_run_test_chi2_with_groups_2d_table_dict():
     # Assert
     assert isinstance(out, dict)
 
+
 def test_run_test_chi2_with_groups_2d_table_value_pvalue():
     # Arrange
     # Act
@@ -129,9 +132,11 @@ def test_run_test_fisher_with_groups_2x2():
 def test_call_test_raises_on_unrouted_test_name():
     """`_call_test` should raise when a test_name slips through
     `run_test`'s alias check but isn't in any category set."""
+
     # Arrange
     def _stub(*a, **kw):
         return {"unused": True}
+
     # Act
     # Assert
     with pytest.raises(ValueError, match="No dispatch rule"):
@@ -221,3 +226,24 @@ def test_paired_dispatch_omitted_alternative_remains_two_sided(test_name):
         pytest.approx(expected["statistic"]),
         pytest.approx(expected["pvalue"]),
     )
+
+
+def test_embed_inputs_false_keeps_hashes_only():
+    # Arrange
+    x, y = [1.0, 2.0, 3.5, 4.0], [2.0, 3.0, 4.5, 6.0]
+    # Act
+    result = run_test("ttest_ind", data=x, data2=y, embed_inputs=False)
+    # Assert
+    assert "values" not in result["provenance"]["inputs"]["data"]
+
+
+def test_a_hash_only_receipt_verifies_with_the_data_supplied():
+    # Arrange
+    from scitex_stats import verify
+
+    x, y = [1.0, 2.0, 3.5, 4.0], [2.0, 3.0, 4.5, 6.0]
+    result = run_test("ttest_ind", data=x, data2=y, embed_inputs=False)
+    # Act
+    report = verify(result, data=x, data2=y)
+    # Assert
+    assert report["verified"] is True

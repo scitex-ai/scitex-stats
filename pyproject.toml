@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "scitex-stats"
-version = "1.1.1"
+version = "1.2.0"
 description = "Publication-ready statistical testing framework with 25 tests, effect sizes, power analysis, and MCP server"
 readme = "README.md"
 license = "AGPL-3.0-only"
@@ -96,10 +96,13 @@ bundle = [
 # Statistics app (standalone + host integration): the SDK supplies the
 # shared App/UI contracts, workspace shell, picker, and GUI lifecycle.
 # The gui extra provides Django for both standalone and mounted operation.
+# It also carries the REST/MCP API (scitex_stats._rest, entry point
+# `scitex.apis` below): 0.5.0 is the first SDK with the operation `exposure`
+# ceiling and the public-tier limits the handlers enforce (call.limits).
 server = [
     "django>=4.2",
-    "scitex-sdk[gui]>=0.3.12",
- ]
+    "scitex-sdk[gui]>=0.5.0",
+]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=7.0.0",
@@ -127,7 +130,9 @@ dev = [
     # [server] extra: shared SDK App/UI contracts and Django boot/mount
     # tests, at the same released floor as [server] (PS-210).
     "django>=4.2",
-    "scitex-sdk[gui]>=0.3.12",
+    "scitex-sdk[gui]>=0.5.0",
+    # assert_contract validates the generated OpenAPI document (API-O002).
+    "openapi-spec-validator>=0.7",
     # Note: fastmcp / mcp / scitex-dev / scitex-logging / pingouin come in via [project.dependencies].
     "weasyprint>=60",
 ]
@@ -154,6 +159,11 @@ stats = "scitex_stats._linter_plugin:get_plugin"
 
 [project.entry-points."scitex.apps"]
 stats = "scitex_stats._django.apps:StatsCalculatorConfig"
+
+# The /api/v1/stats/ operations (scitex-sdk ApiPlugin). Only a host loads it;
+# it needs the [server] extra.
+[project.entry-points."scitex.apis"]
+stats = "scitex_stats._rest:PLUGIN"
 
 [project.urls]
 Homepage = "https://github.com/scitex-ai/scitex-stats"

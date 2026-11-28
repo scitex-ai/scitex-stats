@@ -109,6 +109,7 @@ def run_test(
     group_names: Optional[List[str]] = None,
     nan_policy: Literal["omit", "raise"] = "omit",
     plot_spec: bool = False,
+    embed_inputs: bool = True,
     **kwargs: Any,
 ) -> Dict[str, Any]:
     """Run a statistical test by name and return a normalised result dict.
@@ -145,6 +146,10 @@ def run_test(
     plot_spec : bool, default ``False``
         Attach ``result["plot_spec"]``, the neutral plot spec (see
         :func:`scitex_stats.plot_spec`), including the raw data.
+    embed_inputs : bool, default ``True``
+        Embed the input values in ``result["provenance"]`` (up to
+        ``EMBED_MAX_VALUES``) so :func:`scitex_stats.verify` can recompute
+        alone. ``False`` keeps only their hashes; pass the data to ``verify``.
     **kwargs
         Additional keyword arguments forwarded to the test function.
 
@@ -242,6 +247,7 @@ def run_test(
             **kwargs,
         },
         raw_inputs=raw,
+        embed_inputs=embed_inputs,
     )
 
 

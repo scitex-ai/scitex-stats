@@ -134,8 +134,10 @@ def prob_superiority(
     nx = len(x)
     ny = len(y)
 
-    # Count how many times x > y
-    more = np.sum(x[:, None] > y)
+    # Count how many times x > y, without the nx x ny pair matrix
+    from scitex_stats._utils._pairwise_counts import pairwise_counts
+
+    more, _ = pairwise_counts(x, y)
 
     # Compute probability
     prob = more / (nx * ny)
